@@ -1,0 +1,264 @@
+{
+  "admin": {
+    "pin_hash": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+    "railway_url": "https://velez-ipos-production.up.railway.app"
+  },
+  "football_api": {
+    "key": "4a54465018b24121b44924a85c907e13",
+    "team_id": 462,
+    "espn_team_id": 21,
+    "espn_competition": "arg.1"
+  },
+  "horarios_vo_semana": {
+    "semana_label": "C",
+    "fecha_inicio": "2026-05-18",
+    "fecha_fin": "2026-05-23",
+    "dias": [
+      {
+        "id": "lun",
+        "label": "Lun",
+        "fecha": "2026-05-18"
+      },
+      {
+        "id": "mar",
+        "label": "Mar",
+        "fecha": "2026-05-19"
+      },
+      {
+        "id": "mie",
+        "label": "Mié",
+        "fecha": "2026-05-20"
+      },
+      {
+        "id": "jue",
+        "label": "Jue",
+        "fecha": "2026-05-21"
+      },
+      {
+        "id": "vie",
+        "label": "Vie",
+        "fecha": "2026-05-22"
+      },
+      {
+        "id": "sab",
+        "label": "Sáb",
+        "fecha": "2026-05-23"
+      }
+    ],
+    "sessions": [
+      {
+        "categoria": "Reserva",
+        "dia": "lun",
+        "canchas": [
+          "1fa"
+        ],
+        "turno": "manana"
+      },
+      {
+        "categoria": "Cuarta",
+        "dia": "lun",
+        "canchas": [
+          "8fa",
+          "9fa"
+        ],
+        "turno": "manana"
+      },
+      {
+        "categoria": "Quinta",
+        "dia": "lun",
+        "canchas": [
+          "5fa"
+        ],
+        "turno": "infantiles"
+      },
+      {
+        "categoria": "Sexta",
+        "dia": "mar",
+        "canchas": [
+          "1fa"
+        ],
+        "turno": "manana"
+      },
+      {
+        "categoria": "Séptima",
+        "dia": "mar",
+        "canchas": [
+          "3fa"
+        ],
+        "turno": "manana"
+      },
+      {
+        "categoria": "Femenino",
+        "dia": "mie",
+        "canchas": [
+          "1fa"
+        ],
+        "turno": "femenino"
+      },
+      {
+        "categoria": "Infantiles",
+        "dia": "mie",
+        "canchas": [
+          "8fa"
+        ],
+        "turno": "infantiles"
+      },
+      {
+        "categoria": "Reserva",
+        "dia": "jue",
+        "canchas": [
+          "1fa"
+        ],
+        "turno": "manana"
+      },
+      {
+        "categoria": "Primera",
+        "dia": "vie",
+        "canchas": [
+          "1fp"
+        ],
+        "turno": "manana"
+      }
+    ]
+  },
+  "ipos_semana": {
+    "label": "D",
+    "fecha_inicio": "2026-05-25",
+    "fecha_fin": "2026-05-30",
+    "generado_en": "2026-05-20T16:10:37Z",
+    "canchas": {
+      "1fa": {
+        "score": 375.0,
+        "semaforo": "rojo",
+        "icono": "🔴",
+        "texto": "Cancha al límite — necesita descanso",
+        "personas": 120,
+        "horas": 12.5,
+        "detalle": "Esta semana pisaron esta cancha 120 personas durante 12 horas en total"
+      },
+      "8fa": {
+        "score": 118.5,
+        "semaforo": "amarillo",
+        "icono": "🟡",
+        "texto": "Uso normal",
+        "personas": 45,
+        "horas": 6.5,
+        "detalle": "Esta semana pisaron esta cancha 45 personas durante 6 horas en total"
+      },
+      "9fa": {
+        "score": 45.0,
+        "semaforo": "verde",
+        "icono": "🟢",
+        "texto": "Cancha descansada",
+        "personas": 15,
+        "horas": 3.0,
+        "detalle": "Esta semana pisaron esta cancha 15 personas durante 3 horas en total"
+      },
+      "5fa": {
+        "score": 105.0,
+        "semaforo": "amarillo",
+        "icono": "🟡",
+        "texto": "Uso normal",
+        "personas": 30,
+        "horas": 3.5,
+        "detalle": "Esta semana pisaron esta cancha 30 personas durante 4 horas en total"
+      },
+      "3fa": {
+        "score": 90.0,
+        "semaforo": "verde",
+        "icono": "🟢",
+        "texto": "Cancha descansada",
+        "personas": 30,
+        "horas": 3.0,
+        "detalle": "Esta semana pisaron esta cancha 30 personas durante 3 horas en total"
+      },
+      "1fp": {
+        "score": 90.0,
+        "semaforo": "verde",
+        "icono": "🟢",
+        "texto": "Cancha descansada",
+        "personas": 30,
+        "horas": 3.0,
+        "detalle": "Esta semana pisaron esta cancha 30 personas durante 3 horas en total"
+      }
+    }
+  },
+  "verify_hashes": {
+    "0c57c31ef4fbeedce40a41850b9e0460d89546be6647e714a0d553e78a0e6c0d": {
+      "cancha": "1FA",
+      "semana": "D",
+      "ipos": 375.0,
+      "ndvi": 0.18,
+      "semaforo": "rojo",
+      "fecha_generacion": "2026-05-20T16:10:23Z"
+    },
+    "f6967693f39563a2e3ebddac83669c3a858d9b30d6748b67f1259933c35e82c3": {
+      "cancha": "8FA",
+      "semana": "D",
+      "ipos": 118.5,
+      "ndvi": 0.5372,
+      "semaforo": "amarillo",
+      "fecha_generacion": "2026-05-20T16:10:23Z"
+    },
+    "559f1e10586544bb30c8551081ae4b14c7d440c98f090d8c2fff02befd8f0445": {
+      "cancha": "9FA",
+      "semana": "D",
+      "ipos": 45.0,
+      "ndvi": 0.6506,
+      "semaforo": "verde",
+      "fecha_generacion": "2026-05-20T16:10:23Z"
+    },
+    "d1ad32845a3e76d70a4ae9264f12b83e8de29e76d8d988ac014789cdd2ebd5e8": {
+      "cancha": "5FA",
+      "semana": "D",
+      "ipos": 105.0,
+      "ndvi": 0.558,
+      "semaforo": "amarillo",
+      "fecha_generacion": "2026-05-20T16:10:23Z"
+    },
+    "df4b42ad80a1fbc933697eb72a106a43a3397df8970ea1f08005fa09ee4e7bd3": {
+      "cancha": "3FA",
+      "semana": "D",
+      "ipos": 90.0,
+      "ndvi": 0.5811,
+      "semaforo": "verde",
+      "fecha_generacion": "2026-05-20T16:10:23Z"
+    },
+    "612f6a7c5c69c265d28c4a2def30cc0ff5c34da518d33f5a3d62e3ddd14efb15": {
+      "cancha": "1FP",
+      "semana": "D",
+      "ipos": 90.0,
+      "ndvi": 0.5811,
+      "semaforo": "verde",
+      "fecha_generacion": "2026-05-20T16:10:23Z"
+    }
+  },
+  "ipos_historial": [
+    {
+      "label": "D",
+      "fecha": "2026-05-25",
+      "ts": "2026-05-20T10:34:22Z",
+      "canchas": {
+        "1fa": 375.0,
+        "8fa": 118.5,
+        "9fa": 45.0,
+        "5fa": 105.0,
+        "3fa": 90.0,
+        "1fp": 90.0
+      }
+    },
+    {
+      "label": "D",
+      "fecha": "2026-05-25",
+      "ts": "2026-05-20T16:10:37Z",
+      "canchas": {
+        "1fa": 375.0,
+        "8fa": 118.5,
+        "9fa": 45.0,
+        "5fa": 105.0,
+        "3fa": 90.0,
+        "1fp": 90.0
+      }
+    }
+  ]
+}
