@@ -687,8 +687,9 @@ body{background:var(--bg);color:var(--whi);font-family:-apple-system,BlinkMacSys
 (function(){
 'use strict';
 
-var DATA_URL    = './velez_data.json';
-var CONFIG_URL  = './config_velez.json';
+var _cbTs       = Math.floor(Date.now()/60000);  // 1-minute cache granularity
+var DATA_URL    = './velez_data.json?t=' + _cbTs;
+var CONFIG_URL  = './config_velez.json?t=' + _cbTs;
 var RAILWAY_URL = 'https://faroprotocol-production-45fd.up.railway.app';
 var _pinValue   = '1234';
 var WEATHER_URL = 'https://api.open-meteo.com/v1/forecast?latitude=-34.6375&longitude=-58.5215' +
@@ -983,10 +984,14 @@ function buildEtCard(wl){
       +'<div class="et-value ok">sin falta esta semana</div></div>';
   }
 
+  var etFuente = wl.et0_fuente||'';
+  var etBadge  = etFuente==='estimado'
+    ? '<span style="font-size:9px;color:#e0b84c;font-weight:700;margin-left:4px">ESTIMADO</span>'
+    : '<span style="font-size:9px;color:#4cad72;margin-left:4px">'+etFuente+'</span>';
   var html='<div class="et-card">'
     +'<div class="et-card-title">Agua perdida por día & Balance de Riego</div>'
     +'<div class="et-row"><div class="et-label">Agua perdida hoy por el pasto</div>'
-    +'<div class="et-value '+etCls+'">'+et+' mm/día — '+etLabel+'</div></div>'
+    +'<div class="et-value '+etCls+'">'+et+' mm/día — '+etLabel+etBadge+'</div></div>'
     +'<div class="et-row"><div class="et-label">Agua perdida esta semana</div>'
     +'<div class="et-value normal">'+wl.et0_semana_mm+' mm</div></div>'
     +'<div class="et-row"><div class="et-label">Lluvia estimada semana</div>'
