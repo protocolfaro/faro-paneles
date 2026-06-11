@@ -661,8 +661,17 @@ body{background:var(--bg);color:var(--whi);font-family:-apple-system,BlinkMacSys
       <label style="font-size:11px;display:flex;align-items:center;gap:4px;color:var(--wdim)">
         <input type="checkbox" id="f3d-alerts-chk" checked onchange="f3dToggleAlerts(this.checked)">Alertas
       </label>
+      <label style="font-size:11px;display:flex;align-items:center;gap:4px;color:var(--wdim)">
+        <input type="checkbox" id="f3d-canchas-chk" checked onchange="f3dToggleCanchas(this.checked)">Canchas 3D
+      </label>
     </div>
     <div id="f3d-map"></div>
+    <div style="display:flex;align-items:center;gap:6px;padding:4px 0 2px;font-size:10px;color:var(--wdim);flex-wrap:wrap">
+      <span style="letter-spacing:.07em;color:var(--gold)">NDVI</span>
+      <div style="width:72px;height:6px;border-radius:2px;background:linear-gradient(to right,#d73027,#fee08b,#1a9850)"></div>
+      <span style="color:#e05252">0.0</span><span>→</span><span style="color:#4cad72">0.6</span>
+      <span style="margin-left:8px;border-left:1px solid rgba(255,255,255,.12);padding-left:8px">Columna = 100 − Score (SAR)</span>
+    </div>
     <div class="f3d-slider-wrap">
       <span style="font-size:11px;color:var(--wdim)">Histórico:</span>
       <input type="range" id="f3d-slider" min="0" max="75" value="75" oninput="f3dOnSlider(this.value)">
@@ -3030,8 +3039,13 @@ init();
 
 <script>
 /* ════════════════════════════════════════════════════════════════════════════
-   FARO 3D SATELITAL — MapLibre + WebGL2 PROSAIL Shader
-   Vista 3D integrada en panel Roger (#roger). Lazy-load MapLibre solo al activar.
+   FARO 3D SATELITAL — MapLibre + deck.gl ScatterplotLayer/ColumnLayer + D3
+   Técnica de renderizado basada en Nagix japan-eq-locator:
+   · CARTO Dark Matter como base oscura (fondo negro total)
+   · ScatterplotLayer: canchas coloreadas por NDVI con d3.interpolateRdYlGn
+   · ColumnLayer: columnas SAR extruidas proporcionales a (100 - score)
+   · Tooltip nativo de deck.gl con diseño Faro Protocol
+   · Pitch 45° inicial con rotación libre (dragRotate)
    ════════════════════════════════════════════════════════════════════════════ */
 (function(){
 'use strict';
@@ -3045,143 +3059,239 @@ var CENTER  = [-58.5288, -34.6369];
 var _map        = null;
 var _mapReady   = false;
 var _mlLoaded   = false;
+var _deckOverlay= null;
 var _ts         = [];
 var _shaderMode = 0;
 var _sarOn      = true;
 var _alertsOn   = true;
+var _canchasOn  = true;
 var _pendingMode= null;
 
-/* Lazy-load MapLibre GL JS */
+/* ── Datos canchas Vélez — Villa Olímpica + Amalfitani (coords aproximadas) */
+var CANCHAS = [
+  {id:'1fa',       nombre:'1FA',               ndvi:0.043,score:16, lat:-34.6418,lng:-58.5284,tipo:'Fútbol 11'},
+  {id:'2fa',       nombre:'2FA',               ndvi:0.047,score:44, lat:-34.6418,lng:-58.5268,tipo:'Fútbol 11'},
+  {id:'3fa',       nombre:'3FA',               ndvi:0.071,score:37, lat:-34.6428,lng:-58.5284,tipo:'Fútbol 11'},
+  {id:'4fa',       nombre:'4FA',               ndvi:0.086,score:47, lat:-34.6428,lng:-58.5268,tipo:'Fútbol 11'},
+  {id:'5fa',       nombre:'5FA',               ndvi:0.074,score:36, lat:-34.6438,lng:-58.5284,tipo:'Fútbol 11'},
+  {id:'6fa',       nombre:'6FA',               ndvi:0.077,score:46, lat:-34.6438,lng:-58.5268,tipo:'Fútbol 11'},
+  {id:'7fa',       nombre:'7FA',               ndvi:0.083,score:47, lat:-34.6448,lng:-58.5284,tipo:'Fútbol 11'},
+  {id:'8fa',       nombre:'8FA',               ndvi:0.079,score:36, lat:-34.6448,lng:-58.5268,tipo:'Fútbol 11'},
+  {id:'9fa',       nombre:'9FA',               ndvi:0.061,score:41, lat:-34.6458,lng:-58.5284,tipo:'Fútbol 11'},
+  {id:'10fa',      nombre:'10FA',              ndvi:0.117,score:50, lat:-34.6458,lng:-58.5268,tipo:'Fútbol 11'},
+  {id:'1fp',       nombre:'1FP',               ndvi:0.034,score:35, lat:-34.6413,lng:-58.5303,tipo:'Primer Equipo'},
+  {id:'2fp',       nombre:'2FP',               ndvi:0.044,score:44, lat:-34.6423,lng:-58.5303,tipo:'Primer Equipo'},
+  {id:'amalfitani',nombre:'Estadio Amalfitani',ndvi:0.048,score:78, lat:-34.6369,lng:-58.5288,tipo:'Estadio'},
+  {id:'poli_f11',  nombre:'Poli F11',          ndvi:0.068,score:39, lat:-34.6405,lng:-58.5248,tipo:'Polideportivo'},
+  {id:'poli_f8a',  nombre:'Poli F8A',          ndvi:0.048,score:39, lat:-34.6413,lng:-58.5248,tipo:'Polideportivo'},
+  {id:'poli_f8b',  nombre:'Poli F8B',          ndvi:0.044,score:39, lat:-34.6421,lng:-58.5248,tipo:'Polideportivo'},
+  {id:'poli_hockey',nombre:'Poli Hockey',      ndvi:0.038,score:39, lat:-34.6429,lng:-58.5248,tipo:'Hockey'},
+];
+
+/* ── D3 color (técnica Nagix): interpolateRdYlGn → string CSS → array RGB ─ */
+function _d3color(val, maxVal, alpha){
+  var t = Math.max(0, Math.min(1, val / (maxVal || 1)));
+  var css = d3.interpolateRdYlGn(t);
+  var m = css.match(/(\d+),\s*(\d+),\s*(\d+)/);
+  return m ? [+m[1], +m[2], +m[3], alpha == null ? 210 : alpha] : [128, 128, 128, alpha == null ? 210 : alpha];
+}
+
+/* ── deck.gl tooltip HTML ────────────────────────────────────────────────── */
+function _tooltipHtml(d){
+  var nc = d.ndvi > 0.35 ? '#4cad72' : d.ndvi > 0.2 ? '#e0b84c' : '#e05252';
+  var sc = d.score > 60 ? '#4cad72' : d.score > 40 ? '#e0b84c' : '#e05252';
+  return '<div style="background:#1c2330;border:1px solid rgba(201,168,76,.45);border-radius:8px;'
+    +'padding:9px 13px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;min-width:140px">'
+    +'<b style="color:#c9a84c;font-size:13px">'+d.nombre+'</b>'
+    +'<div style="font-size:10px;color:#8b8680;margin-bottom:5px">'+d.tipo+'</div>'
+    +(d.ndvi!=null?'<div style="font-size:11px;margin-top:2px">NDVI <b style="color:'+nc+'">'+d.ndvi.toFixed(3)+'</b></div>':'')
+    +(d.score!=null?'<div style="font-size:11px">Score <b style="color:'+sc+'">'+d.score+'</b></div>':'')
+    +'</div>';
+}
+
+/* ── deck.gl layers ─────────────────────────────────────────────────────── */
+function _buildLayers(){
+  if(!_canchasOn || !window.deck || !window.d3 || !d3.interpolateRdYlGn) return [];
+  return [
+    /* ColumnLayer: SAR-style — altura = 100 − score (más compactado → columna más alta) */
+    new deck.ColumnLayer({
+      id:'sar-columns',
+      data: CANCHAS.filter(function(c){ return c.score != null; }),
+      diskResolution:16, radius:18, extruded:true, elevationScale:1,
+      getPosition: function(d){ return [d.lng, d.lat]; },
+      getElevation: function(d){ return Math.max(3, (100 - d.score) * 3); },
+      getFillColor: function(d){ return _d3color(d.score, 100, 185); },
+      pickable:true,
+    }),
+    /* ScatterplotLayer: puntos NDVI — rojo=degradado, verde=sano */
+    new deck.ScatterplotLayer({
+      id:'canchas-ndvi',
+      data: CANCHAS.filter(function(c){ return c.ndvi != null; }),
+      radiusUnits:'meters', getRadius:30, billboard:false,
+      getPosition: function(d){ return [d.lng, d.lat, 0]; },
+      getFillColor: function(d){ return _d3color(d.ndvi, 0.55, 215); },
+      stroked:true, getLineColor:[255,255,255,50], lineWidthMinPixels:1,
+      pickable:true,
+    }),
+  ];
+}
+
+/* ── deck.gl overlay (MapboxOverlay: compatible con MapLibre) ───────────── */
+function _initDeck(){
+  if(_deckOverlay || !window.deck || !window.d3 || !d3.interpolateRdYlGn || !_mapReady) return;
+  _deckOverlay = new deck.MapboxOverlay({
+    interleaved:false,
+    layers: _buildLayers(),
+    getTooltip: function(info){
+      if(!info.object) return null;
+      return {
+        html: _tooltipHtml(info.object),
+        style:{ background:'none', border:'none', padding:'0', boxShadow:'none' }
+      };
+    }
+  });
+  _map.addControl(_deckOverlay);
+}
+function _refreshDeck(){
+  if(_deckOverlay) _deckOverlay.setProps({ layers:_buildLayers() });
+}
+
+/* ── Lazy-load MapLibre ─────────────────────────────────────────────────── */
 function _loadML(cb){
   if(_mlLoaded){ cb(); return; }
-  var lnk = document.createElement('link');
-  lnk.rel = 'stylesheet';
+  var lnk = document.createElement('link'); lnk.rel='stylesheet';
   lnk.href = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css';
   document.head.appendChild(lnk);
   var scr = document.createElement('script');
-  scr.src = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js';
-  scr.onload = function(){ _mlLoaded = true; cb(); };
+  scr.src  = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js';
+  scr.onload = function(){ _mlLoaded=true; cb(); };
   document.head.appendChild(scr);
 }
 
-/* ── init 3D section ─────────────────────────────────────────────────────── */
-function buildFaro3D(){
-  var sec = document.getElementById('f3d-section');
-  if(sec) sec.style.display = 'block';
-  _initMap();
-  _loadTimeseries();
-  _loadCuttingWindow();
+/* ── Lazy-load deck.gl + D3 en paralelo ─────────────────────────────────── */
+function _loadDeck(cb){
+  if(window.deck && window.d3 && d3.interpolateRdYlGn){ cb(); return; }
+  var done=0, need=2;
+  function tick(){ if(++done===need) cb(); }
+
+  /* deck.gl UMD bundle → window.deck (incluye MapboxOverlay, ScatterplotLayer, ColumnLayer) */
+  var ds = document.createElement('script');
+  ds.src = 'https://cdn.jsdelivr.net/npm/deck.gl@9/dist.min.js';
+  ds.onload = tick; document.head.appendChild(ds);
+
+  /* D3 modules en cadena (orden requerido por dependencias) */
+  function chain(pkgs, final){
+    if(!pkgs.length){ final(); return; }
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/'+pkgs[0];
+    s.onload = function(){ chain(pkgs.slice(1), final); };
+    document.head.appendChild(s);
+  }
+  chain(['d3-color@3','d3-interpolate@3','d3-scale@4','d3-scale-chromatic@3'], tick);
 }
 
 /* ── MapLibre map init (lazy) ────────────────────────────────────────────── */
 function _initMap(){
   if(_map) return;
   _loadML(function(){
-    var container = document.getElementById('f3d-map');
-    if(!container) return;
+    if(!document.getElementById('f3d-map')) return;
     _map = new maplibregl.Map({
-      container: 'f3d-map',
-      style: {
-        version: 8,
-        glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
-        sources: {
-          osm: { type:'raster', tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-                 tileSize:256, maxzoom:19, attribution:'© OpenStreetMap' }
+      container:'f3d-map',
+      style:{
+        version:8,
+        glyphs:'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+        sources:{
+          dark:{
+            type:'raster', tileSize:256, maxzoom:19,
+            attribution:'© CARTO · © OpenStreetMap',
+            tiles:[
+              'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+              'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+              'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+              'https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+            ]
+          }
         },
-        layers: [{ id:'osm', type:'raster', source:'osm' }]
+        layers:[{id:'dark-base', type:'raster', source:'dark'}]
       },
-      center: CENTER, zoom: 15.4, pitch: 0, bearing: 0,
+      center:CENTER, zoom:14.8, pitch:45, bearing:-15,
+      dragRotate:true, touchZoomRotate:true,
     });
-    _map.addControl(new maplibregl.NavigationControl({ visualizePitch:true }), 'bottom-right');
+    /* Sin controles visibles — estilo Nagix */
     _map.on('load', function(){
-      _mapReady = true;
+      _mapReady=true;
       _addNdvi();
       _addSar();
       _addAlerts();
       _installShader();
       _loadAlerts();
-      if(_pendingMode){var m=_pendingMode;_pendingMode=null;_map.easeTo({pitch:m==='3d'?55:0,bearing:m==='3d'?-20:0,zoom:m==='3d'?15.2:15.4,duration:700});}
+      /* Iniciar deck.gl + D3 en paralelo con el mapa ya listo */
+      _loadDeck(function(){ _initDeck(); });
+      if(_pendingMode){ var m=_pendingMode; _pendingMode=null;
+        _map.easeTo({pitch:m==='3d'?55:0,bearing:m==='3d'?-20:0,zoom:m==='3d'?15.0:15.4,duration:700}); }
     });
   });
 }
 
 function _addNdvi(){
-  _map.addSource('ndvi', { type:'raster', tileSize:256, attribution:'Faro · Sentinel-2',
-    tiles:[FARO_BACKEND+'/tiles/ndvi/{z}/{x}/{y}?venue=velez'] });
-  _map.addLayer({ id:'ndvi-l', type:'raster', source:'ndvi', paint:{'raster-opacity':0.82} });
+  _map.addSource('ndvi',{type:'raster',tileSize:256,attribution:'Faro · Sentinel-2',
+    tiles:[FARO_BACKEND+'/tiles/ndvi/{z}/{x}/{y}?venue=velez']});
+  _map.addLayer({id:'ndvi-l',type:'raster',source:'ndvi',paint:{'raster-opacity':0.82}});
 }
 function _addSar(){
-  _map.addSource('sar', { type:'raster', tileSize:256, attribution:'Faro · OPERA RTC-S1',
-    tiles:[FARO_BACKEND+'/tiles/sar/{z}/{x}/{y}?venue=velez&opacity=102'] });
-  _map.addLayer({ id:'sar-l', type:'raster', source:'sar', paint:{'raster-opacity':0.40} });
+  _map.addSource('sar',{type:'raster',tileSize:256,attribution:'Faro · OPERA RTC-S1',
+    tiles:[FARO_BACKEND+'/tiles/sar/{z}/{x}/{y}?venue=velez&opacity=102']});
+  _map.addLayer({id:'sar-l',type:'raster',source:'sar',paint:{'raster-opacity':0.40}});
 }
 function _addAlerts(){
-  _map.addSource('alerts', { type:'geojson', data:{ type:'FeatureCollection', features:[] } });
-  _map.addLayer({ id:'alerts-c', type:'circle', source:'alerts', paint:{
-    'circle-radius': 8,
-    'circle-color': ['case',
-      ['==',['get','nivel'],'rojo'], '#e05252',
-      ['==',['get','nivel'],'amarillo'], '#e0b84c', '#4cad72'],
-    'circle-stroke-width': 2, 'circle-stroke-color': 'rgba(255,255,255,.35)', 'circle-opacity': 0.95
+  _map.addSource('alerts',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+  _map.addLayer({id:'alerts-c',type:'circle',source:'alerts',paint:{
+    'circle-radius':8,
+    'circle-color':['case',
+      ['==',['get','nivel'],'rojo'],'#e05252',
+      ['==',['get','nivel'],'amarillo'],'#e0b84c','#4cad72'],
+    'circle-stroke-width':2,'circle-stroke-color':'rgba(255,255,255,.35)','circle-opacity':0.95
   }});
-  _map.on('click', 'alerts-c', function(e){
-    var p = e.features[0].properties;
+  _map.on('click','alerts-c',function(e){
+    var p=e.features[0].properties;
     new maplibregl.Popup().setLngLat(e.lngLat)
       .setHTML('<div style="color:#111;font-size:12px;max-width:200px"><b>'+p.nivel+'</b><br>'+(p.motivo||'')+'<br><em>'+(p.recomendacion||'')+'</em></div>')
       .addTo(_map);
   });
 }
 
-/* ── WebGL2 PROSAIL Fragment Shader ─────────────────────────────────────────
-   Tres modos calculados en la GPU del cliente. Cero costo Railway.
-   Usa el tile NDVI pre-renderizado; decodifica NDVI del colormap verde-rojo
-   y recalcula EVI2-proxy/LAI, Clorofila Cab, Humedad Estomática.           */
-var _VERT = 'attribute vec2 a_pos;varying vec2 v_tc;void main(){v_tc=a_pos*.5+.5;gl_Position=vec4(a_pos,0.,1.);}';
-var _FRAG = [
-  'precision highp float;',
-  'varying vec2 v_tc;',
-  'uniform sampler2D u_tile;',
-  'uniform int u_mode;',
+/* ── WebGL2 PROSAIL Fragment Shader (3 modos GPU, cero costo Railway) ────── */
+var _VERT='attribute vec2 a_pos;varying vec2 v_tc;void main(){v_tc=a_pos*.5+.5;gl_Position=vec4(a_pos,0.,1.);}';
+var _FRAG=[
+  'precision highp float;','varying vec2 v_tc;','uniform sampler2D u_tile;','uniform int u_mode;',
   'void main(){',
-  '  vec4 px=texture2D(u_tile,v_tc);',
-  '  float r=px.r,g=px.g;',
-  '  float ndvi=clamp((g-r)/max(g+r+.001,.001),-1.,1.);',
-  '  float val;',
-  '  if(u_mode==0){',
-  '    float e=2.5*ndvi/max(1.+ndvi*2.4+1.,.001);',
-  '    val=clamp(3.61*e-.18,0.,5.)/5.;',
-  '  } else if(u_mode==1){',
-  '    float ratio=(1.+ndvi)/max(1.-ndvi+.001,.001);',
-  '    val=clamp(ratio*12.5/80.,0.,1.);',
-  '  } else {',
-  '    val=clamp((ndvi+1.)*.5,0.,1.);',
-  '  }',
+  '  vec4 px=texture2D(u_tile,v_tc);float r=px.r,g=px.g;',
+  '  float ndvi=clamp((g-r)/max(g+r+.001,.001),-1.,1.);float val;',
+  '  if(u_mode==0){float e=2.5*ndvi/max(1.+ndvi*2.4+1.,.001);val=clamp(3.61*e-.18,0.,5.)/5.;}',
+  '  else if(u_mode==1){float ratio=(1.+ndvi)/max(1.-ndvi+.001,.001);val=clamp(ratio*12.5/80.,0.,1.);}',
+  '  else{val=clamp((ndvi+1.)*.5,0.,1.);}',
   '  vec3 s=vec3(0.,.8,.2);vec3 c=vec3(.9,.1,.1);',
-  '  vec3 col=mix(c,s,val);',
-  '  gl_FragColor=vec4(col,px.a*.85);',
+  '  vec3 col=mix(c,s,val);gl_FragColor=vec4(col,px.a*.85);',
   '}'
 ].join('');
-
-var _prog=null, _aBuf=null, _uTile=null, _uMode=null, _shLayer=null;
+var _prog=null,_aBuf=null,_uTile=null,_uMode=null,_shLayer=null;
 
 function _installShader(){
   if(!_mapReady||!_map) return;
-  var gl = _map.getCanvas().getContext('webgl2') || _map.getCanvas().getContext('webgl');
+  var gl=_map.getCanvas().getContext('webgl2')||_map.getCanvas().getContext('webgl');
   if(!gl) return;
   function _cmp(src,type){ var s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s); return s; }
-  _prog = gl.createProgram();
-  gl.attachShader(_prog, _cmp(_VERT, gl.VERTEX_SHADER));
-  gl.attachShader(_prog, _cmp(_FRAG, gl.FRAGMENT_SHADER));
+  _prog=gl.createProgram();
+  gl.attachShader(_prog,_cmp(_VERT,gl.VERTEX_SHADER));
+  gl.attachShader(_prog,_cmp(_FRAG,gl.FRAGMENT_SHADER));
   gl.linkProgram(_prog);
-  var aPos = gl.getAttribLocation(_prog,'a_pos');
-  _uTile   = gl.getUniformLocation(_prog,'u_tile');
-  _uMode   = gl.getUniformLocation(_prog,'u_mode');
-  _aBuf = gl.createBuffer();
+  _uTile=gl.getUniformLocation(_prog,'u_tile');
+  _uMode=gl.getUniformLocation(_prog,'u_mode');
+  _aBuf=gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER,_aBuf);
   gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
-  _shLayer = {
-    id:'prosail', type:'custom',
-    onAdd:function(){},
+  _shLayer={
+    id:'prosail', type:'custom', onAdd:function(){},
     render:function(gl2){
       var src=_map.getSource('ndvi'); if(!src) return;
       var tiles=src._tiles||{}; var keys=Object.keys(tiles); if(!keys.length) return;
@@ -3203,19 +3313,20 @@ function _installShader(){
 window.f3dSetView = function(mode){
   document.getElementById('f3d-btn-2d').classList.toggle('active',mode==='2d');
   document.getElementById('f3d-btn-3d').classList.toggle('active',mode==='3d');
-  if(!_map||!_mapReady){_pendingMode=mode;if(!_map)_initMap();return;}
-  _map.easeTo({pitch:mode==='3d'?55:0,bearing:mode==='3d'?-20:0,zoom:mode==='3d'?15.2:15.4,duration:700});
+  if(!_map||!_mapReady){ _pendingMode=mode; if(!_map)_initMap(); return; }
+  _map.easeTo({pitch:mode==='3d'?55:0,bearing:mode==='3d'?-20:0,zoom:mode==='3d'?15.0:15.4,duration:700});
 };
-
 window.f3dSetShader = function(v){
-  _shaderMode = parseInt(v,10);
-  if(_map&&_mapReady) _map.triggerRepaint();
+  _shaderMode=parseInt(v,10); if(_map&&_mapReady) _map.triggerRepaint();
 };
 window.f3dToggleSAR = function(on){
   _sarOn=on; if(_map&&_map.getLayer('sar-l')) _map.setLayoutProperty('sar-l','visibility',on?'visible':'none');
 };
 window.f3dToggleAlerts = function(on){
   _alertsOn=on; if(_map&&_map.getLayer('alerts-c')) _map.setLayoutProperty('alerts-c','visibility',on?'visible':'none');
+};
+window.f3dToggleCanchas = function(on){
+  _canchasOn=on; _refreshDeck();
 };
 
 /* ── Temporal slider ─────────────────────────────────────────────────────── */
@@ -3224,7 +3335,7 @@ function _loadTimeseries(){
     {headers:{apikey:SB_KEY,'Authorization':'Bearer '+SB_KEY}})
     .then(function(r){return r.json();})
     .then(function(rows){
-      _ts = Array.isArray(rows)&&rows.length ? rows : _fallbackTs();
+      _ts=Array.isArray(rows)&&rows.length?rows:_fallbackTs();
       var sl=document.getElementById('f3d-slider');
       if(sl){sl.max=_ts.length-1;sl.value=_ts.length-1;}
       window.f3dOnSlider(_ts.length-1);
@@ -3233,20 +3344,18 @@ function _loadTimeseries(){
 function _fallbackTs(){
   var base=new Date('2020-01-08');
   return Array.from({length:76},function(_,i){
-    var d=new Date(base);d.setDate(d.getDate()+i*25);
+    var d=new Date(base); d.setDate(d.getDate()+i*25);
     return {fecha:d.toISOString().slice(0,10),ndvi:+(0.45+0.25*Math.sin(i/75*Math.PI*3+1)).toFixed(3),fuente:'fallback'};
   });
 }
 window.f3dOnSlider = function(idx){
-  idx=parseInt(idx,10);
-  var row=_ts[idx]||{};
+  idx=parseInt(idx,10); var row=_ts[idx]||{};
   var dateEl=document.getElementById('f3d-slider-date');
   var ndviEl=document.getElementById('f3d-slider-ndvi');
   if(dateEl) dateEl.textContent=row.fecha||'—';
   if(ndviEl) ndviEl.textContent=row.ndvi!=null?'NDVI '+parseFloat(row.ndvi).toFixed(3):'';
-  if(_map&&_mapReady&&_map.getSource('ndvi')&&row.fecha){
+  if(_map&&_mapReady&&_map.getSource('ndvi')&&row.fecha)
     _map.getSource('ndvi').setTiles([FARO_BACKEND+'/tiles/ndvi/{z}/{x}/{y}?venue=velez&date='+row.fecha]);
-  }
 };
 
 /* ── Alertas Paperclip desde Supabase ───────────────────────────────────── */
@@ -3267,25 +3376,21 @@ function _loadAlerts(){
 /* ── Ventana de Corte (Magnus-Tetens desde backend) ─────────────────────── */
 function _loadCuttingWindow(){
   var wl=(typeof _currentData!=='undefined'&&_currentData)?(_currentData.weather_live||{}):{};
-  var temp=wl.temp_max_semanal||18;
-  var rh=wl.rh_media||75;
-  var hum=wl.humedad_suelo_pct||22;
+  var temp=wl.temp_max_semanal||18, rh=wl.rh_media||75, hum=wl.humedad_suelo_pct||22;
   var hSuc=Math.max(50,350*(1-Math.min(hum/40,1)));
   var url=FARO_BACKEND+'/api/v1/field-analysis/cutting-window?temp='+temp+'&rh='+rh+'&h_suction='+Math.round(hSuc);
-  fetch(url)
-    .then(function(r){return r.json();})
-    .then(function(d){
-      var card=document.getElementById('f3d-cut-card');
-      var st=document.getElementById('f3d-cut-status');
-      var dt=document.getElementById('f3d-cut-detail');
-      if(!card||!st) return;
-      card.style.display='block';
-      var cp=d.cutting_prescription||{};
-      var s=cp.status_window||'—';
-      st.textContent=s;
-      st.className='f3d-cut-status '+(s.includes('PTIMA')?'optima':s.includes('TRINGIDA')?'restringida':'bloqueo');
-      if(dt) dt.textContent=(cp.mechanical_action||'')+' · '+cp.prescribed_height_mm+' mm · '+cp.reel_speed_rpm+' RPM · Rocío: '+d.dew_point_c+'°C';
-    }).catch(function(){});
+  fetch(url).then(function(r){return r.json();}).then(function(d){
+    var card=document.getElementById('f3d-cut-card');
+    var st=document.getElementById('f3d-cut-status');
+    var dt=document.getElementById('f3d-cut-detail');
+    if(!card||!st) return;
+    card.style.display='block';
+    var cp=d.cutting_prescription||{};
+    var s=cp.status_window||'—';
+    st.textContent=s;
+    st.className='f3d-cut-status '+(s.includes('PTIMA')?'optima':s.includes('TRINGIDA')?'restringida':'bloqueo');
+    if(dt) dt.textContent=(cp.mechanical_action||'')+' · '+cp.prescribed_height_mm+' mm · '+cp.reel_speed_rpm+' RPM · Rocío: '+d.dew_point_c+'°C';
+  }).catch(function(){});
 }
 
 /* ── Photo upload — Ground Truth DGCI ───────────────────────────────────── */
@@ -3312,7 +3417,15 @@ window.f3dUploadPhoto = function(inp){
   inp.value='';
 };
 
-/* Expose to main IIFE scope */
+/* ── Entry point ─────────────────────────────────────────────────────────── */
+function buildFaro3D(){
+  var sec=document.getElementById('f3d-section');
+  if(sec) sec.style.display='block';
+  _initMap();
+  _loadTimeseries();
+  _loadCuttingWindow();
+}
+
 window.buildFaro3D = buildFaro3D;
 
 })();
