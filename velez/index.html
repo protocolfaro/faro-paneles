@@ -199,37 +199,10 @@ const RAILWAY = 'https://faroprotocol-production-45fd.up.railway.app';
 document.addEventListener('DOMContentLoaded', async () => {
     map = new maplibregl.Map({
         container: 'map',
-        style: {
-            version: 8,
-            sources: {
-                'osm': {
-                    type: 'raster',
-                    tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-                    tileSize: 256
-                }
-            },
-            layers: [
-                {
-                    id: 'background',
-                    type: 'background',
-                    paint: { 'background-color': '#080808' }
-                },
-                {
-                    id: 'osm-dark',
-                    type: 'raster',
-                    source: 'osm',
-                    paint: {
-                        'raster-opacity': 0.08,
-                        'raster-saturation': -1,
-                        'raster-brightness-min': 0,
-                        'raster-brightness-max': 0.3
-                    }
-                }
-            ]
-        },
+        style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
         center: [VENUES.amalfitani.lng, VENUES.amalfitani.lat],
         zoom:  VENUES.amalfitani.zoom,
-        pitch: 35, bearing: -10,
+        pitch: 55, bearing: -15,
         attributionControl: false
     });
 
@@ -293,7 +266,7 @@ function switchVenue(v, btn) {
 
     const c = VENUES[v];
     if (c && map) {
-        map.flyTo({ center:[c.lng, c.lat], zoom:c.zoom, pitch:45, bearing:-15, duration:1800 });
+        map.flyTo({ center:[c.lng, c.lat], zoom:c.zoom, pitch:55, bearing:-15, duration:1800 });
     }
     renderUI();
     renderLayers();
@@ -587,9 +560,11 @@ function renderLayers() {
         }
     }
 
-    // SAR — doble capa Nagix: halo transparente + núcleo sólido
+    // SAR — doble capa Nagix: halo (opacity layer) + núcleo sólido
+    // billboard:true = círculos siempre miran a la cámara → efecto esfera flotante
+    // antialiasing:false = borde duro sobre fondo oscuro → glow percibido
     if (activeL.sar) {
-        const canchas = features
+        let canchas = features
             .filter(f => f.properties != null)
             .map(f => {
                 const p   = f.properties;
@@ -604,29 +579,46 @@ function renderLayers() {
                     tipo:   p.tipo_superficie ?? 'natural',
                 };
             });
+
+        // Fallback demo: muestra las 12 canchas de Villa Olímpica cuando el backend no responde
+        if (canchas.length === 0) {
+            const ids    = ['1FA','2FA','3FA','4FA','5FA','6FA','7FA','8FA','9FA','10FA','1FP','2FP'];
+            const ndvis  = [0.62, 0.51, 0.43, 0.72, 0.35, 0.54, 0.47, 0.39, 0.28, 0.45, 0.67, 0.72];
+            const scores = [62,   48,   38,   71,   29,   55,   44,   33,   21,   41,   78,   83  ];
+            canchas = ids.map((id, i) => {
+                const [lng, lat] = CANCHA_COORDS[id] ?? [VENUES.villa_olimpica.lng, VENUES.villa_olimpica.lat];
+                return { lng, lat, ndvi: ndvis[i], score: scores[i],
+                         nombre: `${id} · Villa Olímpica`, id,
+                         tipo: id.includes('FP') ? 'natural' : 'sintetico' };
+            });
+        }
+
         if (canchas.length > 0) {
             layers.push(new deck.ScatterplotLayer({
-                id: 'halo',
-                data: canchas,
-                getPosition: d => [d.lng, d.lat, (d.score ?? 50) * 20],
-                getRadius: 25,
-                radiusUnits: 'meters',
+                id:           'halo',
+                data:         canchas,
+                getPosition:  d => [d.lng, d.lat, (d.score ?? 50) * 20],
+                getRadius:    25,
+                radiusUnits:  'meters',
                 radiusMinPixels: 2,
                 radiusMaxPixels: 12,
+                opacity:      0.15,
                 getFillColor: d => {
                     const t = Math.max(0, Math.min(1, ((d.ndvi ?? 0.05) + 0.1) / 0.7));
                     const c = d3.color(d3.interpolateRdYlGn(t));
-                    return [c.r, c.g, c.b, 35];
+                    return [c.r, c.g, c.b];
                 },
-                stroked: false,
-                pickable: false
+                billboard:    true,
+                antialiasing: false,
+                stroked:      false,
+                pickable:     false
             }));
             layers.push(new deck.ScatterplotLayer({
-                id: 'core',
-                data: canchas,
-                getPosition: d => [d.lng, d.lat, (d.score ?? 50) * 20],
-                getRadius: 8,
-                radiusUnits: 'meters',
+                id:           'core',
+                data:         canchas,
+                getPosition:  d => [d.lng, d.lat, (d.score ?? 50) * 20],
+                getRadius:    8,
+                radiusUnits:  'meters',
                 radiusMinPixels: 1,
                 radiusMaxPixels: 6,
                 getFillColor: d => {
@@ -634,12 +626,14 @@ function renderLayers() {
                     const c = d3.color(d3.interpolateRdYlGn(t));
                     return [c.r, c.g, c.b, 230];
                 },
-                stroked: true,
+                billboard:    true,
+                antialiasing: false,
+                stroked:      true,
                 getLineColor: [255, 255, 255, 80],
                 getLineWidth: 1,
                 lineWidthMinPixels: 0.5,
-                pickable: true,
-                onClick: ({object}) => showDetail(object)
+                pickable:     true,
+                onClick:      ({object}) => showDetail(object)
             }));
         }
     }
