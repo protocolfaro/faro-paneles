@@ -229,7 +229,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         },
         center: [VENUES.amalfitani.lng, VENUES.amalfitani.lat],
         zoom:  VENUES.amalfitani.zoom,
-        pitch: 50, bearing: -15,
+        pitch: 35, bearing: -10,
         attributionControl: false
     });
 
@@ -608,11 +608,11 @@ function renderLayers() {
             layers.push(new deck.ScatterplotLayer({
                 id: 'halo',
                 data: canchas,
-                getPosition: d => [d.lng, d.lat, (d.score ?? 50) * 4],
-                getRadius: 120,
+                getPosition: d => [d.lng, d.lat, (d.score ?? 50) * 20],
+                getRadius: 25,
                 radiusUnits: 'meters',
-                radiusMinPixels: 4,
-                radiusMaxPixels: 40,
+                radiusMinPixels: 2,
+                radiusMaxPixels: 12,
                 getFillColor: d => {
                     const t = Math.max(0, Math.min(1, ((d.ndvi ?? 0.05) + 0.1) / 0.7));
                     const c = d3.color(d3.interpolateRdYlGn(t));
@@ -624,11 +624,11 @@ function renderLayers() {
             layers.push(new deck.ScatterplotLayer({
                 id: 'core',
                 data: canchas,
-                getPosition: d => [d.lng, d.lat, (d.score ?? 50) * 4],
-                getRadius: 40,
+                getPosition: d => [d.lng, d.lat, (d.score ?? 50) * 20],
+                getRadius: 8,
                 radiusUnits: 'meters',
-                radiusMinPixels: 3,
-                radiusMaxPixels: 15,
+                radiusMinPixels: 1,
+                radiusMaxPixels: 6,
                 getFillColor: d => {
                     const t = Math.max(0, Math.min(1, ((d.ndvi ?? 0.05) + 0.1) / 0.7));
                     const c = d3.color(d3.interpolateRdYlGn(t));
