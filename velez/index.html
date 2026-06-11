@@ -201,16 +201,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         container: 'map',
         style: {
             version: 8,
-            sources: {},
-            layers: [{
-                id: 'background',
-                type: 'background',
-                paint: { 'background-color': '#000000' }
-            }]
+            sources: {
+                'osm': {
+                    type: 'raster',
+                    tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+                    tileSize: 256
+                }
+            },
+            layers: [
+                {
+                    id: 'background',
+                    type: 'background',
+                    paint: { 'background-color': '#080808' }
+                },
+                {
+                    id: 'osm-dark',
+                    type: 'raster',
+                    source: 'osm',
+                    paint: {
+                        'raster-opacity': 0.08,
+                        'raster-saturation': -1,
+                        'raster-brightness-min': 0,
+                        'raster-brightness-max': 0.3
+                    }
+                }
+            ]
         },
         center: [VENUES.amalfitani.lng, VENUES.amalfitani.lat],
         zoom:  VENUES.amalfitani.zoom,
-        pitch: 45, bearing: -15,
+        pitch: 50, bearing: -15,
         attributionControl: false
     });
 
@@ -587,38 +606,40 @@ function renderLayers() {
             });
         if (canchas.length > 0) {
             layers.push(new deck.ScatterplotLayer({
-                id: 'spheres-halo',
+                id: 'halo',
                 data: canchas,
-                getPosition: d => [d.lng, d.lat, (d.score ?? 50) * 3],
-                getRadius: 80,
+                getPosition: d => [d.lng, d.lat, (d.score ?? 50) * 4],
+                getRadius: 120,
                 radiusUnits: 'meters',
+                radiusMinPixels: 4,
+                radiusMaxPixels: 40,
                 getFillColor: d => {
                     const t = Math.max(0, Math.min(1, ((d.ndvi ?? 0.05) + 0.1) / 0.7));
                     const c = d3.color(d3.interpolateRdYlGn(t));
-                    return [c.r, c.g, c.b, 40];
+                    return [c.r, c.g, c.b, 35];
                 },
                 stroked: false,
                 pickable: false
             }));
             layers.push(new deck.ScatterplotLayer({
-                id: 'spheres-core',
+                id: 'core',
                 data: canchas,
-                getPosition: d => [d.lng, d.lat, (d.score ?? 50) * 3],
-                getRadius: 25,
+                getPosition: d => [d.lng, d.lat, (d.score ?? 50) * 4],
+                getRadius: 40,
                 radiusUnits: 'meters',
+                radiusMinPixels: 3,
+                radiusMaxPixels: 15,
                 getFillColor: d => {
                     const t = Math.max(0, Math.min(1, ((d.ndvi ?? 0.05) + 0.1) / 0.7));
                     const c = d3.color(d3.interpolateRdYlGn(t));
                     return [c.r, c.g, c.b, 230];
                 },
                 stroked: true,
-                getLineColor: [255, 255, 255, 60],
+                getLineColor: [255, 255, 255, 80],
                 getLineWidth: 1,
+                lineWidthMinPixels: 0.5,
                 pickable: true,
-                onClick: ({object}) => {
-                    document.getElementById('terminal').innerHTML =
-                        `<strong>${object.nombre || object.id}</strong> · NDVI: ${object.ndvi?.toFixed(3) ?? 'Sin dato'} · Score: ${object.score ?? '--'} · ${object.tipo ?? 'natural'}`;
-                }
+                onClick: ({object}) => showDetail(object)
             }));
         }
     }
@@ -824,6 +845,11 @@ function updateSVGOverlay() {
             svgOverlay.appendChild(pulse);
         }
     }
+}
+
+function showDetail(d) {
+    document.getElementById('terminal').innerHTML =
+        `<strong>${d.nombre || d.id}</strong> · NDVI: ${d.ndvi != null ? d.ndvi.toFixed(3) : 'Sin dato'} · Score: ${d.score ?? '--'} · ${d.tipo ?? 'natural'}`;
 }
 </script>
 </body>
