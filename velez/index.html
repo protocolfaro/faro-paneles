@@ -126,6 +126,45 @@ const VENUES = {
     piletas:        { lng:-58.520900, lat:-34.637800, zoom:18.5 }
 };
 
+// ── FUENTE DE VERDAD: tiles_blueprint._BBOXES ─────────────────────────────
+// _BBOXES = {
+//   "velez":      (-58.540, -34.650, -58.520, -34.630),
+//   "amalfitani": (-58.5305, -34.6391, -58.5271, -34.6367),
+//   "balcarce":   (-58.250, -37.850, -58.200, -37.800),
+//   "anelo":      (-68.860, -38.380, -68.790, -38.330),
+// }
+// Centroides calculados del bbox real de cada venue.
+// Villa Olímpica no tiene bbox → grilla proporcional al plano oficial.
+const CANCHA_COORDS = {
+    // ── Amalfitani — centro exacto del bbox (-58.5305/-34.6391, -58.5271/-34.6367)
+    'amalfitani':        [-58.5288, -34.6379],
+    'cancha-principal':  [-58.5288, -34.6379],
+    'campo-principal':   [-58.5288, -34.6379],
+    // Sub-canchas: grilla 2×2 dentro del bbox (W=-58.5305, E=-58.5271)
+    // Separación lng ≈ 0.0012° (~104m), lat ≈ 0.0010° (~111m)
+    'cancha-1':   [-58.5300, -34.6371],   // NW
+    'cancha-2':   [-58.5276, -34.6371],   // NE
+    'cancha-3':   [-58.5300, -34.6385],   // SW
+    'cancha-4':   [-58.5276, -34.6385],   // SE
+
+    // ── Villa Olímpica — 12 canchas en 2 filas (plano oficial Vélez)
+    // Centro: (-58.7193, -34.6221)
+    // Fila 1: 1FA–10FA (sintético) — paso lng 0.000765° ≈ 70m por cancha
+    // Fila 2: 1FP–2FP (pasto natural) — 110m al sur
+    '1FA':  [-58.72274, -34.6216],
+    '2FA':  [-58.72197, -34.6216],
+    '3FA':  [-58.72121, -34.6216],
+    '4FA':  [-58.72044, -34.6216],
+    '5FA':  [-58.71968, -34.6216],
+    '6FA':  [-58.71891, -34.6216],
+    '7FA':  [-58.71814, -34.6216],
+    '8FA':  [-58.71738, -34.6216],
+    '9FA':  [-58.71661, -34.6216],
+    '10FA': [-58.71585, -34.6216],
+    '1FP':  [-58.71968, -34.6231],
+    '2FP':  [-58.71891, -34.6231],
+};
+
 // ── CAPAS POR TIPO DE SUPERFICIE ─────────────────────────────────────────
 const SURFACE_LAYERS = {
     natural:        ['ndvi','sar','temperatura','clima','fungosis'],
@@ -330,15 +369,29 @@ function toggleLayer(lk) {
     renderLayers();
 }
 
-// Centroid of a GeoJSON Feature (Point or Polygon ring avg)
+// Centroid — prioridad: CANCHA_COORDS (bbox real) > GeoJSON > props > venue center
 function geomCenter(f) {
+    const id = f.properties?.cancha_id ?? f.properties?.id ?? null;
+
+    // 1. Lookup fuente de verdad (tiles_blueprint._BBOXES derivado)
+    if (id && CANCHA_COORDS[id]) return CANCHA_COORDS[id];
+
+    // 2. GeoJSON geometry real
     if (f.geometry?.type === 'Point') return f.geometry.coordinates;
     const ring = f.geometry?.coordinates?.[0];
-    if (!ring || ring.length < 3) return [VENUES[currentVenue].lng, VENUES[currentVenue].lat];
-    const pts = (ring[0][0] === ring[ring.length-1][0] && ring[0][1] === ring[ring.length-1][1])
-        ? ring.slice(0, -1) : ring;
-    const n = pts.length;
-    return [pts.reduce((s,c) => s+c[0], 0)/n, pts.reduce((s,c) => s+c[1], 0)/n];
+    if (ring && ring.length >= 3) {
+        const pts = (ring[0][0] === ring[ring.length-1][0] && ring[0][1] === ring[ring.length-1][1])
+            ? ring.slice(0, -1) : ring;
+        const n = pts.length;
+        return [pts.reduce((s,c) => s+c[0], 0)/n, pts.reduce((s,c) => s+c[1], 0)/n];
+    }
+
+    // 3. Propiedades lat/lng explícitas en el feature
+    if (f.properties?.lng != null && f.properties?.lat != null)
+        return [+f.properties.lng, +f.properties.lat];
+
+    // 4. Fallback: centro del venue actual
+    return [VENUES[currentVenue].lng, VENUES[currentVenue].lat];
 }
 
 // ── RENDER LAYERS (deck.gl) ──────────────────────────────────────────────
@@ -458,29 +511,29 @@ function renderLayers() {
                     }));
                 }
 
-                // ColumnLayer de sectores: altura = compactación · zonas donde airear
-                layers.push(new deck.ColumnLayer({
-                    id:           'cancha-aireacion',
-                    data:         detailFeats,
-                    getPosition:  f => geomCenter(f),
-                    getElevation: f => {
+                // Sectores de detalle: esferas a altura proporcional al estrés
+                layers.push(new deck.ScatterplotLayer({
+                    id:          'cancha-aireacion-spheres',
+                    data:        detailFeats,
+                    getPosition: f => {
+                        const c = geomCenter(f);
                         const s = f.properties?.score;
                         const h = f.properties?.entropia_h;
-                        const compactacion = s != null ? (100 - s) : ((1 - (h ?? 0.5)) * 100);
-                        return Math.max(3, compactacion * 1.8);
+                        const comp = s != null ? (100 - s) : ((1 - (h ?? 0.5)) * 100);
+                        return [c[0], c[1], Math.max(3, comp * 1.8)];
                     },
+                    getRadius:   8,
+                    radiusUnits: 'meters',
                     getFillColor: f => {
                         const s = f.properties?.score ?? 50;
                         if (s >= 65) return [34,  197, 94,  160];
                         if (s >= 40) return [234, 179, 8,   180];
                         return              [229, 62,  62,  210];
                     },
-                    getLineColor:   [255, 215, 80, 120],
+                    getLineColor: [255, 215, 80, 120],
                     lineWidthMinPixels: 1,
-                    radius:         8,
-                    extruded:       true,
-                    elevationScale: 1,
-                    pickable:       false,
+                    stroked:  true,
+                    pickable: false,
                 }));
 
                 // Terminal — diagnóstico de la cancha activa
@@ -500,54 +553,40 @@ function renderLayers() {
         }
     }
 
-    // SAR — ColumnLayer 3D técnica Nagix: altura = compactación, color = semáforo score
+    // SAR — ScatterplotLayer esferas billboard (sin columnas)
+    // Z = score * 2m → esfera SAR flotante a distinta altura por cada cancha
+    // Score 100 (compactación 0%) → 200m · Score 0 (máx compactación) → 0m
     if (activeL.sar) {
-        const sarCols = features.filter(f => {
+        const sarPts = features.filter(f => {
             const p = f.properties ?? {};
             return (p.score != null || p.entropia_h != null);
         });
-        if (sarCols.length > 0) {
-            layers.push(new deck.ColumnLayer({
-                id:            'sar-col',
-                data:          sarCols,
-                getPosition:   f => geomCenter(f),
-                getElevation:  f => {
-                    const score = f.properties.score;
-                    if (score != null) return Math.max(5, (100 - score) * 3);
-                    // fallback: entropia_h → mayor entropía = mayor compactación SAR
-                    const h = f.properties.entropia_h ?? 0.5;
-                    return Math.max(5, (1 - h) * 150);
+        if (sarPts.length > 0) {
+            layers.push(new deck.ScatterplotLayer({
+                id:          'canchas-spheres',
+                data:        sarPts,
+                getPosition: f => {
+                    const c = geomCenter(f);
+                    return [c[0], c[1], (f.properties?.score ?? 50) * 2];
                 },
-                getFillColor:  f => {
-                    const s = f.properties.score;
-                    if (s != null) {
-                        if (s >= 60) return [34,  197, 94,  180];
-                        if (s >= 30) return [234, 179, 8,   190];
-                        return              [229, 62,  62,  200];
-                    }
-                    const h = f.properties.entropia_h ?? 0.5;
-                    if (h >= 0.5) return [34, 197, 94, 180];
-                    if (h >= 0.3) return [234,179, 8, 190];
-                    return               [229, 62, 62, 200];
+                getRadius:   35,
+                radiusUnits: 'meters',
+                getFillColor: f => {
+                    const ndvi = f.properties?.ndvi ?? null;
+                    if (ndvi === null) return [80, 80, 80, 150];
+                    const t = Math.max(0, Math.min(1, (ndvi + 0.1) / 0.7));
+                    const c = d3.color(d3.interpolateRdYlGn(t));
+                    return [Math.round(c.r), Math.round(c.g), Math.round(c.b), 220];
                 },
-                getLineColor:   [201, 168, 76, 100],
-                radius:         18,
-                extruded:       true,
-                elevationScale: 1,
-                pickable:       true,
-                autoHighlight:  true,
-                highlightColor: [255, 215, 80, 200],
+                stroked:      true,
+                getLineColor: [255, 255, 255, 30],
+                getLineWidth: 1,
+                pickable:     true,
                 onClick: ({ object }) => {
                     if (!object) return;
-                    const p    = object.properties ?? {};
-                    const s    = p.score;
-                    const h    = p.entropia_h;
-                    const nom  = p.nombre ?? p.cancha_id ?? p.id ?? 'Cancha';
-                    const comp = s != null
-                        ? `${100 - s}% compactación (Score ${s})`
-                        : (h != null ? `Entropía SAR ${h.toFixed(3)}` : '—');
+                    const p = object.properties ?? {};
                     document.getElementById('terminal').innerHTML =
-                        `<strong>${nom}</strong> &nbsp;·&nbsp; SAR: <strong>${comp}</strong>`;
+                        `<strong>${p.nombre || p.cancha_id || p.id}</strong> · NDVI: ${p.ndvi != null ? (+p.ndvi).toFixed(3) : 'Sin dato'} · Score: ${p.score ?? '--'} · ${p.tipo_superficie ?? 'natural'}`;
                 }
             }));
         }
