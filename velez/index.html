@@ -165,6 +165,15 @@ const CANCHA_COORDS = {
     '2FP':  [-58.71891, -34.6231],
 };
 
+// ── DEMO DATA — Amalfitani cuando el backend no responde ──────────────────
+const AMALFITANI_DEMO_POINT = {
+    lng: -58.5288, lat: -34.6379,
+    ndvi: 0.58, score: 62,
+    nombre: 'Estadio Amalfitani',
+    id: 'amalfitani',
+    tipo: 'natural'
+};
+
 // ── CAPAS POR TIPO DE SUPERFICIE ─────────────────────────────────────────
 const SURFACE_LAYERS = {
     natural:        ['ndvi','sar','temperatura','clima','fungosis'],
@@ -191,8 +200,9 @@ let currentVenue   = 'amalfitani';
 let activeL        = { ndvi:true, sar:true, temperatura:false, insar:false, clima:false, fungosis:false, dale_play:false };
 let richDepth      = 1;
 let showDay        = 0;
-let hoveredCanchaId = null;   // cancha activa — activa capas de detalle
-let svgOverlay      = null;   // SVG leader lines (técnica Nagix)
+let hoveredCanchaId = null;
+let svgOverlay      = null;
+let _svgDefs        = null;
 const RAILWAY = 'https://faroprotocol-production-45fd.up.railway.app';
 
 // ── INIT ─────────────────────────────────────────────────────────────────
@@ -407,9 +417,10 @@ function renderLayers() {
     const layers   = [];
     const features = geojson?.features ?? [];
 
-    // Sin features → limpiar overlay, sin error
-    if (features.length === 0) {
+    // Sin features → limpiar overlay (excepto demo Amalfitani)
+    if (features.length === 0 && currentVenue !== 'amalfitani') {
         deckOverlay.setProps({ layers: [] });
+        updateSVGOverlay();
         return;
     }
 
@@ -580,17 +591,9 @@ function renderLayers() {
                 };
             });
 
-        // Fallback demo: muestra las 12 canchas de Villa Olímpica cuando el backend no responde
-        if (canchas.length === 0) {
-            const ids    = ['1FA','2FA','3FA','4FA','5FA','6FA','7FA','8FA','9FA','10FA','1FP','2FP'];
-            const ndvis  = [0.62, 0.51, 0.43, 0.72, 0.35, 0.54, 0.47, 0.39, 0.28, 0.45, 0.67, 0.72];
-            const scores = [62,   48,   38,   71,   29,   55,   44,   33,   21,   41,   78,   83  ];
-            canchas = ids.map((id, i) => {
-                const [lng, lat] = CANCHA_COORDS[id] ?? [VENUES.villa_olimpica.lng, VENUES.villa_olimpica.lat];
-                return { lng, lat, ndvi: ndvis[i], score: scores[i],
-                         nombre: `${id} · Villa Olímpica`, id,
-                         tipo: id.includes('FP') ? 'natural' : 'sintetico' };
-            });
+        // Fallback demo: Amalfitani cuando el backend no responde
+        if (canchas.length === 0 && currentVenue === 'amalfitani') {
+            canchas = [AMALFITANI_DEMO_POINT];
         }
 
         if (canchas.length > 0) {
@@ -737,18 +740,27 @@ function renderLayers() {
     }
 
     deckOverlay.setProps({ layers });
+    updateSVGOverlay();
 }
 
-// ── SVG Overlay — leader lines + centro de cancha (técnica Nagix) ─────────
-// Línea punteada del punto flotante al círculo central de la cancha
+// ── SVG Overlay — floating dot + leader line + ground bloom (técnica Nagix) ─
 function setupSVGOverlay() {
-    svgOverlay = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const ns = 'http://www.w3.org/2000/svg';
+    svgOverlay = document.createElementNS(ns, 'svg');
     svgOverlay.style.cssText =
         'position:absolute;top:0;left:0;width:100%;height:100%;' +
         'pointer-events:none;z-index:5;overflow:visible;';
-    document.getElementById('map').appendChild(svgOverlay);
 
-    ['move', 'zoom', 'rotate', 'pitch', 'resize'].forEach(e => map.on(e, updateSVGOverlay));
+    _svgDefs = document.createElementNS(ns, 'defs');
+    _svgDefs.innerHTML =
+        '<filter id="float-glow" x="-150%" y="-150%" width="400%" height="400%">' +
+        '<feGaussianBlur stdDeviation="6"/></filter>' +
+        '<filter id="ground-bloom" x="-150%" y="-150%" width="400%" height="400%">' +
+        '<feGaussianBlur stdDeviation="16"/></filter>';
+    svgOverlay.appendChild(_svgDefs);
+
+    document.getElementById('map').appendChild(svgOverlay);
+    ['move','zoom','rotate','pitch','resize'].forEach(e => map.on(e, updateSVGOverlay));
 }
 
 function _projectPoint(lng, lat, altMeters) {
@@ -770,74 +782,133 @@ function _projectPoint(lng, lat, altMeters) {
     return { x: ground.x, y: ground.y - altMeters * pxPerM * Math.sin(pitch) };
 }
 
+function _ndviRGB(ndvi) {
+    const t = Math.max(0, Math.min(1, ((ndvi ?? 0.3) + 0.1) / 0.7));
+    const c = d3.color(d3.interpolateRdYlGn(t));
+    return { r: Math.round(c.r), g: Math.round(c.g), b: Math.round(c.b) };
+}
+
 function updateSVGOverlay() {
     if (!svgOverlay) return;
     svgOverlay.innerHTML = '';
+    if (_svgDefs) svgOverlay.appendChild(_svgDefs);
 
     const features = geojson?.features ?? [];
-    if (!features.length || !activeL.ndvi) return;
+    let pts;
+    if (features.length > 0) {
+        pts = features
+            .filter(f => f.properties?.ndvi != null)
+            .map(f => {
+                const p = f.properties, pos = geomCenter(f);
+                return { id: p.cancha_id ?? p.id ?? null,
+                         lng: pos[0], lat: pos[1],
+                         ndvi: p.ndvi, score: p.score,
+                         nombre: p.nombre ?? p.cancha_id ?? 'Cancha' };
+            });
+    } else if (currentVenue === 'amalfitani') {
+        pts = [AMALFITANI_DEMO_POINT];
+    } else {
+        return;
+    }
+    if (!pts.length) return;
 
-    const ndviFeats = features.filter(f => f.properties?.ndvi != null);
+    const ns         = 'http://www.w3.org/2000/svg';
+    const pitch      = map.getPitch() * Math.PI / 180;
+    const pitchScale = Math.cos(pitch);
 
-    for (const f of ndviFeats) {
-        const p     = f.properties;
-        const id    = p?.cancha_id ?? p?.id ?? null;
-        const pos   = geomCenter(f);
-        const ndvi  = p.ndvi ?? 0.3;
-        const altM  = Math.max(15, ndvi * 250);
-        const hovered = hoveredCanchaId === id;
+    for (const pt of pts) {
+        const altM   = Math.max(15, (pt.ndvi ?? 0.3) * 250);
+        const float  = _projectPoint(pt.lng, pt.lat, altM);
+        const ground = map.project([pt.lng, pt.lat]);
+        const hovered = hoveredCanchaId === pt.id;
+        const { r, g, b } = _ndviRGB(pt.ndvi);
+        const al = hovered ? 0.9 : 0.55;
 
-        // Posición flotante (punto billboard en 3D)
-        const float  = _projectPoint(pos[0], pos[1], altM);
-        // Posición suelo (círculo central de la cancha)
-        const ground = map.project([pos[0], pos[1]]);
+        // Perspectiva pitch para elementos del suelo
+        const ptx = `translate(${ground.x},${ground.y}) scale(1,${pitchScale}) translate(${-ground.x},${-ground.y})`;
 
-        const goldAlpha  = hovered ? '0.95' : '0.45';
-        const strokeW    = hovered ? '1.5'  : '0.8';
-        const ringRadius = hovered ? '11'   : '7';
-
-        // Leader line punteada — del float al centro
-        const ns   = 'http://www.w3.org/2000/svg';
+        // ── Leader line ──────────────────────────────────────────────────────
         const line = document.createElementNS(ns, 'line');
-        line.setAttribute('x1', float.x);   line.setAttribute('y1', float.y);
-        line.setAttribute('x2', ground.x);  line.setAttribute('y2', ground.y);
-        line.setAttribute('stroke', `rgba(201,168,76,${goldAlpha})`);
-        line.setAttribute('stroke-width', strokeW);
-        line.setAttribute('stroke-dasharray', '3 3');
+        line.setAttribute('x1', float.x);  line.setAttribute('y1', float.y);
+        line.setAttribute('x2', ground.x); line.setAttribute('y2', ground.y);
+        line.setAttribute('stroke', `rgba(${r},${g},${b},${al})`);
+        line.setAttribute('stroke-width', hovered ? '1.5' : '0.9');
+        line.setAttribute('stroke-dasharray', '4 3');
         svgOverlay.appendChild(line);
 
-        // Anillo en el suelo — círculo central de la cancha
+        // ── Bloom del suelo (blur pesado — epicentro Nagix) ──────────────────
+        const bloom = document.createElementNS(ns, 'circle');
+        bloom.setAttribute('cx', ground.x); bloom.setAttribute('cy', ground.y);
+        bloom.setAttribute('r', hovered ? '24' : '18');
+        bloom.setAttribute('fill', `rgba(${r},${g},${b},0.28)`);
+        bloom.setAttribute('filter', 'url(#ground-bloom)');
+        bloom.setAttribute('transform', ptx);
+        svgOverlay.appendChild(bloom);
+
+        // ── Anillo del suelo con perspectiva pitch ───────────────────────────
         const ring = document.createElementNS(ns, 'circle');
         ring.setAttribute('cx', ground.x); ring.setAttribute('cy', ground.y);
-        ring.setAttribute('r',  ringRadius);
-        ring.setAttribute('fill', hovered ? 'rgba(255,215,80,0.18)' : 'rgba(201,168,76,0.08)');
-        ring.setAttribute('stroke', `rgba(201,168,76,${goldAlpha})`);
-        ring.setAttribute('stroke-width', strokeW);
+        ring.setAttribute('r', hovered ? '12' : '8');
+        ring.setAttribute('fill', `rgba(${r},${g},${b},0.10)`);
+        ring.setAttribute('stroke', `rgba(${r},${g},${b},${al})`);
+        ring.setAttribute('stroke-width', hovered ? '1.5' : '0.9');
+        ring.setAttribute('transform', ptx);
         svgOverlay.appendChild(ring);
 
-        // Punto central del anillo
+        // ── Ondas de pulso continuas (2 ciclos desfasados 1.25s) ─────────────
+        for (let i = 0; i < 2; i++) {
+            const wave = document.createElementNS(ns, 'circle');
+            wave.setAttribute('cx', ground.x); wave.setAttribute('cy', ground.y);
+            wave.setAttribute('r', '6');
+            wave.setAttribute('fill', 'none');
+            wave.setAttribute('stroke', `rgba(${r},${g},${b},0.65)`);
+            wave.setAttribute('stroke-width', '1');
+            wave.setAttribute('transform', ptx);
+            const aR = document.createElementNS(ns, 'animate');
+            aR.setAttribute('attributeName', 'r');
+            aR.setAttribute('from', '6'); aR.setAttribute('to', '55');
+            aR.setAttribute('dur', '2.5s');
+            aR.setAttribute('begin', i === 0 ? '0s' : '1.25s');
+            aR.setAttribute('repeatCount', 'indefinite');
+            wave.appendChild(aR);
+            const aO = document.createElementNS(ns, 'animate');
+            aO.setAttribute('attributeName', 'opacity');
+            aO.setAttribute('from', '0.65'); aO.setAttribute('to', '0');
+            aO.setAttribute('dur', '2.5s');
+            aO.setAttribute('begin', i === 0 ? '0s' : '1.25s');
+            aO.setAttribute('repeatCount', 'indefinite');
+            wave.appendChild(aO);
+            svgOverlay.appendChild(wave);
+        }
+
+        // ── Punto central del suelo ───────────────────────────────────────────
         const dot = document.createElementNS(ns, 'circle');
         dot.setAttribute('cx', ground.x); dot.setAttribute('cy', ground.y);
-        dot.setAttribute('r',  hovered ? '3' : '1.5');
-        dot.setAttribute('fill', `rgba(201,168,76,${goldAlpha})`);
+        dot.setAttribute('r', hovered ? '3.5' : '2');
+        dot.setAttribute('fill', `rgba(${r},${g},${b},${al})`);
         svgOverlay.appendChild(dot);
 
-        // Pulso animado cuando está hover
-        if (hovered) {
-            const pulse = document.createElementNS(ns, 'circle');
-            pulse.setAttribute('cx', ground.x); pulse.setAttribute('cy', ground.y);
-            pulse.setAttribute('r',  '16');
-            pulse.setAttribute('fill', 'none');
-            pulse.setAttribute('stroke', 'rgba(255,215,80,0.35)');
-            pulse.setAttribute('stroke-width', '1');
-            const anim = document.createElementNS(ns, 'animate');
-            anim.setAttribute('attributeName', 'r');
-            anim.setAttribute('values', '11;20;11');
-            anim.setAttribute('dur', '2s');
-            anim.setAttribute('repeatCount', 'indefinite');
-            pulse.appendChild(anim);
-            svgOverlay.appendChild(pulse);
-        }
+        // ── Punto flotante: bloom difuso + núcleo sólido (hipocenter Nagix) ──
+        const floatBloom = document.createElementNS(ns, 'circle');
+        floatBloom.setAttribute('cx', float.x); floatBloom.setAttribute('cy', float.y);
+        floatBloom.setAttribute('r', hovered ? '22' : '16');
+        floatBloom.setAttribute('fill', `rgba(${r},${g},${b},0.85)`);
+        floatBloom.setAttribute('filter', 'url(#float-glow)');
+        svgOverlay.appendChild(floatBloom);
+
+        const floatCore = document.createElementNS(ns, 'circle');
+        floatCore.setAttribute('cx', float.x); floatCore.setAttribute('cy', float.y);
+        floatCore.setAttribute('r', hovered ? '9' : '6');
+        floatCore.setAttribute('fill', `rgba(${r},${g},${b},1)`);
+        svgOverlay.appendChild(floatCore);
+
+        const floatBorder = document.createElementNS(ns, 'circle');
+        floatBorder.setAttribute('cx', float.x); floatBorder.setAttribute('cy', float.y);
+        floatBorder.setAttribute('r', hovered ? '9' : '6');
+        floatBorder.setAttribute('fill', 'none');
+        floatBorder.setAttribute('stroke', 'rgba(255,255,255,0.75)');
+        floatBorder.setAttribute('stroke-width', '0.8');
+        svgOverlay.appendChild(floatBorder);
     }
 }
 
