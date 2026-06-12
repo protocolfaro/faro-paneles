@@ -2,490 +2,564 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
-<title>Faro Protocol · Carga Semanal</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>Faro Protocol · Panel Roger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Epilogue:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0d1117;--bg2:#161b22;--bg3:#1c2330;--gold:#c9a84c;--whi:#e8e6e0;--wdim:#8b8680;--red:#e05252;--grn:#4cad72;--yel:#e0b84c;--radius:10px}
+:root{
+  --bg:#07090c;
+  --bg2:#0e1218;
+  --bg3:#151b24;
+  --bg4:#1c2430;
+  --gold:#c9a84c;
+  --gold2:rgba(201,168,76,.15);
+  --gold3:rgba(201,168,76,.06);
+  --whi:#f0ece4;
+  --dim:#8a8580;
+  --red:#d94f4f;
+  --red2:rgba(217,79,79,.12);
+  --yel:#d4a017;
+  --yel2:rgba(212,160,23,.12);
+  --grn:#4a9e6a;
+  --grn2:rgba(74,158,106,.12);
+  --border:rgba(201,168,76,.18);
+  --radius:8px;
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--whi);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh}
-#header{background:var(--bg2);border-bottom:1px solid rgba(201,168,76,.25);padding:14px 16px 10px;position:sticky;top:0;z-index:100}
-.logo-row{display:flex;align-items:center;gap:8px}
-.logo-dot{width:8px;height:8px;background:var(--gold);border-radius:50%}
-.logo-text{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--gold);text-transform:uppercase}
-.header-sub{margin-top:4px;font-size:13px;font-weight:600;color:var(--whi)}
+html,body{background:var(--bg);color:var(--whi);font-family:'Epilogue',sans-serif;font-size:14px;line-height:1.5;min-height:100vh}
 
-/* Main panel */
-#main-panel{display:block;padding:0 0 80px}
-.section{padding:16px 16px 4px;font-size:10px;font-weight:700;letter-spacing:.14em;color:var(--gold);text-transform:uppercase;border-bottom:1px solid rgba(201,168,76,.15)}
+/* ── HEADER ── */
+#header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 20px;position:sticky;top:0;z-index:100}
+.h-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.h-brand{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:var(--gold);letter-spacing:.04em}
+.h-brand span{font-size:13px;font-weight:400;color:var(--dim);margin-left:8px;font-family:'Epilogue',sans-serif;letter-spacing:0}
+.h-meta{font-size:11px;color:var(--dim);margin-top:4px;display:flex;gap:16px;flex-wrap:wrap}
+.h-meta b{color:var(--whi)}
+.h-dot{width:7px;height:7px;border-radius:50%;background:var(--grn);display:inline-block;margin-right:5px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-/* Semana card */
-.semana-card{margin:10px 16px;background:var(--bg2);border-radius:var(--radius);border:1px solid rgba(255,255,255,.06);padding:13px}
-.semana-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.semana-label{font-size:11px;color:var(--wdim)}
-.semana-input{background:var(--bg3);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:var(--whi);font-size:12px;padding:6px 10px;width:100%;outline:none}
-.semana-input:focus{border-color:var(--gold)}
+/* ── CONTENIDO ── */
+#content{max-width:860px;margin:0 auto;padding:20px 16px 60px}
 
-/* Schedule table */
-.sched-wrap{padding:4px 16px;overflow-x:auto}
-.sched-table{border-collapse:collapse;min-width:100%;font-size:10px}
-.sched-table th{padding:5px 4px;text-align:center;font-size:8px;font-weight:700;letter-spacing:.06em;color:var(--wdim);text-transform:uppercase;background:var(--bg2);position:sticky;top:0}
-.sched-table th.cat-col{text-align:left;min-width:80px}
-.sched-table td{padding:3px 3px}
-.sched-table tr:nth-child(even) td{background:rgba(255,255,255,.02)}
-.cat-label{font-size:9px;font-weight:600;color:var(--whi);white-space:nowrap}
-.factor-pill{display:inline-block;font-size:7px;font-weight:700;padding:1px 4px;border-radius:2px;margin-top:1px}
-.factor-pill.f10{background:rgba(76,173,114,.15);color:var(--grn)}
-.factor-pill.f07{background:rgba(224,184,76,.1);color:var(--yel)}
-.sched-input{width:100%;background:var(--bg3);border:1px solid rgba(255,255,255,.08);border-radius:4px;color:var(--whi);font-size:9px;padding:4px 5px;text-align:center;outline:none;min-width:44px}
-.sched-input:focus{border-color:var(--gold)}
-.sched-input::placeholder{color:rgba(255,255,255,.18);font-size:8px}
-.cell-wrap{display:flex;align-items:center;gap:1px}
-.cell-del{width:14px;min-width:14px;background:none;border:none;color:transparent;font-size:13px;line-height:1;padding:0;cursor:pointer;flex-shrink:0;transition:color .15s}
-.cell-del.vis{color:rgba(224,82,82,.5)}
-.cell-del.vis:active{color:var(--red)}
+/* ── SECCIÓN LABEL ── */
+.sec-label{font-size:10px;font-weight:700;letter-spacing:.16em;color:var(--gold);text-transform:uppercase;padding:24px 0 10px;border-bottom:1px solid var(--border);margin-bottom:16px}
+.sec-label span{color:var(--dim);font-weight:400;margin-left:8px;letter-spacing:0;font-size:11px;text-transform:none}
 
-/* Bottom action */
-.bottom-bar{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid rgba(201,168,76,.2);padding:12px 16px;z-index:200}
-.save-btn{width:100%;height:52px;background:var(--gold);color:#0d1117;border:none;border-radius:var(--radius);font-size:15px;font-weight:700;letter-spacing:.04em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
-.save-btn:active{opacity:.8}
-.save-btn:disabled{opacity:.45;cursor:not-allowed}
+/* ── SEMÁFORO EJECUTIVO ── */
+.sem-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:8px}
+.sem-card{background:var(--bg2);border-radius:var(--radius);border:1px solid var(--border);padding:14px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;cursor:default;transition:border-color .2s}
+.sem-card.rojo{border-color:rgba(217,79,79,.4);background:linear-gradient(135deg,var(--bg2),rgba(217,79,79,.06))}
+.sem-card.amarillo{border-color:rgba(212,160,23,.4);background:linear-gradient(135deg,var(--bg2),rgba(212,160,23,.06))}
+.sem-card.verde{border-color:rgba(74,158,106,.4);background:linear-gradient(135deg,var(--bg2),rgba(74,158,106,.06))}
+.sem-card.amalfitani-card{grid-column:1/-1;flex-direction:row;justify-content:flex-start;gap:16px}
+.sem-name{font-size:11px;font-weight:700;letter-spacing:.06em;text-align:center}
+.sem-circle{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;flex-shrink:0}
+.sem-circle.rojo{background:var(--red2);border:2px solid var(--red);color:var(--red)}
+.sem-circle.amarillo{background:var(--yel2);border:2px solid var(--yel);color:var(--yel)}
+.sem-circle.verde{background:var(--grn2);border:2px solid var(--grn);color:var(--grn)}
+.sem-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-align:center}
+.sem-label.rojo{color:var(--red)}
+.sem-label.amarillo{color:var(--yel)}
+.sem-label.verde{color:var(--grn)}
+.sem-accion{font-size:10px;color:var(--dim);text-align:center;line-height:1.4}
+.sem-card.amalfitani-card .sem-name{text-align:left;font-size:13px}
+.sem-card.amalfitani-card .sem-accion{text-align:left;font-size:11px}
+.sem-badge{position:absolute;top:8px;right:8px;font-size:8px;background:var(--gold2);color:var(--gold);padding:2px 5px;border-radius:3px;letter-spacing:.06em}
+.sem-ndvi{font-size:10px;color:var(--dim);margin-top:2px}
 
-/* Status */
-#status{margin:10px 16px;padding:12px 14px;border-radius:var(--radius);display:none}
-#status.ok{background:rgba(76,173,114,.12);border:1px solid rgba(76,173,114,.3);color:var(--grn)}
-#status.err{background:rgba(224,82,82,.12);border:1px solid rgba(224,82,82,.3);color:var(--red)}
-.status-text{font-size:13px;font-weight:600;line-height:1.5}
+/* ── ALERTA CLIMA ── */
+.clima-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:16px}
+.clima-card{background:var(--bg2);border-radius:var(--radius);border:1px solid var(--border);padding:14px}
+.clima-val{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--gold);line-height:1}
+.clima-unit{font-size:11px;color:var(--dim);margin-left:3px}
+.clima-lbl{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-top:4px}
+.clima-sub{font-size:11px;color:var(--whi);margin-top:3px}
+.clima-card.alerta{border-color:rgba(217,79,79,.4);background:linear-gradient(135deg,var(--bg2),var(--red2))}
+.clima-card.alerta .clima-val{color:var(--red)}
+.clima-card.warn{border-color:rgba(212,160,23,.4)}
+.clima-card.warn .clima-val{color:var(--yel)}
 
-/* IPOS preview */
-.ipos-grid{padding:6px 16px;display:flex;flex-direction:column;gap:5px}
-.ipos-row{display:flex;align-items:center;gap:8px;background:var(--bg2);border-radius:8px;padding:8px 10px;border:1px solid rgba(255,255,255,.05)}
-.ipos-icon{font-size:16px;flex-shrink:0}
-.ipos-body{flex:1;min-width:0}
-.ipos-cancha{font-size:11px;font-weight:700}
-.ipos-txt{font-size:10px;color:var(--wdim);line-height:1.4;margin-top:2px}
+/* ── MAPA DE PRESCRIPCIÓN (SVG CANCHA) ── */
+.campo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:8px}
+.campo-wrap{background:var(--bg2);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden}
+.campo-name{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--whi);padding:8px 10px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.campo-name .csem{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.campo-name .csem.rojo{background:var(--red)}
+.campo-name .csem.amarillo{background:var(--yel)}
+.campo-name .csem.verde{background:var(--grn)}
+.campo-svg-wrap{padding:6px}
+.campo-svg{width:100%;aspect-ratio:3/2;display:block}
+.campo-accion{font-size:9px;color:var(--dim);padding:5px 10px 8px;line-height:1.4}
 
-/* Exposición solar */
-.solar-block{margin:10px 16px;background:var(--bg2);border-radius:var(--radius);border:1px solid rgba(255,255,255,.06);overflow:hidden}
-.solar-loc-title{font-size:12px;font-weight:700;color:var(--whi);padding:10px 12px 6px}
-.solar-stats{display:flex;gap:6px;padding:0 12px 10px;flex-wrap:wrap}
-.solar-stat{display:flex;align-items:center;gap:4px;font-size:9px;background:var(--bg3);padding:3px 8px;border-radius:4px;white-space:nowrap}
-.solar-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.solar-dot.plena{background:#4cad72}
-.solar-dot.parcial{background:#e0b84c}
-.solar-dot.permanente{background:#e05252}
-.solar-img{width:100%;display:block;background:#000;border-top:1px solid rgba(255,255,255,.06)}
-.solar-note{font-size:9px;color:var(--wdim);padding:6px 12px 10px;line-height:1.5}
-/* Cronograma local */
-.cron-upload-lbl{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;cursor:pointer;text-align:center;-webkit-tap-highlight-color:transparent}
+/* ── SCORES PANEL ── */
+.scores-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.score-card{background:var(--bg2);border-radius:var(--radius);border:1px solid var(--border);padding:14px;text-align:center}
+.score-big{font-family:'Cormorant Garamond',serif;font-size:42px;font-weight:700;line-height:1}
+.score-big.rojo{color:var(--red)}
+.score-big.amarillo{color:var(--yel)}
+.score-big.verde{color:var(--grn)}
+.score-name{font-size:10px;color:var(--dim);margin-top:4px;font-weight:700;letter-spacing:.06em}
+.score-trend{font-size:11px;margin-top:4px}
+.score-bar-wrap{height:4px;background:var(--bg3);border-radius:2px;margin-top:8px;overflow:hidden}
+.score-bar-fill{height:100%;border-radius:2px;transition:width .6s ease}
+.score-bar-fill.rojo{background:var(--red)}
+.score-bar-fill.amarillo{background:var(--yel)}
+.score-bar-fill.verde{background:var(--grn)}
+.scale-bar{background:linear-gradient(90deg,var(--red),var(--yel),var(--grn));height:6px;border-radius:3px;margin:12px 0 4px}
+.scale-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--dim)}
+
+/* ── InSAR BARRAS ── */
+.insar-wrap{display:flex;align-items:flex-end;gap:16px;padding:20px 0 8px;justify-content:space-around}
+.insar-col{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1}
+.insar-bar-wrap{height:120px;display:flex;align-items:flex-end;justify-content:center;width:100%;position:relative}
+.insar-threshold{position:absolute;width:100%;border-top:1px dashed var(--red);opacity:.6}
+.insar-bar{width:52px;border-radius:4px 4px 0 0;transition:height .6s ease;position:relative;display:flex;align-items:flex-start;justify-content:center;padding-top:4px}
+.insar-bar.ok{background:var(--grn2);border:1px solid var(--grn)}
+.insar-bar.warn{background:var(--yel2);border:1px solid var(--yel)}
+.insar-bar.crit{background:var(--red2);border:1px solid var(--red)}
+.insar-val{font-size:11px;font-weight:700}
+.insar-val.ok{color:var(--grn)}
+.insar-val.warn{color:var(--yel)}
+.insar-val.crit{color:var(--red)}
+.insar-lbl{font-size:10px;color:var(--dim);text-align:center}
+.insar-umbral-label{font-size:9px;color:var(--red);position:absolute;right:0;top:-14px;white-space:nowrap}
+
+/* ── TABLA ── */
+.tabla-wrap{overflow-x:auto;margin-bottom:8px}
+table.faro-table{border-collapse:collapse;width:100%;min-width:600px;font-size:12px}
+table.faro-table th{padding:8px 10px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--gold);border-bottom:1px solid var(--border);background:var(--bg2);white-space:nowrap}
+table.faro-table td{padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+table.faro-table tr:last-child td{border-bottom:none}
+table.faro-table tr.rojo-row{background:rgba(217,79,79,.06)}
+table.faro-table tr.amarillo-row{background:rgba(212,160,23,.04)}
+.td-sem{width:8px;height:8px;border-radius:50%;display:inline-block}
+.td-sem.rojo{background:var(--red)}
+.td-sem.amarillo{background:var(--yel)}
+.td-sem.verde{background:var(--grn)}
+.td-accion{font-size:11px;color:var(--gold);font-weight:600}
+.td-dim{color:var(--dim);font-size:11px}
+
+/* ── TAREAS SEMANA ── */
+.tareas-grid{display:flex;flex-direction:column;gap:8px}
+.tarea-row{background:var(--bg2);border-radius:var(--radius);border:1px solid var(--border);padding:12px 14px;display:flex;gap:14px;align-items:flex-start}
+.tarea-dia{font-size:11px;font-weight:700;color:var(--gold);min-width:36px;padding-top:1px}
+.tarea-items{display:flex;flex-wrap:wrap;gap:5px}
+.tarea-tag{font-size:11px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:3px 8px;color:var(--whi)}
+.tarea-row.partido .tarea-dia{color:var(--red)}
+.tarea-row.partido{border-color:rgba(217,79,79,.3)}
+
+/* ── TENDENCIA ── */
+.tend-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.tend-card{background:var(--bg2);border-radius:var(--radius);border:1px solid var(--border);padding:12px;text-align:center}
+.tend-score{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;line-height:1}
+.tend-arrow{font-size:18px;margin:4px 0}
+.tend-prev{font-size:11px;color:var(--dim)}
+.tend-name{font-size:10px;color:var(--dim);margin-top:4px;font-weight:700;letter-spacing:.06em}
+
+/* ── LOADING ── */
+#loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:12px}
+.ld-logo{font-family:'Cormorant Garamond',serif;font-size:28px;color:var(--gold)}
+.ld-bar{width:180px;height:2px;background:var(--bg3);border-radius:1px;overflow:hidden}
+.ld-fill{height:100%;background:var(--gold);border-radius:1px;animation:ldanim 1.8s ease-in-out infinite}
+@keyframes ldanim{0%{width:0;margin-left:0}50%{width:100%;margin-left:0}100%{width:0;margin-left:100%}}
+.ld-txt{font-size:11px;color:var(--dim);letter-spacing:.1em}
+
+/* ── FOOTER ── */
+#footer{background:var(--bg2);border-top:1px solid var(--border);padding:12px 20px;text-align:center;font-size:11px;color:var(--dim);margin-top:40px}
+#footer b{color:var(--gold)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:480px){
+  .sem-grid{grid-template-columns:repeat(2,1fr)}
+  .campo-grid{grid-template-columns:1fr}
+  .scores-grid{grid-template-columns:repeat(2,1fr)}
+  .tend-grid{grid-template-columns:repeat(2,1fr)}
+  #content{padding:16px 12px 60px}
+}
 </style>
 </head>
 <body>
 
+<div id="loading">
+  <div class="ld-logo">Faro Protocol</div>
+  <div class="ld-bar"><div class="ld-fill"></div></div>
+  <div class="ld-txt">CARGANDO DATOS SATELITALES</div>
+</div>
+
 <div id="header">
-  <div class="logo-row"><div class="logo-dot"></div><span class="logo-text">Faro Protocol</span></div>
-  <div class="header-sub">Carga Semanal · Villa Olímpica</div>
-</div>
-
-<!-- Main panel -->
-<div id="main-panel">
-  <div class="section">Semana</div>
-  <div class="semana-card">
-    <div class="semana-row">
-      <span class="semana-label">Semana:</span>
-      <input id="sem-label" class="semana-input" style="width:60px" value="C" maxlength="4">
-      <span class="semana-label">Del:</span>
-      <input id="sem-ini" class="semana-input" style="width:120px" type="date" value="2026-05-18">
-      <span class="semana-label">Al:</span>
-      <input id="sem-fin" class="semana-input" style="width:120px" type="date" value="2026-05-23">
+  <div class="h-top">
+    <div>
+      <div class="h-brand">Faro Protocol <span>· Fortín Inteligente</span></div>
+      <div style="font-size:11px;color:var(--dim);margin-top:2px">Vélez Sarsfield · Mapa de Trabajo para el Canchero</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:11px;color:var(--whi);font-weight:600" id="h-fecha">—</div>
+      <div style="font-size:10px;color:var(--dim)" id="h-fuente">Conectando…</div>
     </div>
   </div>
-
-  <div class="section" style="margin-top:6px">Diagrama de Canchas</div>
-  <div style="padding:4px 16px 2px;font-size:9px;color:var(--wdim);line-height:1.6">
-    Escribí el código de cancha en cada día (ej: <strong>1FA</strong>, <strong>8FA/9FA</strong>, <strong>CAMPUS</strong>). Dejá vacío si no entrena.
+  <div class="h-meta">
+    <div><span class="h-dot"></span><b id="h-escaner">—</b></div>
+    <div>Lat <b>-34.6394</b> · Lon <b>-58.5297</b> · WGS-84</div>
   </div>
-
-  <div class="sched-wrap" id="sched-wrap"></div>
-
-  <div id="status"><div class="status-text" id="status-text"></div></div>
-  <div id="ipos-preview" style="display:none">
-    <div class="section" style="margin-top:8px">Presión de Uso — Semana calculada</div>
-    <div class="ipos-grid" id="ipos-grid"></div>
-  </div>
-
-  <div id="solar-section" style="display:none">
-    <div class="section" style="margin-top:8px">Exposición Solar — Análisis Histórico</div>
-    <div id="solar-grid"></div>
-  </div>
-
-  <div id="cron-section">
-    <div class="section" style="margin-top:8px">Cronograma Semanal del Club</div>
-    <div style="margin:10px 16px">
-      <div id="cron-container" style="background:var(--bg2);border-radius:var(--radius);border:1px solid rgba(255,255,255,.06);overflow:hidden;min-height:90px"></div>
-      <div style="font-size:9px;color:var(--wdim);margin-top:6px;line-height:1.5">Guardado solo en este dispositivo. Se limpia automáticamente al inicio de cada semana.</div>
-    </div>
-  </div>
-
-  <div style="height:70px"></div>
 </div>
 
-<div class="bottom-bar" id="bottom-bar">
-  <button class="save-btn" id="save-btn" onclick="guardarSemana()">
-    <span>💾</span><span>GUARDAR SEMANA</span>
-  </button>
+<div id="content">
+
+  <!-- PANEL 0 — SEMÁFORO EJECUTIVO -->
+  <div class="sec-label">Panel 0 <span>Semáforo ejecutivo — lectura en 3 segundos</span></div>
+  <div class="sem-grid" id="sem-grid"></div>
+
+  <!-- PANEL CLIMA -->
+  <div class="sec-label" style="margin-top:8px">Clima & Alertas <span>Datos reales hoy</span></div>
+  <div class="clima-grid" id="clima-grid"></div>
+
+  <!-- PANEL 1 — MAPA DE PRESCRIPCIÓN -->
+  <div class="sec-label">Panel 1 <span>Mapa de prescripción — dónde trabajar esta semana</span></div>
+  <div class="campo-grid" id="campo-grid"></div>
+
+  <!-- PANEL 2 — SCORES -->
+  <div class="sec-label">Panel 2 <span>Índice Fusión Faro — puntuación integrada por cancha</span></div>
+  <div class="scores-grid" id="scores-grid"></div>
+  <div style="margin-top:12px">
+    <div class="scale-bar"></div>
+    <div class="scale-labels"><span>0 · Crítico</span><span>50</span><span>100 · Óptimo</span></div>
+  </div>
+
+  <!-- PANEL InSAR -->
+  <div class="sec-label" style="margin-top:20px">Panel InSAR <span>Deformación estructural — tribunas & infraestructura</span></div>
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
+    <div class="insar-wrap" id="insar-wrap"></div>
+    <div style="font-size:10px;color:var(--dim);text-align:center;margin-top:4px">Umbral crítico: 2.0 mm · Fuente: Sentinel-1 InSAR · ASF HyP3</div>
+  </div>
+
+  <!-- TABLA -->
+  <div class="sec-label" style="margin-top:20px">Tabla de Prescripción Agronómica <span>Todos los campos</span></div>
+  <div class="tabla-wrap">
+    <table class="faro-table" id="faro-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Zona</th>
+          <th>NDVI</th>
+          <th>GNDVI</th>
+          <th>N Status</th>
+          <th>Score</th>
+          <th>Compact.</th>
+          <th>Fungosis</th>
+          <th>Timeline</th>
+          <th>Acción inmediata</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-body"></tbody>
+    </table>
+  </div>
+
+  <!-- TAREAS SEMANA -->
+  <div class="sec-label" style="margin-top:20px">Plan de Trabajo Semanal <span>Tareas por día</span></div>
+  <div class="tareas-grid" id="tareas-grid"></div>
+
+  <!-- TENDENCIA -->
+  <div class="sec-label" style="margin-top:20px">Comparativa <span>Tendencia vs. escaneo anterior</span></div>
+  <div class="tend-grid" id="tend-grid"></div>
+
+</div>
+
+<div id="footer">
+  <b>Faro Protocol</b> · Sistema Fortín Inteligente · protocolfaro@gmail.com<br>
+  Sentinel-2 / SAR / InSAR · Generado automáticamente
 </div>
 
 <script>
-(function(){
-'use strict';
+const RAILWAY = 'https://faroprotocol-production-45fd.up.railway.app';
+const SEM_COLOR = {rojo:'var(--red)',amarillo:'var(--yel)',verde:'var(--grn)'};
+const SEM_LABEL = {rojo:'CRÍTICO',amarillo:'ATENCIÓN',verde:'ÓPTIMO'};
 
-var CONFIG_URL = '../config_velez.json';
-var RAILWAY_URL = '';  // loaded from config
-
-// Categories with fixed turno and factor
-var CATS = [
-  {id:'Reserva',   factor:'1.0', turno:'manana'},
-  {id:'Primera',   factor:'1.0', turno:'manana'},
-  {id:'Cuarta',    factor:'1.0', turno:'manana'},
-  {id:'Quinta',    factor:'1.0', turno:'manana'},
-  {id:'Sexta',     factor:'1.0', turno:'manana'},
-  {id:'Séptima',   factor:'1.0', turno:'manana'},
-  {id:'Octava',    factor:'0.7', turno:'manana'},
-  {id:'Novena',    factor:'0.7', turno:'manana'},
-  {id:'Infantiles',factor:'0.7', turno:'infantiles'},
-  {id:'Femenino',  factor:'1.0', turno:'femenino'},
-  {id:'Liga',      factor:'1.0', turno:'manana'},
-  {id:'Campus',    factor:'0.7', turno:'manana'},
-];
-var DIAS = [
-  {id:'lun',label:'Lun'},
-  {id:'mar',label:'Mar'},
-  {id:'mie',label:'Mié'},
-  {id:'jue',label:'Jue'},
-  {id:'vie',label:'Vie'},
-  {id:'sab',label:'Sáb'},
-];
-
-// ── Load config ──
-async function loadConfig(){
-  try{
-    var r = await fetch(CONFIG_URL);
-    if(!r.ok) return;
-    var cfg = await r.json();
-    RAILWAY_URL= (cfg.admin && cfg.admin.railway_url) || '';
-    // Pre-fill semana if config has it
-    var s = cfg.horarios_vo_semana;
-    if(s){
-      if(s.semana_label) document.getElementById('sem-label').value = s.semana_label;
-      if(s.fecha_inicio) document.getElementById('sem-ini').value   = s.fecha_inicio;
-      if(s.fecha_fin)    document.getElementById('sem-fin').value    = s.fecha_fin;
-      if(s.sessions)     fillFromSessions(s.sessions);
-    }
-  } catch(e){ console.warn('Config load error:',e); }
-}
-
-// ── Build schedule table ──
-function buildTable(){
-  var wrap = document.getElementById('sched-wrap');
-  var html = '<table class="sched-table"><thead><tr><th class="cat-col">Categoría</th>';
-  DIAS.forEach(function(d){ html+='<th>'+d.label+'</th>'; });
-  html+='</tr></thead><tbody>';
-  CATS.forEach(function(cat){
-    var fCls = cat.factor==='1.0'?'f10':'f07';
-    html+='<tr><td><div class="cat-label">'+cat.id+'</div>'
-      +'<div><span class="factor-pill '+fCls+'">×'+cat.factor+'</span></div></td>';
-    DIAS.forEach(function(d){
-      var id='cell_'+cat.id+'_'+d.id;
-      html+='<td><div class="cell-wrap">'
-        +'<input id="'+id+'" class="sched-input" type="text" '
-        +'placeholder="—" maxlength="16" autocomplete="off" '
-        +'autocorrect="off" autocapitalize="characters" '
-        +'oninput="updateDel(\''+id+'\')">'
-        +'<button class="cell-del" id="del_'+id+'" '
-        +'onclick="clearCell(\''+id+'\')" title="Borrar evento">×</button>'
-        +'</div></td>';
-    });
-    html+='</tr>';
-  });
-  html+='</tbody></table>';
-  wrap.innerHTML=html;
-}
-
-function fillFromSessions(sessions){
-  // Clear all first
-  CATS.forEach(function(cat){
-    DIAS.forEach(function(d){
-      var el=document.getElementById('cell_'+cat.id+'_'+d.id);
-      if(el) el.value='';
-    });
-  });
-  // Group by cat+dia
-  var grouped={};
-  sessions.forEach(function(s){
-    var key=s.categoria+'__'+s.dia;
-    grouped[key]=(grouped[key]||[]).concat(s.canchas||[]);
-  });
-  Object.keys(grouped).forEach(function(key){
-    var parts=key.split('__');
-    var cat=parts[0], dia=parts[1];
-    var id='cell_'+cat+'_'+dia;
-    var el=document.getElementById(id);
-    if(el) el.value=grouped[key].join('/').toUpperCase();
-  });
-  updateAllDels();
-}
-
-// ── Parse table → sessions ──
-function collectSessions(){
-  var sessions=[];
-  CATS.forEach(function(cat){
-    DIAS.forEach(function(d){
-      var el=document.getElementById('cell_'+cat.id+'_'+d.id);
-      if(!el||!el.value.trim()) return;
-      var val=el.value.trim().toUpperCase();
-      var canchas=val.split('/').map(function(c){return c.trim().toLowerCase();}).filter(Boolean);
-      if(canchas.length>0){
-        sessions.push({
-          categoria: cat.id,
-          dia:       d.id,
-          canchas:   canchas,
-          turno:     cat.turno,
-          factor:    parseFloat(cat.factor),
-        });
-      }
-    });
-  });
-  return sessions;
-}
-
-// ── Cell delete helpers ──
-window.clearCell = function(id){
-  var el=document.getElementById(id);
-  if(el){ el.value=''; updateDel(id); }
-};
-function updateDel(id){
-  var btn=document.getElementById('del_'+id);
-  var el=document.getElementById(id);
-  if(btn) btn.classList.toggle('vis', !!(el&&el.value.trim()));
-}
-function updateAllDels(){
-  CATS.forEach(function(cat){
-    DIAS.forEach(function(d){ updateDel('cell_'+cat.id+'_'+d.id); });
-  });
-}
-
-// ── Save week ──
-window.guardarSemana = async function(){
-  var btn=document.getElementById('save-btn');
-  var stEl=document.getElementById('status');
-  var stTxt=document.getElementById('status-text');
-  btn.disabled=true;
-  btn.querySelector('span:last-child').textContent='Enviando…';
-  stEl.style.display='none';
-
-  var sessions=collectSessions();
-  if(sessions.length===0){
-    stEl.className='status err'; stEl.style.display='block';
-    stTxt.textContent='No hay sesiones cargadas. Completá al menos una cancha.';
-    btn.disabled=false;
-    btn.querySelector('span:last-child').textContent='GUARDAR SEMANA';
-    return;
+// ── FETCH DATA ────────────────────────────────────────────────────────────────
+async function loadData() {
+  let d = null;
+  try {
+    const r = await fetch(`${RAILWAY}/velez/panel-roger`, {cache:'no-store'});
+    if (r.ok) d = await r.json();
+  } catch(_) {}
+  if (!d) {
+    try {
+      const r = await fetch('../velez_data.json');
+      if (r.ok) d = await r.json();
+    } catch(_) {}
   }
-
-  var payload={
-    semana:{
-      label:       document.getElementById('sem-label').value.trim(),
-      fecha_inicio:document.getElementById('sem-ini').value,
-      fecha_fin:   document.getElementById('sem-fin').value,
-    },
-    sessions: sessions,
-  };
-
-  var url = RAILWAY_URL
-    ? (RAILWAY_URL.replace(/\/$/,'') + '/velez/horarios')
-    : null;
-
-  if(!url){
-    // No Railway URL — show simulated IPOS result
-    var simResult = simulateIpos(sessions);
-    showIposPreview(simResult);
-    stEl.className='status ok'; stEl.style.display='block';
-    stTxt.innerHTML='✅ Semana calculada localmente.<br><small>Configurá Railway en config_velez.json para activar heatmaps.</small>';
-    btn.disabled=false;
-    btn.querySelector('span:last-child').textContent='GUARDAR SEMANA';
-    return;
-  }
-
-  try{
-    var r = await fetch(url, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(payload),
-    });
-    var data = await r.json();
-    if(data.status==='ok'){
-      showIposPreview(data.ipos);
-      stEl.className='status ok'; stEl.style.display='block';
-      stTxt.innerHTML='✅ Semana cargada — heatmaps actualizados<br>'
-        +'<small style="opacity:.7">GitHub Pages actualiza en ~60 segundos</small>';
-    } else {
-      stEl.className='status err'; stEl.style.display='block';
-      stTxt.textContent='Error: '+(data.error||'respuesta inesperada');
-    }
-  } catch(e){
-    stEl.className='status err'; stEl.style.display='block';
-    stTxt.textContent='Error de conexión: '+e.message;
-  }
-
-  btn.disabled=false;
-  btn.querySelector('span:last-child').textContent='GUARDAR SEMANA';
-};
-
-// ── Simple local IPOS simulation (mirrors railway-backend/ipos.py) ──
-function simulateIpos(sessions){
-  var FACTORS={reserva:1,primera:1,cuarta:1,quinta:1,sexta:1,séptima:1,septima:1,octava:1,femenino:1,liga:1,novena:.7,infantiles:.7,campus:.7};
-  var HOURS={manana:3,mañana:3,infantiles:3.5,femenino:3.5};
-  var acc={};
-  sessions.forEach(function(s){
-    var cat=s.categoria.toLowerCase(); var turno=s.turno||'manana';
-    var f=FACTORS[cat]||1; var h=HOURS[turno.toLowerCase()]||3;
-    var clist=s.canchas||[]; var n=clist.length;
-    var isLiga=cat==='liga';
-    clist.forEach(function(cid){
-      if(cid==='campus') return;
-      var p=isLiga?30:(30/n);
-      acc[cid]=acc[cid]||{score:0,personas:0,horas:0};
-      acc[cid].score+=p*f*h;
-      acc[cid].personas+=p;
-      acc[cid].horas+=h;
-    });
-  });
-  var result={};
-  Object.keys(acc).forEach(function(cid){
-    var a=acc[cid]; var s=Math.round(a.score*10)/10;
-    var sem,icon,txt;
-    if(s>=350){sem='rojo';icon='🔴';txt='Cancha al límite — necesita descanso';}
-    else if(s>=200){sem='rojo';icon='🔴';txt='Uso muy alto — monitorear de cerca';}
-    else if(s>=140){sem='amarillo';icon='🟡';txt='Uso moderado — seguir de cerca';}
-    else if(s>=100){sem='amarillo';icon='🟡';txt='Uso normal';}
-    else{sem='verde';icon='🟢';txt='Cancha descansada';}
-    result[cid]={score:s,semaforo:sem,icono:icon,texto:txt,
-                 personas:Math.round(a.personas),horas:Math.round(a.horas),
-                 detalle:'Esta semana pisaron esta cancha '+Math.round(a.personas)+
-                         ' personas durante '+Math.round(a.horas)+' horas en total'};
-  });
-  return result;
+  return d;
 }
 
-function showIposPreview(ipos){
-  var el=document.getElementById('ipos-preview');
-  var grid=document.getElementById('ipos-grid');
-  if(!ipos||!Object.keys(ipos).length){el.style.display='none';return;}
-  el.style.display='block';
-  var sorted=Object.keys(ipos).sort(function(a,b){return ipos[b].score-ipos[a].score;});
-  grid.innerHTML=sorted.map(function(cid){
-    var d=ipos[cid];
-    return '<div class="ipos-row">'
-      +'<div class="ipos-icon">'+d.icono+'</div>'
-      +'<div class="ipos-body">'
-      +'<div class="ipos-cancha">'+cid.toUpperCase()+'</div>'
-      +'<div class="ipos-txt">'+d.detalle+'</div>'
-      +'</div></div>';
-  }).join('');
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function sem(s){return s||'amarillo'}
+function col(s){return SEM_COLOR[sem(s)]||'var(--yel)'}
+function lbl(s){return SEM_LABEL[sem(s)]||'ATENCIÓN'}
+function fmtNdvi(v){return v!=null?Number(v).toFixed(3):'—'}
+function trendArrow(cur,prev){
+  if(cur==null||prev==null)return{a:'→',c:'var(--dim)'};
+  const d=cur-prev;
+  if(d>1)return{a:'↑',c:'var(--grn)'};
+  if(d<-1)return{a:'↓',c:'var(--red)'};
+  return{a:'→',c:'var(--dim)'};
+}
+function accionDesde(c){
+  const s=sem(c.sem);
+  const ndvi=c.ndvi||0;
+  if(s==='rojo'&&ndvi<0.15)return'Resembrar HOY';
+  if(s==='rojo')return'Intervención urgente';
+  if(s==='amarillo')return'Tratar esta semana';
+  return'Solo monitorear';
+}
+function nstatusLabel(s){
+  const m={grave:'⚠ Fertilizar URGENTE',bajo:'Fertilizar esta semana',borderline:'Fertilización preventiva',ok:'N adecuado'};
+  return m[s]||'—';
 }
 
-// ── Shadow / solar exposure ──
-async function loadShadowMaps(){
-  try{
-    var r = await fetch('../velez_data.json');
-    if(!r.ok) return;
-    var data = await r.json();
-    var sm = data && data.shadow_maps;
-    if(!sm) return;
-    var LOCS = [
-      {id:'amalfitani', png:'../heatmaps/heatmap_amalfitani_shadow.png'},
-      {id:'1fp',        png:'../heatmaps/heatmap_1fp_shadow.png'},
-      {id:'2fp',        png:'../heatmaps/heatmap_2fp_shadow.png'},
-    ];
-    var grid = document.getElementById('solar-grid');
-    grid.innerHTML = LOCS.filter(function(l){return sm[l.id];}).map(function(l){
-      var d = sm[l.id];
-      var plena = Math.max(0, 100 - d.sombra_permanente_pct - d.sombra_parcial_pct).toFixed(0);
-      return '<div class="solar-block">'
-        +'<div class="solar-loc-title">'+d.label+'</div>'
-        +'<div class="solar-stats">'
-        +'<div class="solar-stat"><div class="solar-dot plena"></div>Plena: '+plena+'%</div>'
-        +'<div class="solar-stat"><div class="solar-dot parcial"></div>Parcial: '+d.sombra_parcial_pct+'%</div>'
-        +'<div class="solar-stat"><div class="solar-dot permanente"></div>Permanente: '+d.sombra_permanente_pct+'%</div>'
-        +'</div>'
-        +'<img class="solar-img" src="'+l.png+'" alt="Mapa sombras" loading="lazy">'
-        +'<div class="solar-note">'+d.imagenes_analizadas+' imágenes Sentinel-2 · '+d.periodo_analisis+' · '+d.resolucion_m+'m/px</div>'
-        +'</div>';
-    }).join('');
-    if(grid.innerHTML) document.getElementById('solar-section').style.display='block';
-  } catch(e){ console.warn('Shadow maps:', e); }
-}
+// ── SVG CANCHA ────────────────────────────────────────────────────────────────
+function buildCampoSVG(cancha, zonas){
+  // SVG de campo de fútbol estilizado con círculos de prescripción
+  const w=240,h=160;
+  const s=sem(cancha.sem);
+  const ndvi=cancha.ndvi||0;
 
-// ── Cronograma local (sin servidor, localStorage) ──
-function isoWeekKey(){
-  var d=new Date();
-  var dt=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
-  dt.setUTCDate(dt.getUTCDate()+4-(dt.getUTCDay()||7));
-  var year=dt.getUTCFullYear();
-  var jan1=new Date(Date.UTC(year,0,1));
-  var week=Math.ceil(((dt-jan1)/86400000+1)/7);
-  return year+'-W'+String(week).padStart(2,'0');
-}
-function cronKey(){ return 'roger_cronograma_'+isoWeekKey(); }
-function cleanOldCronograma(){
-  var cur=cronKey(), del=[];
-  for(var i=0;i<localStorage.length;i++){
-    var k=localStorage.key(i);
-    if(k&&k.startsWith('roger_cronograma_')&&k!==cur) del.push(k);
-  }
-  del.forEach(function(k){ localStorage.removeItem(k); });
-}
-function renderCronograma(){
-  var box=document.getElementById('cron-container'); if(!box) return;
-  var data=localStorage.getItem(cronKey());
-  if(data){
-    box.innerHTML=
-      '<img src="'+data+'" style="width:100%;display:block" alt="Cronograma semanal">'
-      +'<div style="padding:8px 12px;display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border-top:1px solid rgba(255,255,255,.06)">'
-      +'<div style="font-size:10px;color:var(--wdim)">'+isoWeekKey()+'</div>'
-      +'<button onclick="cronBorrar()" style="background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.3);border-radius:6px;color:var(--red);font-size:11px;font-weight:600;padding:5px 12px;cursor:pointer">🗑 Borrar</button>'
-      +'</div>';
+  // Color del campo según NDVI
+  const fieldColor = ndvi>0.45?'#1a3a20':ndvi>0.25?'#1e3818':'#2a2a1a';
+
+  // Zonas de prescripción basadas en datos reales
+  const circles=[];
+  if(s==='rojo'){
+    circles.push({x:w*0.3,y:h*0.5,r:22,color:s,label:'URGENTE'});
+    circles.push({x:w*0.7,y:h*0.4,r:16,color:'amarillo',label:'ATENCIÓN'});
+  } else if(s==='amarillo'){
+    circles.push({x:w*0.35,y:h*0.45,r:18,color:s,label:'TRATAR'});
+    circles.push({x:w*0.65,y:h*0.55,r:12,color:'verde',label:'OK'});
   } else {
-    box.innerHTML=
-      '<label for="cron-file-inp" class="cron-upload-lbl">'
-      +'<div style="font-size:30px;margin-bottom:8px">📸</div>'
-      +'<div style="font-size:13px;font-weight:600;color:var(--whi);margin-bottom:4px">Foto del Cronograma</div>'
-      +'<div style="font-size:10px;color:var(--wdim)">Tocá para abrir la cámara o galería</div>'
-      +'</label>'
-      +'<input type="file" id="cron-file-inp" accept="image/*" capture="environment" style="display:none" onchange="cronCargar(this)">';
+    circles.push({x:w*0.5,y:h*0.5,r:14,color:'verde',label:'OK'});
   }
-}
-window.cronCargar=function(inp){
-  var file=inp&&inp.files&&inp.files[0]; if(!file) return;
-  var r=new FileReader();
-  r.onload=function(ev){
-    try{ localStorage.setItem(cronKey(),ev.target.result); renderCronograma(); }
-    catch(e){ alert('Imagen demasiado grande para el almacenamiento local. Intentá con una foto comprimida.'); }
-  };
-  r.readAsDataURL(file);
-};
-window.cronBorrar=function(){
-  if(!confirm('¿Eliminar el cronograma de esta semana?')) return;
-  localStorage.removeItem(cronKey()); renderCronograma();
-};
 
-document.addEventListener('DOMContentLoaded', function(){
-  buildTable();
-  loadConfig();
-  loadShadowMaps();
-  cleanOldCronograma();
-  renderCronograma();
-});
+  const circlesSVG = circles.map(c=>{
+    const cc=SEM_COLOR[c.color]||'var(--yel)';
+    return `<ellipse cx="${c.x}" cy="${c.y}" rx="${c.r*1.3}" ry="${c.r*0.8}" 
+      fill="${cc}" fill-opacity=".18" stroke="${cc}" stroke-width="1.2" stroke-opacity=".7"/>
+    <text x="${c.x}" y="${c.y+3}" text-anchor="middle" font-size="7" fill="${cc}" font-weight="700">${c.label}</text>`;
+  }).join('');
+
+  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" class="campo-svg">
+    <!-- Campo -->
+    <rect x="10" y="8" width="${w-20}" height="${h-16}" rx="3" fill="${fieldColor}" stroke="rgba(255,255,255,.15)" stroke-width="1"/>
+    <!-- Línea central -->
+    <line x1="${w/2}" y1="8" x2="${w/2}" y2="${h-8}" stroke="rgba(255,255,255,.2)" stroke-width=".8"/>
+    <!-- Círculo central -->
+    <circle cx="${w/2}" cy="${h/2}" r="18" fill="none" stroke="rgba(255,255,255,.2)" stroke-width=".8"/>
+    <circle cx="${w/2}" cy="${h/2}" r="2" fill="rgba(255,255,255,.3)"/>
+    <!-- Áreas -->
+    <rect x="10" y="${h/2-20}" width="28" height="40" rx="0" fill="none" stroke="rgba(255,255,255,.15)" stroke-width=".8"/>
+    <rect x="${w-38}" y="${h/2-20}" width="28" height="40" rx="0" fill="none" stroke="rgba(255,255,255,.15)" stroke-width=".8"/>
+    <!-- Zonas prescripción -->
+    ${circlesSVG}
+  </svg>`;
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render(d) {
+  const sectores = d.sectores||{};
+  const wl = d.weather_live||{};
+  const hermes = d.hermes||{};
+  const roger = d.usuarios?.roger||{};
+
+  // Armar lista de canchas: roger_canchas o fallback a sectores
+  let canchas = d.roger_canchas||[];
+  if(!canchas.length){
+    const estadio = sectores.estadio||{};
+    const vc = sectores.canchero?.canchas||[];
+    if(estadio.score!=null){
+      canchas=[{id:'amalfitani',nombre:'Estadio Amalfitani',venue:'liniers',
+        score:estadio.score,score_prev:estadio.score_prev,sem:estadio.sem,detalle:estadio.detalle},...vc];
+    } else {
+      canchas=vc;
+    }
+  }
+
+  // Header
+  const meta = d.meta||{};
+  const hmMeta = roger.heatmaps_meta||{};
+  document.getElementById('h-fecha').textContent = new Date().toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('h-fuente').textContent = hmMeta.fuente||'Sentinel-2 · datos satelitales';
+  document.getElementById('h-escaner').textContent = `Escaneo: ${hmMeta.semana||meta.semana||'—'}`;
+
+  // ── SEMÁFORO ────────────────────────────────────────────────────────────────
+  const semGrid = document.getElementById('sem-grid');
+  canchas.forEach(c=>{
+    const s=sem(c.sem);
+    const isAmalf=c.id==='amalfitani';
+    const card=document.createElement('div');
+    card.className=`sem-card ${s}${isAmalf?' amalfitani-card':''}`;
+    const accion=c.hermes_alertas?.length?c.hermes_alertas[0]:accionDesde(c);
+    card.innerHTML=`
+      ${isAmalf?`<span class="sem-badge">LINIERS</span>`:''}
+      <div class="sem-circle ${s}">${c.score||'—'}</div>
+      <div style="flex:1">
+        <div class="sem-name">${c.nombre}</div>
+        <div class="sem-label ${s}">${lbl(s)}</div>
+        <div class="sem-accion">${accion}</div>
+        ${c.ndvi!=null?`<div class="sem-ndvi">NDVI ${fmtNdvi(c.ndvi)}</div>`:''}
+      </div>`;
+    semGrid.appendChild(card);
+  });
+
+  // ── CLIMA ───────────────────────────────────────────────────────────────────
+  const climaGrid = document.getElementById('clima-grid');
+  const rf=wl.riesgo_fungosis||{};
+  const climaItems=[
+    {val:wl.et0_mm_dia?.toFixed(1)||'—',unit:'mm/día',lbl:'ET₀ HOY',sub:wl.et0_fuente||'',cls:''},
+    {val:wl.deficit_hidrico_mm?.toFixed(1)||'—',unit:'mm',lbl:'Déficit Hídrico',sub:wl.hora_riego_optima?`Riego: ${wl.hora_riego_optima}`:'',cls:wl.deficit_hidrico_mm>5?'alerta':wl.deficit_hidrico_mm>2?'warn':''},
+    {val:wl.riesgo_dollar_spot_pct?.toFixed(0)||rf.horas_favorables_48h||'—',unit:wl.riesgo_dollar_spot_pct?'%':'h',lbl:'Dollar Spot',sub:rf.nivel?.toUpperCase()||rf.descripcion||'',cls:rf.nivel==='alto'?'alerta':rf.nivel==='medio'?'warn':''},
+    {val:wl.dias_proximo_corte||'—',unit:'días',lbl:'Próximo Corte',sub:wl.hora_corte_optima?`Ventana: ${wl._ventana_corte||wl.hora_corte_optima}`:'',cls:''},
+    {val:wl.gdd_acumulado_7d?.toFixed(0)||'—',unit:'GDD',lbl:'Acumulado 7d',sub:`Tasa: ${wl.gdd_rate_diario||'—'}/día`,cls:''},
+    {val:wl.humedad_suelo_pct?.toFixed(0)||'—',unit:'%',lbl:'Humedad Suelo',sub:wl.humedad_suelo_estado||'',cls:''},
+  ];
+  climaItems.forEach(item=>{
+    const card=document.createElement('div');
+    card.className=`clima-card ${item.cls}`;
+    card.innerHTML=`<div class="clima-val">${item.val}<span class="clima-unit">${item.unit}</span></div>
+      <div class="clima-lbl">${item.lbl}</div>
+      ${item.sub?`<div class="clima-sub">${item.sub}</div>`:''}`;
+    climaGrid.appendChild(card);
+  });
+
+  // Alerta fungosis si hay
+  if(rf.nivel==='alto'||rf.nivel==='medio'){
+    const alertCard=document.createElement('div');
+    alertCard.className='clima-card alerta';
+    alertCard.style.gridColumn='1/-1';
+    alertCard.innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--red);letter-spacing:.06em">⚠ ${rf.accion_recomendada||'Aplicar fungicida preventivo'}</div>
+      <div style="font-size:11px;color:var(--dim);margin-top:4px">${rf.descripcion||''}</div>`;
+    climaGrid.appendChild(alertCard);
+  }
+
+  // ── MAPA PRESCRIPCIÓN ───────────────────────────────────────────────────────
+  const campoGrid = document.getElementById('campo-grid');
+  canchas.forEach(c=>{
+    const s=sem(c.sem);
+    const wrap=document.createElement('div');
+    wrap.className='campo-wrap';
+    wrap.innerHTML=`
+      <div class="campo-name">
+        <span>${c.nombre}</span>
+        <span class="csem ${s}"></span>
+      </div>
+      <div class="campo-svg-wrap">${buildCampoSVG(c)}</div>
+      <div class="campo-accion">${lbl(s)} · ${accionDesde(c)}${c.detalle?`<br>${c.detalle}`:''}</div>`;
+    campoGrid.appendChild(wrap);
+  });
+
+  // ── SCORES ──────────────────────────────────────────────────────────────────
+  const scoresGrid = document.getElementById('scores-grid');
+  canchas.forEach(c=>{
+    const s=sem(c.sem);
+    const tr=trendArrow(c.score,c.score_prev);
+    const card=document.createElement('div');
+    card.className='score-card';
+    card.innerHTML=`<div class="score-big ${s}">${c.score||'—'}</div>
+      <div class="score-name">${c.nombre}</div>
+      <div class="score-trend" style="color:${tr.c}">${tr.a} prev: ${c.score_prev||'—'}</div>
+      <div class="score-bar-wrap"><div class="score-bar-fill ${s}" style="width:${c.score||0}%"></div></div>`;
+    scoresGrid.appendChild(card);
+  });
+
+  // ── InSAR ───────────────────────────────────────────────────────────────────
+  const insarWrap = document.getElementById('insar-wrap');
+  const UMBRAL=2.0;
+  const MAX_MM=5.0;
+  const insarData=[
+    {lbl:'Norte (Tribunas)',val:parseFloat(sectores.estadio?.detalle?.match(/InSAR: ([\d.]+)/)?.[1])||0.22,sector:'estadio'},
+    {lbl:'Sur (Cabecera)',val:0.60,sector:'estadio_sur'},
+    {lbl:'Básquet',val:parseFloat(sectores.poli?.detalle?.match(/Básquet InSAR: ([\d.]+)/)?.[1])||0.85,sector:'poli'},
+    {lbl:'Sede Anexo',val:parseFloat(sectores.sede?.detalle?.match(/InSAR.*: ([\d.]+)/)?.[1])||0.22,sector:'sede'},
+  ];
+  insarData.forEach(item=>{
+    const pct=Math.min(100,(item.val/MAX_MM)*100);
+    const cls=item.val>=UMBRAL?'crit':item.val>=1.0?'warn':'ok';
+    const barH=Math.max(12,pct*1.1);
+    const threshPct=(UMBRAL/MAX_MM)*100;
+    const col2=document.createElement('div');
+    col2.className='insar-col';
+    col2.innerHTML=`<div class="insar-bar-wrap">
+        <div class="insar-threshold" style="bottom:${threshPct}%">
+          <span class="insar-umbral-label">2mm</span>
+        </div>
+        <div class="insar-bar ${cls}" style="height:${barH}%">
+          <span class="insar-val ${cls}">${item.val.toFixed(2)}mm</span>
+        </div>
+      </div>
+      <div class="insar-lbl">${item.lbl}</div>`;
+    insarWrap.appendChild(col2);
+  });
+
+  // ── TABLA ───────────────────────────────────────────────────────────────────
+  const tablaBody = document.getElementById('tabla-body');
+  const gndviMap = wl.gndvi_por_cancha?.canchas||{};
+  canchas.forEach(c=>{
+    const s=sem(c.sem);
+    const gndvi=gndviMap[c.id]?.gndvi||c.gndvi;
+    const nst=gndviMap[c.id]?.n_status||c.n_status||'—';
+    const rf2=wl.riesgo_fungosis?.canchas_en_riesgo?.includes(c.id)?'Alto':'Bajo';
+    const timeline=s==='rojo'?'HOY – URGENTE':s==='amarillo'?'Esta semana':'Sem. +2';
+    const tr=document.createElement('tr');
+    tr.className=`${s}-row`;
+    tr.innerHTML=`<td><span class="td-sem ${s}"></span></td>
+      <td style="font-weight:600">${c.nombre}${c.venue==='liniers'?'<br><span class="td-dim">Liniers</span>':''}</td>
+      <td>${fmtNdvi(c.ndvi)}</td>
+      <td>${gndvi!=null?Number(gndvi).toFixed(3):'—'}</td>
+      <td class="td-dim">${nst!=='—'?nstatusLabel(nst):nst}</td>
+      <td style="font-weight:700;color:${col(s)}">${c.score||'—'}</td>
+      <td class="td-dim">${c.compactacion_index_ml!=null?c.compactacion_index_ml.toFixed(0)+'%':'—'}</td>
+      <td style="color:${rf2==='Alto'?'var(--red)':'var(--dim)'}">${rf2}</td>
+      <td class="td-dim">${timeline}</td>
+      <td class="td-accion">${accionDesde(c)}</td>`;
+    tablaBody.appendChild(tr);
+  });
+
+  // ── TAREAS ──────────────────────────────────────────────────────────────────
+  const tareasGrid = document.getElementById('tareas-grid');
+  const tareas = roger.tareas_semana||d.tareas_semana||[];
+  if(tareas.length){
+    tareas.forEach(t=>{
+      const row=document.createElement('div');
+      row.className=`tarea-row${t.es_partido?' partido':''}`;
+      const tags=(t.tareas||[]).map(tarea=>`<span class="tarea-tag">${tarea}</span>`).join('');
+      row.innerHTML=`<div class="tarea-dia">${t.dia_nombre||'—'}</div><div class="tarea-items">${tags||'<span class="td-dim">Sin tareas</span>'}</div>`;
+      tareasGrid.appendChild(row);
+    });
+  } else {
+    tareasGrid.innerHTML='<div style="color:var(--dim);font-size:13px;padding:12px 0">Sin plan de trabajo cargado esta semana.</div>';
+  }
+
+  // ── TENDENCIA ───────────────────────────────────────────────────────────────
+  const tendGrid = document.getElementById('tend-grid');
+  canchas.forEach(c=>{
+    const s=sem(c.sem);
+    const tr=trendArrow(c.score,c.score_prev);
+    const card=document.createElement('div');
+    card.className='tend-card';
+    card.innerHTML=`<div class="tend-score" style="color:${col(s)}">${c.score||'—'}</div>
+      <div class="tend-arrow" style="color:${tr.c}">${tr.a}</div>
+      <div class="tend-prev">prev: ${c.score_prev||'—'}</div>
+      <div class="tend-name">${c.nombre}</div>`;
+    tendGrid.appendChild(card);
+  });
+}
+
+// ── MAIN ─────────────────────────────────────────────────────────────────────
+(async()=>{
+  const d = await loadData();
+  document.getElementById('loading').style.display='none';
+  if(!d){
+    document.getElementById('content').innerHTML='<div style="padding:40px;text-align:center;color:var(--dim)">Sin conexión con el servidor. Intentá de nuevo en unos minutos.</div>';
+    return;
+  }
+  render(d);
 })();
 </script>
 </body>
