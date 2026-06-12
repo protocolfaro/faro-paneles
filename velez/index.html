@@ -8,10 +8,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Epilogue:wght@300;400;600;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/deck.gl@^9.0.0/dist.min.js"></script>
 <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
-<script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
-<script src="https://cdn.jsdelivr.net/npm/d3-scale@4"></script>
-<script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
 <style>
 :root {
     --bg: #0a0a0a;
@@ -126,54 +122,6 @@ const VENUES = {
     piletas:        { lng:-58.520900, lat:-34.637800, zoom:18.5 }
 };
 
-// ── FUENTE DE VERDAD: tiles_blueprint._BBOXES ─────────────────────────────
-// _BBOXES = {
-//   "velez":      (-58.540, -34.650, -58.520, -34.630),
-//   "amalfitani": (-58.5305, -34.6391, -58.5271, -34.6367),
-//   "balcarce":   (-58.250, -37.850, -58.200, -37.800),
-//   "anelo":      (-68.860, -38.380, -68.790, -38.330),
-// }
-// Centroides calculados del bbox real de cada venue.
-// Villa Olímpica no tiene bbox → grilla proporcional al plano oficial.
-const CANCHA_COORDS = {
-    // ── Amalfitani — centro exacto del bbox (-58.5305/-34.6391, -58.5271/-34.6367)
-    'amalfitani':        [-58.5288, -34.6379],
-    'cancha-principal':  [-58.5288, -34.6379],
-    'campo-principal':   [-58.5288, -34.6379],
-    // Sub-canchas: grilla 2×2 dentro del bbox (W=-58.5305, E=-58.5271)
-    // Separación lng ≈ 0.0012° (~104m), lat ≈ 0.0010° (~111m)
-    'cancha-1':   [-58.5300, -34.6371],   // NW
-    'cancha-2':   [-58.5276, -34.6371],   // NE
-    'cancha-3':   [-58.5300, -34.6385],   // SW
-    'cancha-4':   [-58.5276, -34.6385],   // SE
-
-    // ── Villa Olímpica — 12 canchas en 2 filas (plano oficial Vélez)
-    // Centro: (-58.7193, -34.6221)
-    // Fila 1: 1FA–10FA (sintético) — paso lng 0.000765° ≈ 70m por cancha
-    // Fila 2: 1FP–2FP (pasto natural) — 110m al sur
-    '1FA':  [-58.72274, -34.6216],
-    '2FA':  [-58.72197, -34.6216],
-    '3FA':  [-58.72121, -34.6216],
-    '4FA':  [-58.72044, -34.6216],
-    '5FA':  [-58.71968, -34.6216],
-    '6FA':  [-58.71891, -34.6216],
-    '7FA':  [-58.71814, -34.6216],
-    '8FA':  [-58.71738, -34.6216],
-    '9FA':  [-58.71661, -34.6216],
-    '10FA': [-58.71585, -34.6216],
-    '1FP':  [-58.71968, -34.6231],
-    '2FP':  [-58.71891, -34.6231],
-};
-
-// ── DEMO DATA — Amalfitani cuando el backend no responde ──────────────────
-const AMALFITANI_DEMO_POINT = {
-    lng: -58.5288, lat: -34.6379,
-    ndvi: 0.58, score: 62,
-    nombre: 'Estadio Amalfitani',
-    id: 'amalfitani',
-    tipo: 'natural'
-};
-
 // ── CAPAS POR TIPO DE SUPERFICIE ─────────────────────────────────────────
 const SURFACE_LAYERS = {
     natural:        ['ndvi','sar','temperatura','clima','fungosis'],
@@ -196,23 +144,20 @@ const LAYER_LABELS = {
 };
 
 let map, deckOverlay, canonical, geojson;
-let currentVenue   = 'amalfitani';
-let activeL        = { ndvi:true, sar:true, temperatura:false, insar:false, clima:false, fungosis:false, dale_play:false };
-let richDepth      = 1;
-let showDay        = 0;
-let hoveredCanchaId = null;
-let svgOverlay      = null;
-let _svgDefs        = null;
+let currentVenue = 'amalfitani';
+let activeL = { ndvi:true, sar:true, temperatura:false, insar:false, clima:false, fungosis:false, dale_play:false };
+let richDepth = 1;  // 0=5cm  1=10cm  2=20cm
+let showDay   = 0;  // días desde el show (0=hoy)
 const RAILWAY = 'https://faroprotocol-production-45fd.up.railway.app';
 
 // ── INIT ─────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
     map = new maplibregl.Map({
         container: 'map',
-        style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+        style: 'https://tiles.openfreemap.org/styles/dark',
         center: [VENUES.amalfitani.lng, VENUES.amalfitani.lat],
         zoom:  VENUES.amalfitani.zoom,
-        pitch: 55, bearing: -15,
+        pitch: 45, bearing: -15,
         attributionControl: false
     });
 
@@ -220,6 +165,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     deckOverlay = new deck.MapboxOverlay({ interleaved: true, layers: [] });
     map.addControl(deckOverlay);
     map.on('load', async () => {
+        // Satélite ArcGIS World Imagery — sin API key
+        map.addSource('arcgis-sat', {
+            type: 'raster',
+            tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+            tileSize: 256, maxzoom: 19
+        });
+        map.addLayer({ id:'sat-layer', type:'raster', source:'arcgis-sat', layout:{ visibility:'none' } });
+
         // Cargar datos del assembler — triple fallback
         try {
             const [c, g] = await Promise.all([
@@ -233,7 +186,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             geojson   = { type:'FeatureCollection', features:[] };
         }
 
-        setupSVGOverlay();
         renderUI();
         renderLayers();
     });
@@ -242,24 +194,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ── BASEMAP TOGGLE ───────────────────────────────────────────────────────
 function setBasemap(mode) {
     document.getElementById('btn-dark').classList.toggle('active', mode === 'dark');
-    document.getElementById('btn-sat').classList.toggle('active', mode === 'satellite');
-
-    if (mode === 'satellite') {
-        if (!map.getSource('arcgis')) {
-            map.addSource('arcgis', {
-                type: 'raster',
-                tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
-                tileSize: 256
-            });
-            map.addLayer({ id: 'arcgis-layer', type: 'raster', source: 'arcgis' });
-        } else {
-            map.setLayoutProperty('arcgis-layer', 'visibility', 'visible');
-        }
-    } else {
-        if (map.getLayer('arcgis-layer')) {
-            map.setLayoutProperty('arcgis-layer', 'visibility', 'none');
-        }
-    }
+    document.getElementById('btn-sat').classList.toggle('active',  mode === 'satellite');
+    if (!map || !map.getLayer('sat-layer')) return;
+    map.setLayoutProperty('sat-layer', 'visibility', mode === 'satellite' ? 'visible' : 'none');
 }
 
 // ── VENUE SWITCH ─────────────────────────────────────────────────────────
@@ -276,7 +213,7 @@ function switchVenue(v, btn) {
 
     const c = VENUES[v];
     if (c && map) {
-        map.flyTo({ center:[c.lng, c.lat], zoom:c.zoom, pitch:55, bearing:-15, duration:1800 });
+        map.flyTo({ center:[c.lng, c.lat], zoom:c.zoom, pitch:45, bearing:-15, duration:1800 });
     }
     renderUI();
     renderLayers();
@@ -386,29 +323,15 @@ function toggleLayer(lk) {
     renderLayers();
 }
 
-// Centroid — prioridad: CANCHA_COORDS (bbox real) > GeoJSON > props > venue center
+// Centroid of a GeoJSON Feature (Point or Polygon ring avg)
 function geomCenter(f) {
-    const id = f.properties?.cancha_id ?? f.properties?.id ?? null;
-
-    // 1. Lookup fuente de verdad (tiles_blueprint._BBOXES derivado)
-    if (id && CANCHA_COORDS[id]) return CANCHA_COORDS[id];
-
-    // 2. GeoJSON geometry real
     if (f.geometry?.type === 'Point') return f.geometry.coordinates;
     const ring = f.geometry?.coordinates?.[0];
-    if (ring && ring.length >= 3) {
-        const pts = (ring[0][0] === ring[ring.length-1][0] && ring[0][1] === ring[ring.length-1][1])
-            ? ring.slice(0, -1) : ring;
-        const n = pts.length;
-        return [pts.reduce((s,c) => s+c[0], 0)/n, pts.reduce((s,c) => s+c[1], 0)/n];
-    }
-
-    // 3. Propiedades lat/lng explícitas en el feature
-    if (f.properties?.lng != null && f.properties?.lat != null)
-        return [+f.properties.lng, +f.properties.lat];
-
-    // 4. Fallback: centro del venue actual
-    return [VENUES[currentVenue].lng, VENUES[currentVenue].lat];
+    if (!ring || ring.length < 3) return [VENUES[currentVenue].lng, VENUES[currentVenue].lat];
+    const pts = (ring[0][0] === ring[ring.length-1][0] && ring[0][1] === ring[ring.length-1][1])
+        ? ring.slice(0, -1) : ring;
+    const n = pts.length;
+    return [pts.reduce((s,c) => s+c[0], 0)/n, pts.reduce((s,c) => s+c[1], 0)/n];
 }
 
 // ── RENDER LAYERS (deck.gl) ──────────────────────────────────────────────
@@ -417,226 +340,48 @@ function renderLayers() {
     const layers   = [];
     const features = geojson?.features ?? [];
 
-    // Sin features → limpiar overlay (excepto demo Amalfitani)
-    if (features.length === 0 && currentVenue !== 'amalfitani') {
+    // Sin features → limpiar overlay, sin error
+    if (features.length === 0) {
         deckOverlay.setProps({ layers: [] });
-        updateSVGOverlay();
         return;
     }
 
-    // NDVI — ScatterplotLayer billboard flotante (técnica Nagix completa)
-    // billboard:true = el círculo siempre mira a la cámara → efecto suspendido
-    // Z = ndvi * 250m → campos sanos flotan más alto visualmente
+    // NDVI — HeatmapLayer con pesos reales
     if (activeL.ndvi) {
-        const ndviPts = features
+        const pts = features
             .filter(f => f.properties?.ndvi != null)
-            .map(f => ({
-                id:     f.properties?.cancha_id ?? f.properties?.id ?? null,
-                pos:    geomCenter(f),
-                ndvi:   f.properties.ndvi,
-                score:  f.properties.score,
-                nombre: f.properties.nombre ?? f.properties.cancha_id ?? f.properties.id ?? 'Cancha',
-                tipo:   f.properties.tipo_superficie ?? 'natural'
+            .map(f => ({ pos: geomCenter(f), w: f.properties.ndvi }));
+        if (pts.length > 0) {
+            layers.push(new deck.HeatmapLayer({
+                id: 'ndvi-heat',
+                data: pts,
+                getPosition: d => d.pos,
+                getWeight:   d => d.w,
+                radiusPixels: 40,
+                colorRange: [[229,62,62,255],[234,179,8,255],[34,197,94,255]]
             }));
-        if (ndviPts.length > 0) {
-            layers.push(new deck.ScatterplotLayer({
-                id:            'ndvi-scatter',
-                data:          ndviPts,
-                // Z altitude proporcional a NDVI — igual a profundidad en Nagix
-                getPosition:   d => [d.pos[0], d.pos[1], Math.max(15, d.ndvi * 250)],
-                getRadius:     22,
-                radiusUnits:   'meters',
-                radiusMinPixels: 9,
-                billboard:     true,    // KEY Nagix: siempre mira a la cámara
-                antialiasing:  false,
-                getFillColor: d => {
-                    const t = Math.max(0, Math.min(1, (d.ndvi + 0.1) / 0.7));
-                    const c = d3.color(d3.interpolateRdYlGn(t));
-                    const alpha = hoveredCanchaId && hoveredCanchaId !== d.id ? 120 : 220;
-                    return [Math.round(c.r), Math.round(c.g), Math.round(c.b), alpha];
-                },
-                getLineColor: d => hoveredCanchaId === d.id
-                    ? [255, 215, 80, 255]
-                    : [255, 255, 255, 50],
-                lineWidthMinPixels: 1,
-                stroked:  true,
-                filled:   true,
-                pickable: true,
-                onHover: ({ object }) => {
-                    const newId = object?.id ?? null;
-                    if (newId === hoveredCanchaId) return;
-                    hoveredCanchaId = newId;
-                    map.getCanvas().style.cursor = newId ? 'pointer' : '';
-                    renderLayers();
-                    updateSVGOverlay();
-                },
-                onClick: ({ object }) => {
-                    if (!object) return;
-                    map.easeTo({ center: object.pos, zoom: 18.5, pitch: 55, duration: 900 });
-                }
-            }));
-        }
-
-        // Capas de detalle sobre la cancha hover — compactación + zonas de aireación
-        if (hoveredCanchaId) {
-            const detailFeats = features.filter(f => {
-                const fid = f.properties?.cancha_id ?? f.properties?.id;
-                return fid === hoveredCanchaId && f.geometry?.type === 'Polygon';
-            });
-
-            if (detailFeats.length > 0) {
-                // Relleno de diagnóstico: muestra el estado real de la cancha
-                layers.push(new deck.GeoJsonLayer({
-                    id: 'cancha-diagnostico',
-                    data: { type: 'FeatureCollection', features: detailFeats },
-                    filled:   true,
-                    stroked:  true,
-                    getFillColor: f => {
-                        const s = f.properties?.score;
-                        const h = f.properties?.entropia_h;
-                        const val = s != null ? s / 100 : (h ?? 0.5);
-                        // Rojo = compactado/necesita aireación · Verde = OK
-                        if (val >= 0.65) return [34,  197, 94,  110];
-                        if (val >= 0.40) return [234, 179, 8,   130];
-                        return                  [229, 62,  62,  160];
-                    },
-                    getLineColor:       [255, 215, 80, 220],
-                    getLineWidth:       2,
-                    lineWidthMinPixels: 2,
-                    pickable: false,
-                }));
-
-                // HeatmapLayer de problema: concentra el calor donde hay estrés
-                const stressPoints = detailFeats.flatMap(f => {
-                    const center = geomCenter(f);
-                    const score  = f.properties?.score ?? 50;
-                    const stress = Math.max(0, (60 - score) / 60);
-                    if (stress < 0.1) return [];
-                    return [{ pos: center, w: stress }];
-                });
-                if (stressPoints.length > 0) {
-                    layers.push(new deck.HeatmapLayer({
-                        id:           'cancha-stress-heat',
-                        data:         stressPoints,
-                        getPosition:  d => d.pos,
-                        getWeight:    d => d.w,
-                        radiusPixels: 60,
-                        colorRange: [
-                            [34, 197, 94, 0],
-                            [234,179, 8, 180],
-                            [229, 62, 62, 240],
-                        ],
-                    }));
-                }
-
-                // Sectores de detalle: esferas a altura proporcional al estrés
-                layers.push(new deck.ScatterplotLayer({
-                    id:          'cancha-aireacion-spheres',
-                    data:        detailFeats,
-                    getPosition: f => {
-                        const c = geomCenter(f);
-                        const s = f.properties?.score;
-                        const h = f.properties?.entropia_h;
-                        const comp = s != null ? (100 - s) : ((1 - (h ?? 0.5)) * 100);
-                        return [c[0], c[1], Math.max(3, comp * 1.8)];
-                    },
-                    getRadius:   8,
-                    radiusUnits: 'meters',
-                    getFillColor: f => {
-                        const s = f.properties?.score ?? 50;
-                        if (s >= 65) return [34,  197, 94,  160];
-                        if (s >= 40) return [234, 179, 8,   180];
-                        return              [229, 62,  62,  210];
-                    },
-                    getLineColor: [255, 215, 80, 120],
-                    lineWidthMinPixels: 1,
-                    stroked:  true,
-                    pickable: false,
-                }));
-
-                // Terminal — diagnóstico de la cancha activa
-                const feat = detailFeats[0];
-                const p    = feat?.properties ?? {};
-                const ndvi = p.ndvi  != null ? (+p.ndvi).toFixed(3) : '—';
-                const sc   = p.score != null ? p.score              : '—';
-                const accion = (p.score != null && p.score < 40)
-                    ? '<span style="color:#E53E3E">● Airear urgente</span>'
-                    : (p.score != null && p.score < 65)
-                        ? '<span style="color:#e0c040">● Monitorear humedad</span>'
-                        : '<span style="color:#4caf7d">● Estado óptimo</span>';
-                document.getElementById('terminal').innerHTML =
-                    `<strong>${p.nombre ?? hoveredCanchaId}</strong> &nbsp;·&nbsp; ` +
-                    `NDVI <strong>${ndvi}</strong> · Score <strong>${sc}</strong> &nbsp;·&nbsp; ${accion}`;
-            }
         }
     }
 
-    // SAR — doble capa Nagix: halo (opacity layer) + núcleo sólido
-    // billboard:true = círculos siempre miran a la cámara → efecto esfera flotante
-    // antialiasing:false = borde duro sobre fondo oscuro → glow percibido
+    // SAR — GeoJsonLayer polígonos con entropía real
     if (activeL.sar) {
-        let canchas = features
-            .filter(f => f.properties != null)
-            .map(f => {
-                const p   = f.properties;
-                const pos = geomCenter(f);
-                return {
-                    lng:    pos[0],
-                    lat:    pos[1],
-                    ndvi:   p.ndvi  != null ? +p.ndvi  : null,
-                    score:  p.score != null ? +p.score : null,
-                    nombre: p.nombre ?? p.cancha_id ?? p.id ?? 'Cancha',
-                    id:     p.cancha_id ?? p.id ?? null,
-                    tipo:   p.tipo_superficie ?? 'natural',
-                };
-            });
-
-        // Fallback demo: Amalfitani cuando el backend no responde
-        if (canchas.length === 0 && currentVenue === 'amalfitani') {
-            canchas = [AMALFITANI_DEMO_POINT];
-        }
-
-        if (canchas.length > 0) {
-            layers.push(new deck.ScatterplotLayer({
-                id:           'halo',
-                data:         canchas,
-                getPosition:  d => [d.lng, d.lat, (d.score ?? 50) * 20],
-                getRadius:    25,
-                radiusUnits:  'meters',
-                radiusMinPixels: 2,
-                radiusMaxPixels: 12,
-                opacity:      0.15,
-                getFillColor: d => {
-                    const t = Math.max(0, Math.min(1, ((d.ndvi ?? 0.05) + 0.1) / 0.7));
-                    const c = d3.color(d3.interpolateRdYlGn(t));
-                    return [c.r, c.g, c.b];
+        const polys = features.filter(f =>
+            f.geometry?.type === 'Polygon' && f.properties?.entropia_h != null
+        );
+        if (polys.length > 0) {
+            layers.push(new deck.GeoJsonLayer({
+                id: 'sar-poly',
+                data: { type:'FeatureCollection', features: polys },
+                filled: true,
+                getFillColor: f => {
+                    const h = f.properties.entropia_h;
+                    if (h < 0.3) return [229,62,62,160];
+                    if (h < 0.5) return [234,179,8,140];
+                    return [34,197,94,120];
                 },
-                billboard:    true,
-                antialiasing: false,
-                stroked:      false,
-                pickable:     false
-            }));
-            layers.push(new deck.ScatterplotLayer({
-                id:           'core',
-                data:         canchas,
-                getPosition:  d => [d.lng, d.lat, (d.score ?? 50) * 20],
-                getRadius:    8,
-                radiusUnits:  'meters',
-                radiusMinPixels: 1,
-                radiusMaxPixels: 6,
-                getFillColor: d => {
-                    const t = Math.max(0, Math.min(1, ((d.ndvi ?? 0.05) + 0.1) / 0.7));
-                    const c = d3.color(d3.interpolateRdYlGn(t));
-                    return [c.r, c.g, c.b, 230];
-                },
-                billboard:    true,
-                antialiasing: false,
-                stroked:      true,
-                getLineColor: [255, 255, 255, 80],
+                getLineColor: [201,168,76,80],
                 getLineWidth: 1,
-                lineWidthMinPixels: 0.5,
-                pickable:     true,
-                onClick:      ({object}) => showDetail(object)
+                lineWidthMinPixels: 1
             }));
         }
     }
@@ -740,181 +485,6 @@ function renderLayers() {
     }
 
     deckOverlay.setProps({ layers });
-    updateSVGOverlay();
-}
-
-// ── SVG Overlay — floating dot + leader line + ground bloom (técnica Nagix) ─
-function setupSVGOverlay() {
-    const ns = 'http://www.w3.org/2000/svg';
-    svgOverlay = document.createElementNS(ns, 'svg');
-    svgOverlay.style.cssText =
-        'position:absolute;top:0;left:0;width:100%;height:100%;' +
-        'pointer-events:none;z-index:5;overflow:visible;';
-
-    _svgDefs = document.createElementNS(ns, 'defs');
-    _svgDefs.innerHTML =
-        '<filter id="float-glow" x="-150%" y="-150%" width="400%" height="400%">' +
-        '<feGaussianBlur stdDeviation="6"/></filter>' +
-        '<filter id="ground-bloom" x="-150%" y="-150%" width="400%" height="400%">' +
-        '<feGaussianBlur stdDeviation="16"/></filter>';
-    svgOverlay.appendChild(_svgDefs);
-
-    document.getElementById('map').appendChild(svgOverlay);
-    ['move','zoom','rotate','pitch','resize'].forEach(e => map.on(e, updateSVGOverlay));
-}
-
-function _projectPoint(lng, lat, altMeters) {
-    // Intenta proyección 3D via deck.gl viewport; fallback a aproximación geométrica
-    try {
-        const vp = deckOverlay?._deck?.getViewports()?.[0];
-        if (vp) {
-            const [x, y] = vp.project([lng, lat, altMeters]);
-            return { x, y };
-        }
-    } catch (_) {}
-
-    // Fallback: offset vertical proporcional al pitch y zoom
-    const ground  = map.project([lng, lat]);
-    const pitch   = map.getPitch() * Math.PI / 180;
-    const zoom    = map.getZoom();
-    const pxPerM  = (Math.pow(2, zoom) * 256 / (2 * Math.PI * 6378137)) *
-                    Math.cos(lat * Math.PI / 180);
-    return { x: ground.x, y: ground.y - altMeters * pxPerM * Math.sin(pitch) };
-}
-
-function _ndviRGB(ndvi) {
-    const t = Math.max(0, Math.min(1, ((ndvi ?? 0.3) + 0.1) / 0.7));
-    const c = d3.color(d3.interpolateRdYlGn(t));
-    return { r: Math.round(c.r), g: Math.round(c.g), b: Math.round(c.b) };
-}
-
-function updateSVGOverlay() {
-    if (!svgOverlay) return;
-    svgOverlay.innerHTML = '';
-    if (_svgDefs) svgOverlay.appendChild(_svgDefs);
-
-    const features = geojson?.features ?? [];
-    let pts;
-    if (features.length > 0) {
-        pts = features
-            .filter(f => f.properties?.ndvi != null)
-            .map(f => {
-                const p = f.properties, pos = geomCenter(f);
-                return { id: p.cancha_id ?? p.id ?? null,
-                         lng: pos[0], lat: pos[1],
-                         ndvi: p.ndvi, score: p.score,
-                         nombre: p.nombre ?? p.cancha_id ?? 'Cancha' };
-            });
-    } else if (currentVenue === 'amalfitani') {
-        pts = [AMALFITANI_DEMO_POINT];
-    } else {
-        return;
-    }
-    if (!pts.length) return;
-
-    const ns         = 'http://www.w3.org/2000/svg';
-    const pitch      = map.getPitch() * Math.PI / 180;
-    const pitchScale = Math.cos(pitch);
-
-    for (const pt of pts) {
-        const altM   = Math.max(15, (pt.ndvi ?? 0.3) * 250);
-        const float  = _projectPoint(pt.lng, pt.lat, altM);
-        const ground = map.project([pt.lng, pt.lat]);
-        const hovered = hoveredCanchaId === pt.id;
-        const { r, g, b } = _ndviRGB(pt.ndvi);
-        const al = hovered ? 0.9 : 0.55;
-
-        // Perspectiva pitch para elementos del suelo
-        const ptx = `translate(${ground.x},${ground.y}) scale(1,${pitchScale}) translate(${-ground.x},${-ground.y})`;
-
-        // ── Leader line ──────────────────────────────────────────────────────
-        const line = document.createElementNS(ns, 'line');
-        line.setAttribute('x1', float.x);  line.setAttribute('y1', float.y);
-        line.setAttribute('x2', ground.x); line.setAttribute('y2', ground.y);
-        line.setAttribute('stroke', `rgba(${r},${g},${b},${al})`);
-        line.setAttribute('stroke-width', hovered ? '1.5' : '0.9');
-        line.setAttribute('stroke-dasharray', '4 3');
-        svgOverlay.appendChild(line);
-
-        // ── Bloom del suelo (blur pesado — epicentro Nagix) ──────────────────
-        const bloom = document.createElementNS(ns, 'circle');
-        bloom.setAttribute('cx', ground.x); bloom.setAttribute('cy', ground.y);
-        bloom.setAttribute('r', hovered ? '24' : '18');
-        bloom.setAttribute('fill', `rgba(${r},${g},${b},0.28)`);
-        bloom.setAttribute('filter', 'url(#ground-bloom)');
-        bloom.setAttribute('transform', ptx);
-        svgOverlay.appendChild(bloom);
-
-        // ── Anillo del suelo con perspectiva pitch ───────────────────────────
-        const ring = document.createElementNS(ns, 'circle');
-        ring.setAttribute('cx', ground.x); ring.setAttribute('cy', ground.y);
-        ring.setAttribute('r', hovered ? '12' : '8');
-        ring.setAttribute('fill', `rgba(${r},${g},${b},0.10)`);
-        ring.setAttribute('stroke', `rgba(${r},${g},${b},${al})`);
-        ring.setAttribute('stroke-width', hovered ? '1.5' : '0.9');
-        ring.setAttribute('transform', ptx);
-        svgOverlay.appendChild(ring);
-
-        // ── Ondas de pulso continuas (2 ciclos desfasados 1.25s) ─────────────
-        for (let i = 0; i < 2; i++) {
-            const wave = document.createElementNS(ns, 'circle');
-            wave.setAttribute('cx', ground.x); wave.setAttribute('cy', ground.y);
-            wave.setAttribute('r', '6');
-            wave.setAttribute('fill', 'none');
-            wave.setAttribute('stroke', `rgba(${r},${g},${b},0.65)`);
-            wave.setAttribute('stroke-width', '1');
-            wave.setAttribute('transform', ptx);
-            const aR = document.createElementNS(ns, 'animate');
-            aR.setAttribute('attributeName', 'r');
-            aR.setAttribute('from', '6'); aR.setAttribute('to', '55');
-            aR.setAttribute('dur', '2.5s');
-            aR.setAttribute('begin', i === 0 ? '0s' : '1.25s');
-            aR.setAttribute('repeatCount', 'indefinite');
-            wave.appendChild(aR);
-            const aO = document.createElementNS(ns, 'animate');
-            aO.setAttribute('attributeName', 'opacity');
-            aO.setAttribute('from', '0.65'); aO.setAttribute('to', '0');
-            aO.setAttribute('dur', '2.5s');
-            aO.setAttribute('begin', i === 0 ? '0s' : '1.25s');
-            aO.setAttribute('repeatCount', 'indefinite');
-            wave.appendChild(aO);
-            svgOverlay.appendChild(wave);
-        }
-
-        // ── Punto central del suelo ───────────────────────────────────────────
-        const dot = document.createElementNS(ns, 'circle');
-        dot.setAttribute('cx', ground.x); dot.setAttribute('cy', ground.y);
-        dot.setAttribute('r', hovered ? '3.5' : '2');
-        dot.setAttribute('fill', `rgba(${r},${g},${b},${al})`);
-        svgOverlay.appendChild(dot);
-
-        // ── Punto flotante: bloom difuso + núcleo sólido (hipocenter Nagix) ──
-        const floatBloom = document.createElementNS(ns, 'circle');
-        floatBloom.setAttribute('cx', float.x); floatBloom.setAttribute('cy', float.y);
-        floatBloom.setAttribute('r', hovered ? '22' : '16');
-        floatBloom.setAttribute('fill', `rgba(${r},${g},${b},0.85)`);
-        floatBloom.setAttribute('filter', 'url(#float-glow)');
-        svgOverlay.appendChild(floatBloom);
-
-        const floatCore = document.createElementNS(ns, 'circle');
-        floatCore.setAttribute('cx', float.x); floatCore.setAttribute('cy', float.y);
-        floatCore.setAttribute('r', hovered ? '9' : '6');
-        floatCore.setAttribute('fill', `rgba(${r},${g},${b},1)`);
-        svgOverlay.appendChild(floatCore);
-
-        const floatBorder = document.createElementNS(ns, 'circle');
-        floatBorder.setAttribute('cx', float.x); floatBorder.setAttribute('cy', float.y);
-        floatBorder.setAttribute('r', hovered ? '9' : '6');
-        floatBorder.setAttribute('fill', 'none');
-        floatBorder.setAttribute('stroke', 'rgba(255,255,255,0.75)');
-        floatBorder.setAttribute('stroke-width', '0.8');
-        svgOverlay.appendChild(floatBorder);
-    }
-}
-
-function showDetail(d) {
-    document.getElementById('terminal').innerHTML =
-        `<strong>${d.nombre || d.id}</strong> · NDVI: ${d.ndvi != null ? d.ndvi.toFixed(3) : 'Sin dato'} · Score: ${d.score ?? '--'} · ${d.tipo ?? 'natural'}`;
 }
 </script>
 </body>
