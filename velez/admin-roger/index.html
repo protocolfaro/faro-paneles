@@ -157,6 +157,26 @@ table.faro-table tr.amarillo-row{background:rgba(212,160,23,.04)}
 .tend-prev{font-size:11px;color:var(--dim)}
 .tend-name{font-size:10px;color:var(--dim);margin-top:4px;font-weight:700;letter-spacing:.06em}
 
+/* ── HEATMAP CARD ── */
+#heatmap-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:8px}
+.hm-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;user-select:none}
+.hm-title{font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--gold);text-transform:uppercase}
+.hm-meta{font-size:10px;color:var(--dim);margin-top:3px}
+.hm-toggle{font-size:16px;color:var(--gold);transition:transform .3s}
+.hm-toggle.open{transform:rotate(180deg)}
+#heatmap-body{display:none}
+#heatmap-body.open{display:block}
+#hm-map{height:460px;width:100%}
+.hm-tabs{display:flex;gap:5px;padding:10px 12px;overflow-x:auto;background:var(--bg3);border-bottom:1px solid var(--border);scrollbar-width:thin}
+.hm-tab{font-size:10px;font-weight:700;padding:4px 9px;border-radius:4px;border:1px solid var(--border);background:var(--bg2);color:var(--dim);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s}
+.hm-tab:hover,.hm-tab.active{border-color:var(--gold);color:var(--gold);background:var(--gold3)}
+.hm-tab.rojo{border-color:rgba(217,79,79,.4);color:rgba(217,79,79,.8)}
+.hm-tab.amarillo{border-color:rgba(212,160,23,.4);color:rgba(212,160,23,.8)}
+.hm-tab.verde{border-color:rgba(74,158,106,.4);color:rgba(74,158,106,.8)}
+.hm-legend{display:flex;align-items:center;gap:10px;padding:8px 14px;font-size:10px;color:var(--dim);flex-wrap:wrap}
+.hm-legend-bar{height:8px;flex:1;max-width:160px;border-radius:4px;background:linear-gradient(90deg,#b71c1c,#e05252,#e0b84c,#8bc34a,#1b5e20)}
+#hm-popup{position:absolute;top:12px;left:12px;background:rgba(14,18,24,.95);border:1px solid var(--gold);border-radius:8px;padding:10px 14px;font-size:12px;z-index:10;min-width:180px;pointer-events:none;display:none;line-height:1.6}
+
 /* ── LOADING ── */
 #loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:12px}
 .ld-logo{font-family:'Cormorant Garamond',serif;font-size:28px;color:var(--gold)}
@@ -178,6 +198,8 @@ table.faro-table tr.amarillo-row{background:rgba(212,160,23,.04)}
   #content{padding:16px 12px 60px}
 }
 </style>
+<link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
 </head>
 <body>
 
@@ -205,6 +227,30 @@ table.faro-table tr.amarillo-row{background:rgba(212,160,23,.04)}
 </div>
 
 <div id="content">
+
+  <!-- HEATMAP CARD — NDVI SATELITAL INTERACTIVO -->
+  <div id="heatmap-card">
+    <div class="hm-header" onclick="toggleHeatmap()">
+      <div>
+        <div class="hm-title">🛰 Vélez Heatmaps — NDVI Satelital en Vivo</div>
+        <div class="hm-meta" id="hm-fecha">Conectando con el satélite…</div>
+      </div>
+      <div class="hm-toggle" id="hm-toggle">▼</div>
+    </div>
+    <div id="heatmap-body">
+      <div class="hm-tabs" id="hm-tabs"></div>
+      <div style="position:relative">
+        <div id="hm-map"></div>
+        <div id="hm-popup"></div>
+      </div>
+      <div class="hm-legend">
+        <span>NDVI 0.10 · Crítico</span>
+        <div class="hm-legend-bar"></div>
+        <span>0.65+ · Óptimo</span>
+        <span style="margin-left:auto;color:var(--dim);font-size:9px" id="hm-fuente-label"></span>
+      </div>
+    </div>
+  </div>
 
   <!-- PANEL 0 — SEMÁFORO EJECUTIVO -->
   <div class="sec-label">Panel 0 <span>Semáforo ejecutivo — lectura en 3 segundos</span></div>
@@ -551,7 +597,133 @@ function render(d) {
   });
 }
 
-// ── MAIN ─────────────────────────────────────────────────────────────────────
+// ── HEATMAP MAP ──────────────────────────────────────────────────────────────
+const HM_BOUNDS = {
+  amalfitani:{west:-58.52201,south:-34.636064,east:-58.51939,north:-34.634536,nombre:'Estadio Amalfitani'},
+  '1fa':{west:-58.522704,south:-34.635913,east:-58.521296,north:-34.635087,nombre:'1FA'},
+  '2fa':{west:-58.521604,south:-34.635913,east:-58.520196,north:-34.635087,nombre:'2FA'},
+  '1fp':{west:-58.522004,south:-34.637022,east:-58.520596,north:-34.636178,nombre:'1FP'},
+  '2fp':{west:-58.520904,south:-34.637022,east:-58.519496,north:-34.636178,nombre:'2FP'},
+  '3fa':{west:-58.51957,south:-34.636367,east:-58.51803,north:-34.635433,nombre:'3FA'},
+  '4fa':{west:-58.51977,south:-34.635767,east:-58.51823,north:-34.634833,nombre:'4FA'},
+  '5fa':{west:-58.518904,south:-34.637013,east:-58.517496,north:-34.636187,nombre:'5FA'},
+  '6fa':{west:-58.518104,south:-34.636413,east:-58.516696,north:-34.635587,nombre:'6FA'},
+  '7fa':{west:-58.517404,south:-34.636413,east:-58.515996,north:-34.635587,nombre:'7FA'},
+  '8fa':{west:-58.516704,south:-34.636313,east:-58.515296,north:-34.635487,nombre:'8FA'},
+  '9fa':{west:-58.516904,south:-34.635913,east:-58.515496,north:-34.635087,nombre:'9FA'},
+  '10fa':{west:-58.515604,south:-34.636113,east:-58.514196,north:-34.635287,nombre:'10FA'},
+};
+const HM_ORDER=['amalfitani','1fp','2fp','1fa','2fa','3fa','4fa','5fa','6fa','7fa','8fa','9fa','10fa'];
+const PNG_BASE='https://raw.githubusercontent.com/protocolfaro/faro-paneles/main/velez/heatmaps/';
+
+let hmMap=null, hmActive='amalfitani', hmData={}, hmOpen=false;
+
+function toggleHeatmap(){
+  hmOpen=!hmOpen;
+  document.getElementById('heatmap-body').classList.toggle('open',hmOpen);
+  document.getElementById('hm-toggle').classList.toggle('open',hmOpen);
+  if(hmOpen && !hmMap) setTimeout(initHmMap,120);
+}
+
+function initHmMap(){
+  hmMap=new maplibregl.Map({
+    container:'hm-map',
+    style:'https://tiles.openfreemap.org/styles/dark',
+    center:[-58.519,-34.636],
+    zoom:15.0,pitch:0,bearing:0,
+    attributionControl:false,
+  });
+  hmMap.on('load',()=>{
+    // Satélite base
+    hmMap.addSource('sat',{type:'raster',
+      tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+      tileSize:256,maxzoom:20});
+    hmMap.addLayer({id:'sat-layer',type:'raster',source:'sat',paint:{'raster-opacity':0.85}});
+
+    // Un source+layer por cancha con timestamp para evitar cache
+    const ts=Date.now();
+    HM_ORDER.forEach(cid=>{
+      const b=HM_BOUNDS[cid]; if(!b) return;
+      hmMap.addSource('src-'+cid,{
+        type:'image',
+        url:PNG_BASE+'heatmap_'+cid+'.png?v='+ts,
+        coordinates:[
+          [b.west,b.north],[b.east,b.north],
+          [b.east,b.south],[b.west,b.south]
+        ]
+      });
+      hmMap.addLayer({
+        id:'lay-'+cid,type:'raster',source:'src-'+cid,
+        paint:{'raster-opacity':cid==='amalfitani'?0.85:0,
+               'raster-opacity-transition':{duration:350}}
+      });
+    });
+    buildHmTabs();
+    showHmCancha('amalfitani');
+  });
+
+  hmMap.on('click',(e)=>{
+    const pop=document.getElementById('hm-popup');
+    const b=HM_BOUNDS[hmActive]; if(!b){pop.style.display='none';return;}
+    if(e.lngLat.lng>=b.west&&e.lngLat.lng<=b.east&&e.lngLat.lat>=b.south&&e.lngLat.lat<=b.north){
+      const c=hmData[hmActive]||{};
+      const ndvi=c.ndvi!=null?Number(c.ndvi).toFixed(3):'—';
+      const score=c.score||'—';
+      const sem=c.sem||'amarillo';
+      const col={rojo:'#d94f4f',amarillo:'#d4a017',verde:'#4a9e6a'}[sem]||'#d4a017';
+      pop.innerHTML='<div style="font-weight:700;color:'+col+';margin-bottom:5px">'+b.nombre+'</div>'
+        +'<div>NDVI: <b>'+ndvi+'</b></div>'
+        +'<div>Score: <b style="color:'+col+'">'+score+'/100</b></div>'
+        +'<div style="font-size:10px;color:#8a8580;margin-top:4px">'+(c.detalle||'')+'</div>';
+      pop.style.display='block';
+    } else {pop.style.display='none';}
+  });
+}
+
+function buildHmTabs(){
+  const tabs=document.getElementById('hm-tabs');
+  tabs.innerHTML='';
+  HM_ORDER.forEach(cid=>{
+    const b=HM_BOUNDS[cid]; if(!b) return;
+    const c=hmData[cid]||{};
+    const btn=document.createElement('button');
+    btn.className='hm-tab '+(c.sem||'');
+    btn.id='hm-tab-'+cid;
+    btn.textContent=b.nombre+(c.score?' ('+c.score+')':'');
+    btn.onclick=()=>showHmCancha(cid);
+    tabs.appendChild(btn);
+  });
+}
+
+function showHmCancha(cid){
+  if(!hmMap||!hmMap.isStyleLoaded()) return;
+  hmActive=cid;
+  const b=HM_BOUNDS[cid]; if(!b) return;
+  HM_ORDER.forEach(id=>{
+    if(hmMap.getLayer('lay-'+id))
+      hmMap.setPaintProperty('lay-'+id,'raster-opacity',id===cid?0.85:0);
+  });
+  hmMap.fitBounds([[b.west,b.south],[b.east,b.north]],{padding:50,duration:700,maxZoom:19});
+  document.querySelectorAll('.hm-tab').forEach(t=>t.classList.remove('active'));
+  const at=document.getElementById('hm-tab-'+cid);
+  if(at) at.classList.add('active');
+  document.getElementById('hm-popup').style.display='none';
+}
+
+function initHmData(d){
+  const canchas=d.roger_canchas||d.sectores?.canchero?.canchas||[];
+  canchas.forEach(c=>{if(c.id) hmData[c.id]=c;});
+  const am=d.sectores?.estadio||{};
+  if(am.score) hmData['amalfitani']={...am,id:'amalfitani',nombre:'Estadio Amalfitani'};
+  const meta=d.usuarios?.roger?.heatmaps_meta||{};
+  const fecha=meta.semana||'—';
+  const fuente=meta.fuente||'Sentinel-2';
+  document.getElementById('hm-fecha').textContent='Imagen satelital: '+fecha+' · '+fuente;
+  document.getElementById('hm-fuente-label').textContent=fuente;
+  if(hmMap&&hmMap.isStyleLoaded()) buildHmTabs();
+}
+
+// ── MAIN ──────────────────────────────────────────────────────────────────────────
 (async()=>{
   const d = await loadData();
   document.getElementById('loading').style.display='none';
@@ -560,6 +732,7 @@ function render(d) {
     return;
   }
   render(d);
+  initHmData(d);
 })();
 </script>
 </body>
