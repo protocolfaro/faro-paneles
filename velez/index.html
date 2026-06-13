@@ -331,19 +331,27 @@ function diasDesde(dateStr){
 
 // Cancha activa desde DATA
 function getCancha(){
-  const canchas = DATA?.roger_canchas || DATA?.sectores?.canchero?.canchas || [];
+  // Usar sectores.canchero.canchas — tiene datos reales distintos por cancha
+  const canchas = DATA?.sectores?.canchero?.canchas || [];
   if(ACTIVE==='amalfitani'){
     const e = DATA?.sectores?.estadio||{};
-    return {id:'amalfitani',nombre:'Estadio J. Amalfitani',
-      score:e.score,score_prev:e.score_prev,sem:e.sem,detalle:e.detalle,
-      ndvi:DATA?.weather_live?.gndvi_por_cancha?.canchas?.amalfitani?.ndvi||null};
+    const gndvi_am = DATA?.weather_live?.gndvi_por_cancha?.canchas?.amalfitani;
+    return {
+      id:'amalfitani', nombre:'Estadio J. Amalfitani',
+      score: e.score, score_prev: e.score_prev,
+      sem: e.sem, detalle: e.detalle,
+      ndvi: gndvi_am?.ndvi || null,
+      ndvi_prev: null,
+    };
   }
-  return canchas.find(c=>c.id===ACTIVE)||{id:ACTIVE,nombre:ACTIVE,score:0,sem:'amarillo'};
+  const c = canchas.find(c=>c.id===ACTIVE);
+  if(c) return c;
+  return {id:ACTIVE, nombre:ACTIVE.toUpperCase(), score:0, sem:'amarillo', ndvi:null};
 }
 
 // ── TABS ────────────────────────────────────────────────────────────────────
 function buildTabs(){
-  const canchas = DATA?.roger_canchas||DATA?.sectores?.canchero?.canchas||[];
+  const canchas = DATA?.sectores?.canchero?.canchas||[];
   const wrap = document.getElementById('tabs');
   wrap.innerHTML = '';
   VENUES.forEach(v=>{
@@ -610,7 +618,7 @@ function renderInsar(){
 
 // ── TABLA AGRONÓMICA ──────────────────────────────────────────────────────────
 function renderTabla(){
-  const canchas = DATA?.roger_canchas||DATA?.sectores?.canchero?.canchas||[];
+  const canchas = DATA?.sectores?.canchero?.canchas||[];
   const estadio = DATA?.sectores?.estadio||{};
   const wl = DATA?.weather_live||{};
   const rf = wl.riesgo_fungosis||{};
@@ -618,9 +626,12 @@ function renderTabla(){
   const month = new Date().getMonth()+1;
   const winter = month>=5&&month<=8;
 
-  const all = [{id:'amalfitani',nombre:'Estadio Amalfitani',
-    score:estadio.score,sem:estadio.sem,
-    ndvi:gndvi_c.amalfitani?.ndvi||null,detalle:estadio.detalle||''},...canchas];
+  const gndvi_am = gndvi_c.amalfitani;
+  const all = [{
+    id:'amalfitani', nombre:'Estadio Amalfitani',
+    score:estadio.score, score_prev:estadio.score_prev,
+    sem:estadio.sem, ndvi:gndvi_am?.ndvi||null, detalle:estadio.detalle||''
+  }, ...canchas];
 
   document.getElementById('tabla-body').innerHTML = all.map(c=>{
     const s = sem(c.sem);
@@ -712,7 +723,7 @@ function renderTend(){
 
 // ── TILDE INTERVENCIÓN ────────────────────────────────────────────────────────
 function renderTildeInterv(){
-  const canchas = DATA?.roger_canchas||DATA?.sectores?.canchero?.canchas||[];
+  const canchas = DATA?.sectores?.canchero?.canchas||[];
   let maxCaida=0, maxId=null;
   canchas.forEach(c=>{
     const caida=(c.ndvi_prev||0)-(c.ndvi||0);
