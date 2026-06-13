@@ -225,7 +225,7 @@ html,body{background:var(--bg);color:var(--whi);font-family:'Epilogue',sans-seri
   <div class="cfield-grid" id="canchas-grid"></div>
 
   <!-- CLIMA -->
-  <div class="slbl" style="margin-top:8px">Clima hoy <span>Open-Meteo · NASA POWER</span></div>
+  <div class="slbl" style="margin-top:8px">Clima <span id="lbl-clima-fecha">Open-Meteo · NASA POWER</span></div>
   <div class="clima-row" id="clima-row"></div>
 
   <!-- TAREAS -->
@@ -311,6 +311,15 @@ function renderHeader(d) {
     rBadge.className = 'img-badge radar';
     rBadge.textContent = 'SAR ACTIVO';
     document.querySelector('.hdr-img').appendChild(rBadge);
+  }
+
+  // Label fecha clima
+  const wt2 = DATA?.weather_live?.timestamp || '';
+  if(wt2) {
+    const d2 = new Date(wt2);
+    const hm = d2.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    const lbl_c = document.getElementById('lbl-clima-fecha');
+    if(lbl_c) lbl_c.innerHTML = `Open-Meteo · NASA POWER · <span style="color:var(--grn)">hoy ${hm}</span>`;
   }
 
   // Banner invernal
@@ -403,9 +412,17 @@ function renderCanchas(d) {
     const alertaDone = ST.get(alertaKey);
     const tieneAlerta = (s==='rojo') && !alertaDone;
     const dias_img = diasDesde(d?.usuarios?.roger?.heatmaps_meta?.semana);
-    const ndvi_lbl = ndvi!=null
-      ? `NDVI ${fmtNdvi(ndvi)}${dias_img>14?' · '+dias_img+'d':''}`
-      : 'SAR activo';
+    const img_fecha = d?.usuarios?.roger?.heatmaps_meta?.semana || '';
+    let ndvi_lbl = '';
+    if(ndvi!=null) {
+      ndvi_lbl = `NDVI ${fmtNdvi(ndvi)}`;
+      if(dias_img<=3)  ndvi_lbl += ` <span style="color:var(--grn);font-size:9px">● HOY</span>`;
+      else if(dias_img<=7)  ndvi_lbl += ` <span style="color:var(--grn);font-size:9px">● ${dias_img}d</span>`;
+      else if(dias_img<=14) ndvi_lbl += ` <span style="color:var(--yel);font-size:9px">⚠ ${dias_img}d</span>`;
+      else ndvi_lbl += ` <span style="color:var(--red);font-size:9px">⚠ ${dias_img}d · ${img_fecha}</span>`;
+    } else {
+      ndvi_lbl = '<span style="color:#818cf8;font-size:10px">● SAR activo</span>';
+    }
 
     const div = document.createElement('div');
     div.className = `cfield ${s}`;
@@ -517,8 +534,14 @@ function cerrarAlerta(tipo) {
 // ── CLIMA ──────────────────────────────────────────────────────────────────
 function renderClima(d) {
   const wl = d?.weather_live || {};
+  // Badge de frescura del dato climático
+  const wt = wl.timestamp || '';
+  const dias_wl = diasDesde(wt.slice(0,10));
+  const wl_badge = dias_wl<=1 ? ' <span style="color:var(--grn);font-size:9px">● hoy</span>'
+                 : dias_wl<=3 ? ` <span style="color:var(--yel);font-size:9px">⚠ ${dias_wl}d</span>`
+                 : ` <span style="color:var(--red);font-size:9px">⚠ ${dias_wl}d</span>`;
   const items = [
-    { val: wl.et0_mm_dia?.toFixed(1)||'—', unit:'mm', lbl:'ET₀', sub:wl.et0_fuente?.split('·')[0]||'', cls:'' },
+    { val: wl.et0_mm_dia?.toFixed(1)||'—', unit:'mm', lbl:'ET₀'+wl_badge, sub:wl.et0_fuente?.split('·')[0]||'', cls:'' },
     { val: wl.deficit_hidrico_mm?.toFixed(1)||'—', unit:'mm', lbl:'Déficit hídrico',
       sub: wl.hora_riego_optima?`Riego ${wl.hora_riego_optima}`:'', cls: wl.deficit_hidrico_mm>5?'alerta':wl.deficit_hidrico_mm>2?'warn':'' },
     { val: wl.riesgo_dollar_spot_pct?.toFixed(0)||'—', unit:'%', lbl:'Dollar Spot',
