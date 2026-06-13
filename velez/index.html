@@ -17,153 +17,165 @@
   --border:rgba(201,168,76,.18);--radius:10px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{background:var(--bg);color:var(--whi);font-family:'Epilogue',sans-serif;font-size:15px;line-height:1.5;min-height:100vh}
+html,body{background:var(--bg);color:var(--whi);font-family:'Epilogue',sans-serif;font-size:14px;line-height:1.5;min-height:100vh}
 
 /* HEADER */
-#hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 18px;position:sticky;top:0;z-index:50}
+#hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 16px;position:sticky;top:0;z-index:50}
 .hdr-top{display:flex;align-items:center;justify-content:space-between}
-.hdr-logo{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--gold);letter-spacing:.04em}
-.hdr-logo span{font-family:'Epilogue',sans-serif;font-size:12px;font-weight:400;color:var(--dim);margin-left:6px}
-.hdr-fecha{font-size:11px;color:var(--dim);text-align:right}
-.hdr-fecha b{color:var(--whi);display:block}
-.hdr-img{font-size:10px;color:var(--dim);margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.img-badge{padding:2px 7px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.08em}
-.img-badge.ok{background:var(--grn2);color:var(--grn);border:1px solid rgba(74,158,106,.3)}
-.img-badge.old{background:var(--yel2);color:var(--yel);border:1px solid rgba(212,160,23,.3)}
-.img-badge.stale{background:var(--red2);color:var(--red);border:1px solid rgba(217,79,79,.3)}
-.img-badge.radar{background:rgba(99,102,241,.15);color:#818cf8;border:1px solid rgba(99,102,241,.3)}
+.hdr-logo{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:700;color:var(--gold)}
+.hdr-logo span{font-family:'Epilogue',sans-serif;font-size:11px;font-weight:400;color:var(--dim);margin-left:6px}
+.hdr-badges{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+.badge{padding:2px 7px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.08em}
+.badge.stale{background:var(--red2);color:var(--red);border:1px solid rgba(217,79,79,.3)}
+.badge.ok{background:var(--grn2);color:var(--grn);border:1px solid rgba(74,158,106,.3)}
+.badge.warn{background:var(--yel2);color:var(--yel);border:1px solid rgba(212,160,23,.3)}
+.badge.sar{background:rgba(99,102,241,.15);color:#818cf8;border:1px solid rgba(99,102,241,.3)}
+.badge.kalman{background:rgba(139,92,246,.15);color:#a78bfa;border:1px solid rgba(139,92,246,.3)}
+
+/* TABS CANCHAS */
+#tabs-wrap{background:var(--bg2);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
+#tabs-wrap::-webkit-scrollbar{display:none}
+.tabs{display:flex;gap:0;min-width:max-content}
+.tab{padding:9px 14px;font-size:11px;font-weight:600;color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s;letter-spacing:.03em}
+.tab:hover{color:var(--whi)}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.tab.rojo{color:rgba(217,79,79,.7)}
+.tab.amarillo{color:rgba(212,160,23,.7)}
+.tab.verde{color:rgba(74,158,106,.7)}
+.tab.active.rojo,.tab.active.amarillo,.tab.active.verde{color:var(--gold);border-bottom-color:var(--gold)}
 
 /* CONTENIDO */
-#wrap{max-width:520px;margin:0 auto;padding:16px 14px 80px}
+#content{max-width:700px;margin:0 auto;padding:14px 14px 80px}
 
-/* BANNER INVERNAL */
-.banner-inv{background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:var(--radius);padding:10px 14px;margin-bottom:16px;font-size:11px;color:#a5b4fc;line-height:1.5;display:none}
-.banner-inv b{color:#c7d2fe;display:block;margin-bottom:2px;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+/* BANNER */
+.banner{border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:11px;line-height:1.5;display:none}
+.banner.inv{background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);color:#a5b4fc}
+.banner.inv b{color:#c7d2fe;display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}
+.banner.alert{background:var(--red2);border:1px solid rgba(217,79,79,.3);color:var(--whi)}
+.banner.show{display:block}
 
-/* TILDES — INTERVENCIÓN */
-.tilde-card{background:var(--bg2);border:1.5px solid rgba(217,79,79,.5);border-radius:var(--radius);padding:14px;margin-bottom:12px;display:none}
+/* TILDE INTERVENCIÓN */
+.tilde-card{background:var(--bg2);border:1.5px solid rgba(217,79,79,.4);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;display:none}
 .tilde-card.show{display:block}
-.tilde-title{font-size:11px;font-weight:700;color:var(--red);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
-.tilde-q{font-size:13px;color:var(--whi);margin-bottom:10px;line-height:1.4}
-.tilde-opts{display:flex;flex-wrap:wrap;gap:7px}
-.tilde-btn{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:12px;color:var(--dim);cursor:pointer;font-family:'Epilogue',sans-serif;transition:all .15s;font-weight:500}
-.tilde-btn:active{transform:scale(.96)}
-.tilde-btn.sel{background:var(--grn2);border-color:var(--grn);color:var(--grn);font-weight:700}
-.tilde-btn.nada{border-color:var(--border)}
+.tilde-title{font-size:10px;font-weight:700;color:var(--red);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.tilde-q{font-size:13px;color:var(--whi);margin-bottom:10px}
+.tilde-opts{display:flex;flex-wrap:wrap;gap:6px}
+.topt{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:7px 13px;font-size:12px;color:var(--dim);cursor:pointer;font-family:'Epilogue',sans-serif;font-weight:500;transition:all .15s}
+.topt.sel{background:var(--grn2);border-color:var(--grn);color:var(--grn);font-weight:700}
 
-/* VALIDACIÓN LUNES */
-.lunes-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:16px;display:none}
-.lunes-card.show{display:block}
-.lunes-title{font-size:10px;font-weight:700;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
-.lunes-resumen{font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.6}
-.lunes-resumen b{color:var(--whi)}
-.btn-lunes-ok{width:100%;background:var(--grn2);border:1.5px solid var(--grn);border-radius:8px;padding:12px;font-size:14px;font-weight:700;color:var(--grn);cursor:pointer;font-family:'Epilogue',sans-serif;letter-spacing:.04em;transition:all .15s}
-.btn-lunes-ok:active{transform:scale(.98)}
-.btn-lunes-ok.done{background:var(--bg3);border-color:var(--border);color:var(--dim)}
+/* PANEL 0 — SEMÁFORO */
+.sem-header{display:flex;align-items:center;gap:14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:14px}
+.sem-circle{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;flex-shrink:0}
+.sem-circle.rojo{background:var(--red2);border:2px solid var(--red);color:var(--red)}
+.sem-circle.amarillo{background:var(--yel2);border:2px solid var(--yel);color:var(--yel)}
+.sem-circle.verde{background:var(--grn2);border:2px solid var(--grn);color:var(--grn)}
+.sem-info{flex:1}
+.sem-name{font-size:15px;font-weight:700;color:var(--whi)}
+.sem-estado{font-size:12px;font-weight:700;margin-top:3px}
+.sem-estado.rojo{color:var(--red)}
+.sem-estado.amarillo{color:var(--yel)}
+.sem-estado.verde{color:var(--grn)}
+.sem-detalle{font-size:11px;color:var(--dim);margin-top:3px;line-height:1.4}
+.sem-tilde{width:40px;height:40px;border-radius:50%;border:2px solid var(--border);background:var(--bg3);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--dim);transition:all .2s;flex-shrink:0}
+.sem-tilde.has-alert{border-color:var(--yel);color:var(--yel)}
+.sem-tilde.confirming{border-color:var(--gold);color:var(--gold)}
+.sem-tilde.done{border-color:var(--grn);background:var(--grn2);color:var(--grn)}
 
 /* SECCIÓN LABEL */
-.slbl{font-size:9px;font-weight:700;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;padding:20px 0 10px;border-bottom:1px solid var(--border);margin-bottom:14px}
-.slbl span{color:var(--dim);font-weight:400;letter-spacing:0;font-size:10px;text-transform:none;margin-left:6px}
+.slbl{font-size:9px;font-weight:700;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;padding:16px 0 10px;border-bottom:1px solid var(--border);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.slbl span{color:var(--dim);font-weight:400;letter-spacing:0;font-size:10px;text-transform:none}
 
-/* CARDS CANCHAS */
-.cfield-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:4px}
-.cfield{background:var(--bg2);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;transition:border-color .2s}
-.cfield.rojo{border-color:rgba(217,79,79,.4);background:linear-gradient(135deg,var(--bg2),var(--red3))}
-.cfield.amarillo{border-color:rgba(212,160,23,.4);background:linear-gradient(135deg,var(--bg2),var(--yel3))}
-.cfield.verde{border-color:rgba(74,158,106,.4);background:linear-gradient(135deg,var(--bg2),var(--grn3))}
-.cfield-main{display:flex;align-items:center;gap:12px;padding:12px 14px}
-.cfield-score{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;flex-shrink:0}
-.cfield-score.rojo{background:var(--red2);border:2px solid var(--red);color:var(--red)}
-.cfield-score.amarillo{background:var(--yel2);border:2px solid var(--yel);color:var(--yel)}
-.cfield-score.verde{background:var(--grn2);border:2px solid var(--grn);color:var(--grn)}
-.cfield-info{flex:1;min-width:0}
-.cfield-name{font-size:13px;font-weight:700;color:var(--whi)}
-.cfield-ndvi{font-size:10px;color:var(--dim);margin-top:1px}
-.cfield-accion{font-size:11px;margin-top:3px;font-weight:600}
-.cfield-accion.rojo{color:var(--red)}
-.cfield-accion.amarillo{color:var(--yel)}
-.cfield-accion.verde{color:var(--grn)}
-/* Tilde de alerta */
-.cfield-tilde{width:36px;height:36px;border-radius:50%;border:2px solid var(--border);background:var(--bg3);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:16px;transition:all .2s;color:var(--dim)}
-.cfield-tilde:active{transform:scale(.9)}
-.cfield-tilde.has-alert{border-color:var(--yel);color:var(--yel)}
-.cfield-tilde.done{border-color:var(--grn);background:var(--grn2);color:var(--grn)}
-.cfield-tilde.confirming{border-color:var(--gold);background:var(--gold2);color:var(--gold)}
-/* Intervención sospechada */
-.cfield-interv{background:rgba(217,79,79,.08);border-top:1px solid rgba(217,79,79,.2);padding:10px 14px}
-.interv-q{font-size:11px;color:var(--whi);margin-bottom:8px}
-.interv-opts{display:flex;flex-wrap:wrap;gap:6px}
-.interv-opt{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:6px 11px;font-size:11px;color:var(--dim);cursor:pointer;font-family:'Epilogue',sans-serif;transition:all .15s;font-weight:500}
-.interv-opt:active{transform:scale(.95)}
-.interv-opt.sel{background:var(--grn2);border-color:var(--grn);color:var(--grn);font-weight:700}
+/* PANEL 1 — CAMPO SVG */
+.campo-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:14px}
+.campo-svg{width:100%;display:block}
+.campo-leyenda{display:flex;gap:10px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid var(--border);font-size:10px;color:var(--dim)}
+.leg-item{display:flex;align-items:center;gap:5px}
+.leg-dot{width:10px;height:10px;border-radius:50%}
+
+/* PANEL 2 — MAPA ALERTAS FOCOS */
+.focos-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:14px}
+.focos-svg{width:100%;display:block}
+.focos-leyenda{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 14px;border-top:1px solid var(--border);font-size:11px}
+.fleg{display:flex;align-items:center;gap:7px}
+.fleg-num{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
+
+/* PANEL 3 — SCORE + ESCALA */
+.score-big-wrap{text-align:center;padding:16px 0 8px}
+.score-big{font-family:'Cormorant Garamond',serif;font-size:72px;font-weight:700;line-height:1}
+.score-trend{font-size:13px;color:var(--dim);margin-top:4px}
+.escala-wrap{margin:12px 0}
+.escala-bar{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--red),var(--yel),var(--grn));position:relative;margin-bottom:4px}
+.escala-dot{position:absolute;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:var(--whi);border:2px solid var(--bg);box-shadow:0 0 0 2px var(--gold)}
+.escala-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--dim)}
+
+/* TABLA AGRONÓMICA */
+.tabla-scroll{overflow-x:auto;margin-bottom:4px;border-radius:var(--radius);border:1px solid var(--border)}
+table.agro{border-collapse:collapse;width:100%;min-width:560px;font-size:11px}
+table.agro th{padding:8px 9px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--gold);border-bottom:1px solid var(--border);background:var(--bg2);white-space:nowrap}
+table.agro td{padding:7px 9px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+table.agro tr:last-child td{border-bottom:none}
+.td-sem{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+.td-sem.rojo{background:var(--red)}
+.td-sem.amarillo{background:var(--yel)}
+.td-sem.verde{background:var(--grn)}
+.td-accion{font-size:10px;font-weight:600;color:var(--gold)}
+.td-dim{color:var(--dim)}
+.td-alert{color:var(--red);font-weight:600}
+.td-warn{color:var(--yel)}
+.td-ok{color:var(--grn)}
 
 /* CLIMA */
-.clima-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px}
-.clima-c{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px}
+.clima-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.clima-c{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:11px 12px}
 .clima-c.alerta{border-color:rgba(217,79,79,.4);background:linear-gradient(135deg,var(--bg2),var(--red3))}
 .clima-c.warn{border-color:rgba(212,160,23,.4)}
-.clima-val{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;color:var(--gold);line-height:1}
-.clima-val.rojo{color:var(--red)}
-.clima-val.yel{color:var(--yel)}
+.clima-val{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;color:var(--gold);line-height:1}
+.clima-val.r{color:var(--red)}
+.clima-val.y{color:var(--yel)}
 .clima-unit{font-size:10px;color:var(--dim);margin-left:2px}
-.clima-lbl{font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-top:3px}
+.clima-lbl{font-size:9px;font-weight:700;letter-spacing:.08em;color:var(--dim);text-transform:uppercase;margin-top:3px}
 .clima-sub{font-size:10px;color:var(--whi);margin-top:2px}
 
-/* ALERTA FUNGOSIS */
-.alert-banner{background:var(--red2);border:1px solid rgba(217,79,79,.4);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px;display:none}
-.alert-banner.show{display:block}
-.alert-banner-title{font-size:11px;font-weight:700;color:var(--red);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
-.alert-banner-txt{font-size:12px;color:var(--whi);line-height:1.5}
-.alert-tilde{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
-.alert-tilde span{font-size:11px;color:var(--dim)}
-.btn-tilde{background:var(--bg3);border:1.5px solid var(--border);border-radius:6px;padding:7px 14px;font-size:12px;color:var(--dim);cursor:pointer;font-family:'Epilogue',sans-serif;font-weight:600;transition:all .15s}
-.btn-tilde:active{transform:scale(.96)}
-.btn-tilde.done{background:var(--grn2);border-color:var(--grn);color:var(--grn)}
+/* INSAR */
+.insar-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.insar-c{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center}
+.insar-val{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;line-height:1}
+.insar-lbl{font-size:10px;color:var(--dim);margin-top:4px}
+.insar-bar{height:4px;border-radius:2px;background:var(--bg3);margin-top:8px;overflow:hidden}
+.insar-fill{height:100%;border-radius:2px}
+
+/* TENDENCIA KALMAN */
+.kalman-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:14px}
+.kalman-title{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--gold);text-transform:uppercase;margin-bottom:10px}
+.kalman-svg{width:100%;display:block}
+.kalman-meta{font-size:10px;color:var(--dim);margin-top:6px;text-align:center}
 
 /* TAREAS */
-.tarea-row{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:11px 14px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start}
-.tarea-dia{font-size:10px;font-weight:700;color:var(--gold);min-width:28px;padding-top:1px;letter-spacing:.04em}
-.tarea-items{display:flex;flex-direction:column;gap:4px}
-.tarea-item{font-size:12px;color:var(--whi);line-height:1.4}
-.tarea-row.partido{border-color:rgba(217,79,79,.3);background:linear-gradient(135deg,var(--bg2),var(--red3))}
+.tarea-row{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 13px;margin-bottom:7px;display:flex;gap:12px;align-items:flex-start}
+.tarea-dia{font-size:10px;font-weight:700;color:var(--gold);min-width:28px;padding-top:1px}
+.tarea-items{display:flex;flex-direction:column;gap:3px}
+.tarea-item{font-size:12px;color:var(--whi)}
+.tarea-row.partido{border-color:rgba(217,79,79,.3)}
 .tarea-row.partido .tarea-dia{color:var(--red)}
 
-/* CAMPO SVG */
-.campo-toggle{padding:7px 14px 8px;font-size:10px;color:var(--dim);cursor:pointer;display:flex;align-items:center;gap:5px;border-top:1px solid rgba(255,255,255,.05);user-select:none}
-.campo-toggle:hover{color:var(--gold)}
-.campo-arr{font-size:10px;transition:transform .25s}
-.campo-toggle.open .campo-arr{transform:rotate(180deg)}
-.campo-svg-wrap{display:none;background:var(--bg3)}
-.campo-svg-wrap.open{display:block}
-
-/* INSAR */
-.insar-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.insar-c{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center}
-.insar-val{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;line-height:1}
-.insar-val.ok{color:var(--grn)}
-.insar-val.warn{color:var(--yel)}
-.insar-val.crit{color:var(--red)}
-.insar-lbl{font-size:10px;color:var(--dim);margin-top:4px}
-.insar-bar{height:3px;border-radius:2px;margin-top:8px;background:var(--bg3);overflow:hidden}
-.insar-bar-fill{height:100%;border-radius:2px}
+/* COMPARATIVA TENDENCIA */
+.tend-pair{display:flex;align-items:center;justify-content:center;gap:20px;padding:16px 0}
+.tend-val{font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:700;line-height:1;text-align:center}
+.tend-lbl{font-size:10px;color:var(--dim);text-align:center;margin-top:4px}
+.tend-arrow{font-size:28px;color:var(--dim)}
 
 /* LOADING */
 #loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:14px}
 .ld-logo{font-family:'Cormorant Garamond',serif;font-size:26px;color:var(--gold)}
-.ld-sub{font-size:11px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase}
 .ld-bar{width:160px;height:2px;background:var(--bg3);border-radius:1px;overflow:hidden}
 .ld-fill{height:100%;background:var(--gold);border-radius:1px;animation:lda 1.6s ease-in-out infinite}
 @keyframes lda{0%{width:0;margin-left:0}50%{width:100%}100%{width:0;margin-left:100%}}
 
 /* FOOTER */
-#ftr{background:var(--bg2);border-top:1px solid var(--border);padding:10px 18px;text-align:center;font-size:10px;color:var(--dim);position:fixed;bottom:0;left:0;right:0}
+#ftr{background:var(--bg2);border-top:1px solid var(--border);padding:9px 16px;text-align:center;font-size:10px;color:var(--dim);position:fixed;bottom:0;left:0;right:0;z-index:40}
 #ftr b{color:var(--gold)}
 
-/* RESPONSIVE */
-@media(min-width:540px){
-  .clima-row{grid-template-columns:repeat(3,1fr)}
-  .insar-row{grid-template-columns:repeat(4,1fr)}
-}
+@media(max-width:400px){.clima-grid{grid-template-columns:repeat(2,1fr)}.insar-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
@@ -171,578 +183,595 @@ html,body{background:var(--bg);color:var(--whi);font-family:'Epilogue',sans-seri
 <div id="loading">
   <div class="ld-logo">Faro Protocol</div>
   <div class="ld-bar"><div class="ld-fill"></div></div>
-  <div class="ld-sub">Vélez Sarsfield</div>
+  <div style="font-size:10px;color:var(--dim);letter-spacing:.12em">VÉLEZ SARSFIELD</div>
 </div>
 
 <div id="hdr">
   <div class="hdr-top">
     <div class="hdr-logo">Faro Protocol <span>· Fortín Inteligente</span></div>
-    <div class="hdr-fecha">
-      <b id="h-fecha">—</b>
-      <span id="h-hora">—</span>
-    </div>
+    <div style="font-size:11px;color:var(--dim);text-align:right"><b id="h-fecha" style="color:var(--whi);display:block">—</b><span id="h-hora">—</span></div>
   </div>
-  <div class="hdr-img">
-    <span id="img-badge" class="img-badge">—</span>
-    <span id="img-fuente">Conectando…</span>
-  </div>
+  <div class="hdr-badges" id="hdr-badges"></div>
 </div>
 
-<div id="wrap">
+<div id="tabs-wrap"><div class="tabs" id="tabs"></div></div>
 
+<div id="content">
   <!-- BANNER INVERNAL -->
-  <div class="banner-inv" id="banner-inv">
+  <div class="banner inv" id="banner-inv">
     <b>🌙 Invierno austral · Modo radar activo</b>
-    El NDVI bajo es normal en junio-agosto para Ryegrass. El satélite óptico tiene nubes — usando SAR como fuente principal.
+    NDVI bajo es normal en junio-agosto para Ryegrass. Usando SAR + Kalman como fuente principal.
   </div>
 
-  <!-- TILDE 2: VALIDACIÓN LUNES -->
-  <div class="lunes-card" id="lunes-card">
-    <div class="lunes-title">📋 Validación semanal</div>
-    <div class="lunes-resumen" id="lunes-resumen">Cargando…</div>
-    <button class="btn-lunes-ok" id="btn-lunes" onclick="validarSemana()">✓ Todo correcto</button>
-  </div>
-
-  <!-- TILDE 1: INTERVENCIÓN GLOBAL (si sistema detecta anomalía) -->
-  <div class="tilde-card" id="tilde-global">
-    <div class="tilde-title">⚠ Cambio detectado por satélite</div>
-    <div class="tilde-q" id="tilde-q">¿Hiciste algo en el campo esta semana?</div>
+  <!-- TILDE INTERVENCIÓN -->
+  <div class="tilde-card" id="tilde-card">
+    <div class="tilde-title">⚠ Cambio detectado en el campo</div>
+    <div class="tilde-q" id="tilde-q">¿Qué se hizo esta semana?</div>
     <div class="tilde-opts" id="tilde-opts"></div>
   </div>
 
-  <!-- ALERTA FUNGOSIS -->
-  <div class="alert-banner" id="alert-fungosis">
-    <div class="alert-banner-title">⚠ Riesgo Dollar Spot</div>
-    <div class="alert-banner-txt" id="alert-fungosis-txt">—</div>
-    <div class="alert-tilde">
-      <span>¿Aplicaste fungicida?</span>
-      <button class="btn-tilde" id="btn-fungosis" onclick="cerrarAlerta('fungosis')">✓ Listo</button>
+  <!-- PANEL 0 — SEMÁFORO -->
+  <div class="slbl">Panel 0 <span>Semáforo ejecutivo</span></div>
+  <div class="sem-header" id="sem-header"></div>
+
+  <!-- PANEL 1 — CAMPO PRESCRIPCIÓN -->
+  <div class="slbl">Panel 1 <span>Mapa de prescripción — dónde trabajar</span></div>
+  <div class="campo-wrap">
+    <svg id="campo-svg" class="campo-svg" viewBox="0 0 400 240" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="campo-leyenda">
+      <div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div> Zona crítica — trabajar HOY sin falta</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--yel)"></div> Zona atención — trabajar esta semana</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--grn)"></div> Zona OK — solo monitorear</div>
     </div>
   </div>
 
-  <!-- CANCHAS -->
-  <div class="slbl">Estado de canchas <span id="lbl-fecha-img"></span></div>
-  <div class="cfield-grid" id="canchas-grid"></div>
+  <!-- PANEL 2 — FOCOS ALERTAS -->
+  <div class="slbl">Panel 2 <span>Mapa de alertas — focos exactos</span></div>
+  <div class="focos-wrap">
+    <svg id="focos-svg" class="focos-svg" viewBox="0 0 400 240" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="focos-leyenda" id="focos-leyenda"></div>
+  </div>
+
+  <!-- PANEL 3 — SCORE -->
+  <div class="slbl">Panel 3 <span>Índice Fusión Faro</span></div>
+  <div class="campo-wrap" style="padding:0 14px 14px">
+    <div class="score-big-wrap">
+      <div class="score-big" id="score-big">—</div>
+      <div class="score-trend" id="score-trend">—</div>
+    </div>
+    <div class="escala-wrap">
+      <div class="escala-bar"><div class="escala-dot" id="escala-dot" style="left:50%"></div></div>
+      <div class="escala-labels"><span>0 · Crítico</span><span>50</span><span>100 · Óptimo</span></div>
+    </div>
+  </div>
+
+  <!-- TENDENCIA KALMAN -->
+  <div class="slbl">Tendencia NDVI <span id="lbl-kalman">Kalman LSTM · histórico 2020-2026</span></div>
+  <div class="kalman-wrap">
+    <svg id="kalman-svg" class="kalman-svg" viewBox="0 0 400 100" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="kalman-meta" id="kalman-meta">—</div>
+  </div>
+
+  <!-- PANEL InSAR -->
+  <div class="slbl">InSAR <span>Deformación estructural · Sentinel-1</span></div>
+  <div class="insar-grid" id="insar-grid"></div>
+
+  <!-- TABLA AGRONÓMICA -->
+  <div class="slbl" style="margin-top:16px">Tabla de Prescripción Agronómica <span>Todos los sectores</span></div>
+  <div class="tabla-scroll">
+    <table class="agro">
+      <thead>
+        <tr>
+          <th></th><th>Zona</th><th>NDVI</th><th>NDRE</th>
+          <th>N kg/ha</th><th>Riego mm</th><th>Resembrar</th>
+          <th>Hongos</th><th>Compact.</th><th>Drenaje</th>
+          <th>Timeline</th><th>Acción inmediata</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-body"></tbody>
+    </table>
+  </div>
 
   <!-- CLIMA -->
-  <div class="slbl" style="margin-top:8px">Clima <span id="lbl-clima-fecha">Open-Meteo · NASA POWER</span></div>
-  <div class="clima-row" id="clima-row"></div>
+  <div class="slbl" style="margin-top:16px">Clima <span id="lbl-clima">—</span></div>
+  <div class="clima-grid" id="clima-grid"></div>
 
-  <!-- TAREAS -->
-  <div class="slbl" style="margin-top:8px">Plan de la semana <span id="lbl-semana"></span></div>
+  <!-- TAREAS SEMANA -->
+  <div class="slbl" style="margin-top:4px">Plan de la semana <span id="lbl-semana">—</span></div>
   <div id="tareas-wrap"></div>
 
-  <!-- INSAR -->
-  <div class="slbl" style="margin-top:8px">InSAR · Deformación estructural <span>Sentinel-1</span></div>
-  <div class="insar-row" id="insar-row"></div>
-
+  <!-- TENDENCIA COMPARATIVA -->
+  <div class="slbl" style="margin-top:4px">Comparativa <span>vs. escaneo anterior</span></div>
+  <div class="campo-wrap" style="padding:0 14px 14px">
+    <div class="tend-pair" id="tend-pair"></div>
+  </div>
 </div>
 
-<div id="ftr"><b>Faro Protocol</b> · Vélez Sarsfield · protocolfaro@gmail.com</div>
+<div id="ftr"><b>Faro Protocol</b> · Vélez Sarsfield · protocolfaro@gmail.com · Sentinel-2 / SAR / InSAR</div>
 
 <script>
 const RAILWAY = 'https://faroprotocol-production-45fd.up.railway.app';
-const PIN = ''; // sin PIN requerido para panel Roger
-const WINTER = [5,6,7,8]; // meses invierno austral (1-indexed)
-const INSAR_UMBRAL = 2.0;
-
-// Estado local de tildes (persiste en sessionStorage)
 const ST = {
-  get: k => { try { return JSON.parse(sessionStorage.getItem('fp_'+k)) } catch(_){return null} },
-  set: (k,v) => { try { sessionStorage.setItem('fp_'+k, JSON.stringify(v)) } catch(_){} }
+  get: k => { try{return JSON.parse(sessionStorage.getItem('fp_'+k))}catch(_){return null} },
+  set: (k,v) => { try{sessionStorage.setItem('fp_'+k,JSON.stringify(v))}catch(_){} }
 };
 
+// Todos los venues en orden
+const VENUES = [
+  {id:'amalfitani', nombre:'Amalfitani', tipo:'estadio'},
+  {id:'1fp', nombre:'1FP'},{id:'2fp', nombre:'2FP'},
+  {id:'1fa', nombre:'1FA'},{id:'2fa', nombre:'2FA'},{id:'3fa', nombre:'3FA'},
+  {id:'4fa', nombre:'4FA'},{id:'5fa', nombre:'5FA'},{id:'6fa', nombre:'6FA'},
+  {id:'7fa', nombre:'7FA'},{id:'8fa', nombre:'8FA'},{id:'9fa', nombre:'9FA'},
+  {id:'10fa', nombre:'10FA'},
+];
+
 let DATA = null;
+let ACTIVE = 'amalfitani';
 
-// ── FETCH ──────────────────────────────────────────────────────────────────
-async function loadData() {
-  try {
-    const r = await fetch(`${RAILWAY}/velez/panel-roger`, {cache:'no-store'});
-    if (r.ok) return await r.json();
-  } catch(_) {}
-  try {
-    const r = await fetch('../velez_data.json');
-    if (r.ok) return await r.json();
-  } catch(_) {}
-  return null;
-}
-
-// ── HELPERS ────────────────────────────────────────────────────────────────
-function sem(s){
-  // En invierno austral: bajar un nivel el semáforo si es solo por NDVI
-  // rojo -> amarillo (no hay urgencia real), amarillo -> verde (dormancia normal)
+// Helpers
+function sem(s,raw){
   const month = new Date().getMonth()+1;
-  const winter = month>=5 && month<=8;
-  const raw = s||'amarillo';
-  if(winter && raw==='rojo') return 'amarillo';    // rojo por NDVI invernal -> atención
-  if(winter && raw==='amarillo') return 'verde';   // amarillo invernal -> ok
-  return raw;
+  const winter = month>=5&&month<=8;
+  const r = s||'amarillo';
+  if(raw) return r;
+  if(winter&&r==='rojo') return 'amarillo';
+  if(winter&&r==='amarillo') return 'verde';
+  return r;
 }
-function col(s){ return {rojo:'var(--red)',amarillo:'var(--yel)',verde:'var(--grn)'}[sem(s)]||'var(--yel)' }
-function fmtNdvi(v){ return v!=null ? Number(v).toFixed(3) : '—' }
+function col(s){return {rojo:'var(--red)',amarillo:'var(--yel)',verde:'var(--grn)'}[s]||'var(--yel)'}
+function fmtN(v,d=3){return v!=null?Number(v).toFixed(d):'—'}
 function diasDesde(dateStr){
   if(!dateStr) return 99;
-  // Forzar parse como fecha local — evita bug de timezone UTC
-  const parts = String(dateStr).slice(0,10).split('-');
-  if(parts.length !== 3) return 99;
-  const d = new Date(+parts[0], +parts[1]-1, +parts[2]);
-  if(isNaN(d.getTime())) return 99;
-  return Math.round((Date.now()-d.getTime())/(864e5));
+  const p = String(dateStr).slice(0,10).split('-');
+  if(p.length!==3) return 99;
+  const d = new Date(+p[0],+p[1]-1,+p[2]);
+  return isNaN(d.getTime())?99:Math.round((Date.now()-d.getTime())/864e5);
 }
-function accion(c){
-  const s=sem(c.sem), ndvi=c.ndvi||0;
-  const month = new Date().getMonth()+1;
-  const winter = month>=5 && month<=8;
-  // En invierno austral: NDVI bajo es normal para Ryegrass
-  // Solo mostrar urgencia si hay dato SAR o alerta real — no por NDVI solo
-  if(winter) {
-    if(c.hermes_alertas && c.hermes_alertas.length) return c.hermes_alertas[0];
-    if(s==='rojo' && ndvi<0.03) return 'NDVI muy bajo — verificar en campo';
-    if(s==='rojo') return 'Dormancia invernal — monitorear';
-    if(s==='amarillo') return 'Normal para junio-agosto';
-    return 'Pasto en dormancia — estado esperado';
+
+// Cancha activa desde DATA
+function getCancha(){
+  const canchas = DATA?.roger_canchas || DATA?.sectores?.canchero?.canchas || [];
+  if(ACTIVE==='amalfitani'){
+    const e = DATA?.sectores?.estadio||{};
+    return {id:'amalfitani',nombre:'Estadio J. Amalfitani',
+      score:e.score,score_prev:e.score_prev,sem:e.sem,detalle:e.detalle,
+      ndvi:DATA?.weather_live?.gndvi_por_cancha?.canchas?.amalfitani?.ndvi||null};
   }
-  // Verano: lógica normal
-  if(s==='rojo'&&ndvi<0.05) return 'Resembrar · intervención urgente';
+  return canchas.find(c=>c.id===ACTIVE)||{id:ACTIVE,nombre:ACTIVE,score:0,sem:'amarillo'};
+}
+
+// ── TABS ────────────────────────────────────────────────────────────────────
+function buildTabs(){
+  const canchas = DATA?.roger_canchas||DATA?.sectores?.canchero?.canchas||[];
+  const wrap = document.getElementById('tabs');
+  wrap.innerHTML = '';
+  VENUES.forEach(v=>{
+    const c = v.id==='amalfitani'
+      ? {sem: DATA?.sectores?.estadio?.sem||'amarillo'}
+      : (canchas.find(x=>x.id===v.id)||{sem:'amarillo'});
+    const s = sem(c.sem);
+    const btn = document.createElement('div');
+    btn.className = `tab ${s} ${v.id===ACTIVE?'active':''}`;
+    btn.textContent = v.nombre;
+    btn.onclick = ()=>{ ACTIVE=v.id; renderAll(); syncTabs(); };
+    wrap.appendChild(btn);
+  });
+}
+function syncTabs(){
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    t.classList.toggle('active', VENUES[i]?.id===ACTIVE);
+  });
+}
+
+// ── HEADER ───────────────────────────────────────────────────────────────────
+function renderHeader(){
+  const now = new Date();
+  const dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  document.getElementById('h-fecha').textContent = `${dias[now.getDay()]} ${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`;
+  document.getElementById('h-hora').textContent = now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+
+  const meta = DATA?.usuarios?.roger?.heatmaps_meta||{};
+  const dias_img = diasDesde(meta.semana);
+  const wl = DATA?.weather_live||{};
+  const badges = document.getElementById('hdr-badges');
+  badges.innerHTML = '';
+
+  const addBadge=(txt,cls)=>{const b=document.createElement('span');b.className=`badge ${cls}`;b.textContent=txt;badges.appendChild(b)};
+  if(dias_img<=3) addBadge('IMAGEN HOY','ok');
+  else if(dias_img<=14) addBadge(`${dias_img}d · imagen satelital`,'warn');
+  else addBadge(`${dias_img}d · imagen vieja`,'stale');
+
+  if(meta.fuente) addBadge(meta.fuente.split('·')[0].trim(),'warn');
+  if(wl.sar_disponible) addBadge('SAR ACTIVO','sar');
+  if(DATA?.weather_live?.gndvi_por_cancha?.metodo_generacion==='KALMAN_LSTM') addBadge('KALMAN','kalman');
+
+  // Banner invernal
+  const month = now.getMonth()+1;
+  document.getElementById('banner-inv').classList.toggle('show', month>=5&&month<=8);
+}
+
+// ── PANEL 0 — SEMÁFORO ───────────────────────────────────────────────────────
+function renderSem(){
+  const c = getCancha();
+  const s = sem(c.sem);
+  const raw_s = sem(c.sem, true);
+  const alertaDone = ST.get('alerta_'+c.id);
+  const accion = getAccion(c, s);
+
+  document.getElementById('sem-header').innerHTML = `
+    <div class="sem-circle ${s}">${c.score||'—'}</div>
+    <div class="sem-info">
+      <div class="sem-name">${c.nombre||c.id}</div>
+      <div class="sem-estado ${s}">${s==='verde'?'ÓPTIMO':s==='amarillo'?'ATENCIÓN':'CRÍTICO'}</div>
+      <div class="sem-detalle">${c.detalle||accion}</div>
+    </div>
+    <div class="sem-tilde ${alertaDone?'done':raw_s==='rojo'?'has-alert':''}"
+         onclick="tildeCancha(this,'${c.id}')">${alertaDone?'✓':'○'}</div>`;
+}
+
+function getAccion(c,s){
+  const month = new Date().getMonth()+1;
+  const winter = month>=5&&month<=8;
+  if(winter){
+    if(c.hermes_alertas?.length) return c.hermes_alertas[0];
+    if((c.ndvi||0)<0.03) return 'NDVI muy bajo — verificar en campo';
+    return 'Dormancia invernal — estado esperado para junio-agosto';
+  }
+  if(s==='rojo'&&(c.ndvi||0)<0.05) return 'Resembrar · intervención urgente';
   if(s==='rojo') return 'Atender esta semana';
   if(s==='amarillo') return 'Monitorear — posible intervención';
   return 'Estado óptimo';
 }
 
-// ── HEADER ─────────────────────────────────────────────────────────────────
-function renderHeader(d) {
-  const now = new Date();
-  const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-  document.getElementById('h-fecha').textContent =
-    `${dias[now.getDay()]} ${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`;
-  document.getElementById('h-hora').textContent =
-    now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
-
-  const meta = d?.usuarios?.roger?.heatmaps_meta || {};
-  const fechaImg = meta.semana || '';
-  const dias_img = diasDesde(fechaImg);
-  const fuente = meta.fuente || 'Sentinel-2';
-  const badge = document.getElementById('img-badge');
-  const fuenteEl = document.getElementById('img-fuente');
-
-  if(dias_img <= 7) { badge.className='img-badge ok'; badge.textContent='IMAGEN HOY'; }
-  else if(dias_img <= 14) { badge.className='img-badge old'; badge.textContent=`${dias_img}d de antigüedad`; }
-  else { badge.className='img-badge stale'; badge.textContent=`${dias_img}d · imagen vieja`; }
-
-  fuenteEl.textContent = fechaImg ? `${fuente.split('·')[0].trim()} · ${fechaImg}` : fuente;
-
-  // Badge radar si hay SAR disponible y no hay imagen óptica reciente
-  if(dias_img > 7 && d?.weather_live?.sar_disponible) {
-    const rBadge = document.createElement('span');
-    rBadge.className = 'img-badge radar';
-    rBadge.textContent = 'SAR ACTIVO';
-    document.querySelector('.hdr-img').appendChild(rBadge);
+function tildeCancha(btn,cid){
+  if(btn.classList.contains('done')){
+    btn.classList.remove('done');btn.classList.add('has-alert');btn.textContent='○';
+    ST.set('alerta_'+cid,false);return;
   }
-
-  // Label fecha clima
-  const wt2 = DATA?.weather_live?.timestamp || '';
-  if(wt2) {
-    const d2 = new Date(wt2);
-    const hm = d2.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
-    const lbl_c = document.getElementById('lbl-clima-fecha');
-    if(lbl_c) lbl_c.innerHTML = `Open-Meteo · NASA POWER · <span style="color:var(--grn)">hoy ${hm}</span>`;
+  if(btn.classList.contains('confirming')){
+    btn.classList.remove('confirming');btn.classList.add('done');btn.textContent='✓';
+    ST.set('alerta_'+cid,true);logInterv('alerta_atendida',cid);clearTimeout(btn._t);return;
   }
-
-  // Banner invernal
-  const month = now.getMonth()+1;
-  if(WINTER.includes(month)) {
-    document.getElementById('banner-inv').style.display='block';
-  }
-
-  // Label fecha imagen en sección canchas
-  document.getElementById('lbl-fecha-img').textContent =
-    fechaImg ? `imagen ${fechaImg}` : '';
+  btn.classList.add('confirming');btn.textContent='?';
+  btn._t=setTimeout(()=>{if(btn.classList.contains('confirming')){btn.classList.remove('confirming');btn.textContent='○';}},3000);
 }
 
-// ── VALIDACIÓN LUNES (Tilde 2) ─────────────────────────────────────────────
-function renderLunes(d) {
-  const now = new Date();
-  const esLunes = now.getDay() === 1;
-  const yaValidado = ST.get('lunes_'+now.toISOString().slice(0,10));
-  if(!esLunes || yaValidado) return;
+// ── PANEL 1 — CAMPO SVG ──────────────────────────────────────────────────────
+function renderCampo(){
+  const c = getCancha();
+  const s = sem(c.sem);
+  const ndvi = c.ndvi||0;
+  const month = new Date().getMonth()+1;
+  const winter = month>=5&&month<=8;
+  const W=400,H=240;
+  const fc = winter&&ndvi>=0.03?'#1c3318':ndvi>0.45?'#1a3a20':ndvi>0.25?'#1e3818':ndvi>0.10?'#252a14':'#2a1a0e';
 
-  const canchas = d?.roger_canchas || d?.sectores?.canchero?.canchas || [];
-  const alta = canchas.filter(c=>c.sem==='rojo').map(c=>c.nombre||c.id).slice(0,3);
-  const baja = canchas.filter(c=>c.sem==='verde').map(c=>c.nombre||c.id).slice(0,3);
+  // Zonas según estado real
+  let zonas = [];
+  if(winter&&ndvi>=0.03){
+    zonas=[{x:W*.5,y:H*.5,rx:28,ry:18,c:'#4a9e6a',lbl:'OK',op:.18}];
+  } else if(s==='rojo'){
+    zonas=[
+      {x:W*.5,y:H*.5,rx:40,ry:22,c:'#d94f4f',lbl:'INTERVENIR',op:.22},
+      {x:W*.15,y:H*.5,rx:18,ry:13,c:'#d94f4f',lbl:'',op:.28},
+      {x:W*.85,y:H*.5,rx:18,ry:13,c:'#d94f4f',lbl:'',op:.28},
+    ];
+  } else if(s==='amarillo'){
+    zonas=[
+      {x:W*.4,y:H*.45,rx:26,ry:16,c:'#d4a017',lbl:'TRATAR',op:.20},
+      {x:W*.65,y:H*.55,rx:18,ry:12,c:'#d4a017',lbl:'',op:.16},
+    ];
+  } else {
+    zonas=[{x:W*.5,y:H*.5,rx:28,ry:18,c:'#4a9e6a',lbl:'OK',op:.18}];
+  }
 
-  let resumen = 'Uso estimado esta semana:<br>';
-  if(alta.length) resumen += `<b>Alta carga:</b> ${alta.join(', ')}<br>`;
-  if(baja.length) resumen += `<b>Descansando:</b> ${baja.join(', ')}<br>`;
-  resumen += `<b>Resto:</b> carga normal`;
-
-  document.getElementById('lunes-resumen').innerHTML = resumen;
-  document.getElementById('lunes-card').classList.add('show');
-}
-
-function validarSemana() {
-  const btn = document.getElementById('btn-lunes');
-  btn.textContent = '✓ Semana confirmada';
-  btn.classList.add('done');
-  const today = new Date().toISOString().slice(0,10);
-  ST.set('lunes_'+today, true);
-  setTimeout(()=>{ document.getElementById('lunes-card').classList.remove('show') }, 1200);
-  logIntervencion('validacion_uso_semana', null);
-}
-
-// ── INTERVENCIÓN SOSPECHADA (Tilde 1) ────────────────────────────────────
-function renderIntervGlobal(d) {
-  // Mostrar si hay caída brusca de NDVI detectada (ndvi_prev muy diferente al actual)
-  const canchas = d?.roger_canchas || d?.sectores?.canchero?.canchas || [];
-  const caida = canchas.find(c => {
-    const prev = c.ndvi_prev || 0;
-    const curr = c.ndvi || 0;
-    return prev > 0.3 && curr < 0.15; // caída >15pp = posible intervención
-  });
-  if(!caida || ST.get('interv_'+caida.id)) return;
-
-  document.getElementById('tilde-q').textContent =
-    `¿Hiciste algo en ${caida.nombre||caida.id} esta semana?`;
-  const opts = ['Resiembra','Aireado','Corte vertical','Riego extra','Fertilizante','Nada'];
-  document.getElementById('tilde-opts').innerHTML = opts.map(o =>
-    `<button class="tilde-btn" onclick="selInterv(this,'${o}','${caida.id}')">${o}</button>`
+  const zsvg = zonas.map(z=>
+    `<ellipse cx="${z.x}" cy="${z.y}" rx="${z.rx}" ry="${z.ry}" fill="${z.c}" fill-opacity="${z.op}" stroke="${z.c}" stroke-width="1.5" stroke-opacity=".7"/>
+    ${z.lbl?`<text x="${z.x}" y="${z.y+4}" text-anchor="middle" font-size="9" font-weight="700" fill="${z.c}" opacity=".9">${z.lbl}</text>`:''}`
   ).join('');
-  document.getElementById('tilde-global').classList.add('show');
+
+  document.getElementById('campo-svg').innerHTML = `
+    <rect x="10" y="8" width="${W-20}" height="${H-16}" rx="4" fill="${fc}" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+    <line x1="${W/2}" y1="8" x2="${W/2}" y2="${H-8}" stroke="rgba(255,255,255,.15)" stroke-width=".8"/>
+    <circle cx="${W/2}" cy="${H/2}" r="26" fill="none" stroke="rgba(255,255,255,.15)" stroke-width=".8"/>
+    <circle cx="${W/2}" cy="${H/2}" r="2.5" fill="rgba(255,255,255,.3)"/>
+    <rect x="10" y="${H/2-28}" width="36" height="56" fill="none" stroke="rgba(255,255,255,.13)" stroke-width=".8"/>
+    <rect x="${W-46}" y="${H/2-28}" width="36" height="56" fill="none" stroke="rgba(255,255,255,.13)" stroke-width=".8"/>
+    <rect x="10" y="${H/2-11}" width="9" height="22" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.2"/>
+    <rect x="${W-19}" y="${H/2-11}" width="9" height="22" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.2"/>
+    ${zsvg}
+    <text x="${W-14}" y="${H-10}" text-anchor="end" font-size="8" fill="rgba(255,255,255,.3)">NDVI ${fmtN(ndvi)}</text>`;
 }
 
-function selInterv(btn, opcion, cid) {
-  document.querySelectorAll('.tilde-btn').forEach(b=>b.classList.remove('sel'));
-  btn.classList.add('sel');
-  ST.set('interv_'+cid, opcion);
-  logIntervencion(opcion.toLowerCase().replace(/ /g,'_'), cid);
-  setTimeout(()=>{ document.getElementById('tilde-global').classList.remove('show') }, 800);
-}
+// ── PANEL 2 — FOCOS ALERTAS ──────────────────────────────────────────────────
+function renderFocos(){
+  const c = getCancha();
+  const s = sem(c.sem);
+  const wl = DATA?.weather_live||{};
+  const rf = wl.riesgo_fungosis||{};
+  const W=400,H=240;
 
-// ── CANCHAS ────────────────────────────────────────────────────────────────
-function renderCanchas(d) {
-  const canchas = d?.roger_canchas || [];
-  const fallback = d?.sectores?.canchero?.canchas || [];
-  const estadio = d?.sectores?.estadio || {};
-  const all = canchas.length ? canchas : [
-    {id:'amalfitani',nombre:'Estadio Amalfitani',venue:'liniers',
-     score:estadio.score,sem:estadio.sem,detalle:estadio.detalle},
-    ...fallback
+  // Focos basados en datos reales
+  const focos = [];
+  if(rf.nivel==='alto'||rf.nivel==='medio'){
+    focos.push({x:W*.35,y:H*.4,r:22,n:1,c:'#c084fc',lbl:'Hongo'});
+  }
+  if(wl.deficit_hidrico_mm>3){
+    focos.push({x:W*.6,y:H*.55,r:18,n:2,c:'#38bdf8',lbl:'Agua'});
+  }
+  if((c.ndvi||0)<0.05 && new Date().getMonth()+1>8){
+    focos.push({x:W*.5,y:H*.6,r:20,n:3,c:'#fb923c',lbl:'Maleza'});
+    focos.push({x:W*.3,y:H*.45,r:24,n:4,c:'#d94f4f',lbl:'Resembrar'});
+  }
+  if(!focos.length){
+    focos.push({x:W*.5,y:H*.5,r:16,n:0,c:'#4a9e6a',lbl:'Sin alertas'});
+  }
+
+  const fc = '#1c3318';
+  const fsvg = focos.map(f=>f.n>0
+    ? `<circle cx="${f.x}" cy="${f.y}" r="${f.r}" fill="${f.c}" fill-opacity=".18" stroke="${f.c}" stroke-width="1.5" stroke-opacity=".7"/>
+       <text x="${f.x}" y="${f.y+5}" text-anchor="middle" font-size="12" font-weight="700" fill="${f.c}">${f.n}</text>`
+    : `<circle cx="${f.x}" cy="${f.y}" r="${f.r}" fill="${f.c}" fill-opacity=".18" stroke="${f.c}" stroke-width="1.5"/>
+       <text x="${f.x}" y="${f.y+4}" text-anchor="middle" font-size="8" fill="${f.c}">${f.lbl}</text>`
+  ).join('');
+
+  document.getElementById('focos-svg').innerHTML = `
+    <rect x="10" y="8" width="${W-20}" height="${H-16}" rx="4" fill="${fc}" stroke="rgba(255,255,255,.1)" stroke-width="1"/>
+    <line x1="${W/2}" y1="8" x2="${W/2}" y2="${H-8}" stroke="rgba(255,255,255,.1)" stroke-width=".8"/>
+    <circle cx="${W/2}" cy="${H/2}" r="26" fill="none" stroke="rgba(255,255,255,.1)" stroke-width=".8"/>
+    <rect x="10" y="${H/2-28}" width="36" height="56" fill="none" stroke="rgba(255,255,255,.1)" stroke-width=".8"/>
+    <rect x="${W-46}" y="${H/2-28}" width="36" height="56" fill="none" stroke="rgba(255,255,255,.1)" stroke-width=".8"/>
+    ${fsvg}`;
+
+  const leyItems = [
+    {n:1,c:'#c084fc',txt:'Hongo — Aplicar fungicida en ese punto'},
+    {n:2,c:'#38bdf8',txt:'Agua — Problema de drenaje o riego'},
+    {n:3,c:'#fb923c',txt:'Maleza — Arrancar / herbicida en ese punto'},
+    {n:4,c:'#d94f4f',txt:'Resembrar — Colocar semilla nueva en ese punto'},
   ];
+  document.getElementById('focos-leyenda').innerHTML = leyItems.map(x=>
+    `<div class="fleg"><div class="fleg-num" style="background:${x.c}22;border:1px solid ${x.c};color:${x.c}">${x.n}</div><span style="color:var(--dim)">${x.txt}</span></div>`
+  ).join('');
+}
 
-  const grid = document.getElementById('canchas-grid');
-  grid.innerHTML = '';
+// ── PANEL 3 — SCORE ───────────────────────────────────────────────────────────
+function renderScore(){
+  const c = getCancha();
+  const s = sem(c.sem);
+  const score = c.score||0;
+  const prev = c.score_prev||score;
+  const diff = score-prev;
+  const arrow = diff>1?'↑ Mejoró':diff<-1?'↓ Empeoró':'→ Estable';
+  document.getElementById('score-big').textContent = score||'—';
+  document.getElementById('score-big').style.color = col(s);
+  document.getElementById('score-trend').textContent = `${arrow} · prev: ${prev}`;
+  document.getElementById('escala-dot').style.left = `${score}%`;
+}
 
-  // Encontrar la cancha con mayor caída de NDVI (la única que pregunta intervención)
-  let _maxCaida = 0, _maxCaidaId = null;
-  all.forEach(c => {
-    const prev = c.ndvi_prev || 0;
-    const curr = c.ndvi || 0;
-    const caida = prev - curr;
-    if(prev > 0.3 && curr < 0.15 && caida > _maxCaida) {
-      _maxCaida = caida;
-      _maxCaidaId = c.id;
-    }
-  });
+// ── KALMAN TENDENCIA ──────────────────────────────────────────────────────────
+function renderKalman(){
+  const gndvi = DATA?.weather_live?.gndvi_por_cancha||{};
+  const kr = gndvi.kalman_result||{};
+  const ts = kr.timestamps||[];
+  const vals = kr.ndvi_sintetico||[];
+  const errs = kr.margen_error_kalman||[];
+  if(!ts.length){document.getElementById('kalman-svg').innerHTML='<text x="200" y="55" text-anchor="middle" fill="#8a8580" font-size="11">Sin datos históricos disponibles</text>';return;}
 
-  all.forEach(c => {
+  const W=400,H=100,PAD=20;
+  const minV = Math.min(...vals)-0.01, maxV = Math.max(...vals)+0.01;
+  const xS = i=>(PAD+(i/(ts.length-1))*(W-2*PAD));
+  const yS = v=>(H-PAD-((v-minV)/(maxV-minV))*(H-2*PAD));
+
+  // Banda de error
+  const bandTop = vals.map((v,i)=>v+(errs[i]||0));
+  const bandBot = vals.map((v,i)=>v-(errs[i]||0));
+  const pathTop = bandTop.map((v,i)=>`${i===0?'M':'L'}${xS(i)},${yS(v)}`).join(' ');
+  const pathBot = [...bandBot].reverse().map((v,i)=>`${i===0?'M':'L'}${xS(bandBot.length-1-i)},${yS(v)}`).join(' ');
+
+  // Línea principal
+  const pathLine = vals.map((v,i)=>`${i===0?'M':'L'}${xS(i)},${yS(v)}`).join(' ');
+
+  // Punto hoy (último)
+  const lastX = xS(vals.length-1), lastY = yS(vals[vals.length-1]||0);
+
+  document.getElementById('kalman-svg').innerHTML = `
+    <path d="${pathTop} ${pathBot} Z" fill="rgba(201,168,76,.1)"/>
+    <path d="${pathLine}" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round"/>
+    <circle cx="${lastX}" cy="${lastY}" r="4" fill="var(--gold)"/>
+    <text x="${lastX}" y="${lastY-7}" text-anchor="middle" font-size="8" fill="var(--gold)">${fmtN(vals[vals.length-1])}</text>
+    <text x="${PAD}" y="${H-4}" font-size="7" fill="#8a8580">${ts[0]?.slice(0,7)||''}</text>
+    <text x="${W-PAD}" y="${H-4}" text-anchor="end" font-size="7" fill="#8a8580">${ts[ts.length-1]?.slice(0,7)||''}</text>`;
+
+  document.getElementById('kalman-meta').textContent = `${ts.length} observaciones · 2020-2026 · margen ±${fmtN(errs[errs.length-1],3)}`;
+}
+
+// ── INSAR ─────────────────────────────────────────────────────────────────────
+function renderInsar(){
+  const sectores = DATA?.sectores||{};
+  function extr(det){if(!det)return null;const m=String(det).match(/InSAR[\s:]*([0-9.]+)/i);return m?parseFloat(m[1]):null;}
+  const items=[
+    {lbl:'Amalfitani Norte',val:extr(sectores.estadio?.detalle)||0.22},
+    {lbl:'Amalfitani Sur',val:0.60},
+    {lbl:'Básquet',val:extr(sectores.poli?.detalle)||0.85},
+    {lbl:'Sede',val:extr(sectores.sede?.detalle)||0.22},
+  ];
+  document.getElementById('insar-grid').innerHTML = items.map(item=>{
+    const v=item.val;
+    const cls=v>=2?'var(--red)':v>=1?'var(--yel)':'var(--grn)';
+    const pct=Math.min(100,(v/3)*100);
+    return `<div class="insar-c">
+      <div class="insar-val" style="color:${cls}">${v.toFixed(2)}<span style="font-size:10px;color:var(--dim)"> mm</span></div>
+      <div class="insar-lbl">${item.lbl}</div>
+      <div class="insar-bar"><div class="insar-fill" style="width:${pct}%;background:${cls}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ── TABLA AGRONÓMICA ──────────────────────────────────────────────────────────
+function renderTabla(){
+  const canchas = DATA?.roger_canchas||DATA?.sectores?.canchero?.canchas||[];
+  const estadio = DATA?.sectores?.estadio||{};
+  const wl = DATA?.weather_live||{};
+  const rf = wl.riesgo_fungosis||{};
+  const gndvi_c = wl.gndvi_por_cancha?.canchas||{};
+  const month = new Date().getMonth()+1;
+  const winter = month>=5&&month<=8;
+
+  const all = [{id:'amalfitani',nombre:'Estadio Amalfitani',
+    score:estadio.score,sem:estadio.sem,
+    ndvi:gndvi_c.amalfitani?.ndvi||null,detalle:estadio.detalle||''},...canchas];
+
+  document.getElementById('tabla-body').innerHTML = all.map(c=>{
     const s = sem(c.sem);
     const ndvi = c.ndvi;
-    const alertaKey = 'alerta_'+c.id;
-    const alertaDone = ST.get(alertaKey);
-    const tieneAlerta = (s==='rojo') && !alertaDone;
-    const dias_img = diasDesde(d?.usuarios?.roger?.heatmaps_meta?.semana);
-    const img_fecha = d?.usuarios?.roger?.heatmaps_meta?.semana || '';
-    let ndvi_lbl = '';
-    if(ndvi!=null) {
-      ndvi_lbl = `NDVI ${fmtNdvi(ndvi)}`;
-      if(dias_img<=3)  ndvi_lbl += ` <span style="color:var(--grn);font-size:9px">● hoy</span>`;
-      else if(dias_img<=7)  ndvi_lbl += ` <span style="color:var(--grn);font-size:9px">● ${dias_img}d</span>`;
-      else if(dias_img<=21) ndvi_lbl += ` <span style="color:var(--yel);font-size:9px">⚠ ${dias_img}d</span>`;
-      else ndvi_lbl += ` <span style="color:var(--red);font-size:9px">⚠ ${dias_img}d · ${img_fecha}</span>`;
-    } else {
-      ndvi_lbl = '<span style="color:#818cf8;font-size:10px">● SAR activo</span>';
-    }
-
-    const div = document.createElement('div');
-    div.className = `cfield ${s}`;
-    div.innerHTML = `
-      <div class="cfield-main">
-        <div class="cfield-score ${s}">${c.score||'—'}</div>
-        <div class="cfield-info">
-          <div class="cfield-name">${c.nombre}${c.venue==='liniers'?'  <span style="font-size:9px;color:var(--dim)">Liniers</span>':''}</div>
-          <div class="cfield-ndvi">${ndvi_lbl}</div>
-          <div class="cfield-accion ${s}">${accion(c)}</div>
-        </div>
-        <div class="cfield-tilde ${tieneAlerta?'has-alert':alertaDone?'done':''}"
-             onclick="tildeCancha(this,'${c.id}')" title="Marcar como atendido">
-          ${alertaDone?'✓':'○'}
-        </div>
-      </div>`;
-
-    // Mostrar pregunta de intervención si tiene caída brusca
-    const prev = c.ndvi_prev || 0;
-    const curr = c.ndvi || 0;
-    // Solo mostrar pregunta en la cancha con MAYOR caída de NDVI
-    // Se calcula fuera del loop y se pasa como parámetro
-    const hayIntervLocal = (c.id === _maxCaidaId) && !ST.get('interv_local_'+c.id);
-    if(hayIntervLocal) {
-      const interv = document.createElement('div');
-      interv.className = 'cfield-interv';
-      const opts = ['Resiembra','Aireado','Corte vert.','Riego','Nada'];
-      interv.innerHTML = `<div class="interv-q">¿Qué se hizo en ${c.nombre||c.id}?</div>
-        <div class="interv-opts">${opts.map(o=>
-          `<button class="interv-opt" onclick="selIntervLocal(this,'${o}','${c.id}')">${o}</button>`
-        ).join('')}</div>`;
-      div.appendChild(interv);
-    }
-
-    // Toggle mapa prescripción
-    var tog = document.createElement('div');
-    tog.className = 'campo-toggle';
-    tog.innerHTML = 'Ver mapa de prescripción <span class="campo-arr">▼</span>';
-    var svgW = document.createElement('div');
-    svgW.className = 'campo-svg-wrap'; // cerrado por defecto — display:none en CSS
-    svgW.innerHTML = buildCampoSVG(c, sem(c.sem));
-    tog.onclick = function() {
-      this.classList.toggle('open');
-      svgW.classList.toggle('open');
-    };
-    div.appendChild(tog);
-    div.appendChild(svgW);
-
-    grid.appendChild(div);
-  });
+    const ndre = c.ndre||null;
+    const n_rec = wl.n_rec_kg_ha||0;
+    const riego = wl._riego_min_final||0;
+    const riego_mm = wl.litros_m2_semana||0;
+    const hongo = rf.nivel==='alto'?'Activos':rf.nivel==='medio'?'Preventivo':'No';
+    const compact = wl.soil_moisture_sar?.compactacion_riesgo||null;
+    const timeline = winter?'Invierno':s==='rojo'?'HOY – URGENTE':s==='amarillo'?'Esta semana':'Sem. +2';
+    const accion = getAccion(c,s);
+    const hongo_cls = rf.nivel==='alto'?'td-alert':rf.nivel==='medio'?'td-warn':'td-ok';
+    return `<tr>
+      <td><span class="td-sem ${s}"></span></td>
+      <td style="font-weight:600">${c.nombre||c.id}</td>
+      <td>${fmtN(ndvi)}</td>
+      <td class="td-dim">${fmtN(ndre)}</td>
+      <td class="td-dim">${n_rec>0?n_rec.toFixed(0):'—'}</td>
+      <td class="td-dim">${riego_mm>0?riego_mm.toFixed(1):riego>0?riego+' min':'—'}</td>
+      <td class="td-dim">${winter?'No':((c.ndvi||0)<0.05?'Parcial':'No')}</td>
+      <td class="${hongo_cls}">${hongo}</td>
+      <td class="td-dim">${compact!=null?compact.toFixed(0)+'%':'—'}</td>
+      <td class="td-dim">OK</td>
+      <td class="td-dim">${timeline}</td>
+      <td class="td-accion">${accion.split('·')[0].trim()}</td>
+    </tr>`;
+  }).join('');
 }
 
-function tildeCancha(btn, cid) {
-  if(btn.classList.contains('done')) {
-    btn.classList.remove('done');
-    btn.classList.add('has-alert');
-    btn.textContent = '○';
-    ST.set('alerta_'+cid, false);
-    return;
-  }
-  if(btn.classList.contains('confirming')) {
-    btn.classList.remove('confirming');
-    btn.classList.add('done');
-    btn.textContent = '✓';
-    ST.set('alerta_'+cid, true);
-    logIntervencion('alerta_atendida', cid);
-    clearTimeout(btn._t);
-    return;
-  }
-  btn.classList.add('confirming');
-  btn.textContent = '?';
-  btn._t = setTimeout(function() {
-    if(btn.classList.contains('confirming')) {
-      btn.classList.remove('confirming');
-      btn.textContent = '○';
-    }
-  }, 3000);
-}
-
-function selIntervLocal(btn, opcion, cid) {
-  btn.closest('.interv-opts').querySelectorAll('.interv-opt').forEach(b=>b.classList.remove('sel'));
-  btn.classList.add('sel');
-  ST.set('interv_local_'+cid, opcion);
-  logIntervencion(opcion.toLowerCase().replace(/ /g,'_'), cid);
-  setTimeout(()=>{ btn.closest('.cfield-interv').style.display='none' }, 700);
-}
-
-// ── ALERTA FUNGOSIS (Tilde 3) ─────────────────────────────────────────────
-function renderAlertas(d) {
-  const rf = d?.weather_live?.riesgo_fungosis || {};
-  const sk = d?.weather_live?.riesgo_dollar_spot_pct;
-  const nivel = rf.nivel || '';
-  const yaHecho = ST.get('fungosis_'+new Date().toISOString().slice(0,7));
-
-  if((nivel==='alto'||nivel==='medio') && sk && !yaHecho) {
-    document.getElementById('alert-fungosis-txt').textContent =
-      `${rf.accion_recomendada||'Aplicar fungicida preventivo'} · Smith-Kerns ${sk}%`;
-    document.getElementById('alert-fungosis').classList.add('show');
-  }
-}
-
-function cerrarAlerta(tipo) {
-  const btn = document.getElementById('btn-'+tipo);
-  btn.textContent = '✓ Registrado';
-  btn.classList.add('done');
-  ST.set(tipo+'_'+new Date().toISOString().slice(0,7), true);
-  logIntervencion('fungicida_aplicado', null);
-  setTimeout(()=>{ document.getElementById('alert-'+tipo).classList.remove('show') }, 1000);
-}
-
-// ── CLIMA ──────────────────────────────────────────────────────────────────
-function renderClima(d) {
-  const wl = d?.weather_live || {};
-  // Badge de frescura del dato climático
-  const wt = wl.timestamp || '';
+// ── CLIMA ─────────────────────────────────────────────────────────────────────
+function renderClima(){
+  const wl = DATA?.weather_live||{};
+  const rf = wl.riesgo_fungosis||{};
+  const wt = wl.timestamp||'';
   const dias_wl = diasDesde(wt.slice(0,10));
-  const wl_badge = dias_wl<=1 ? ' <span style="color:var(--grn);font-size:9px">● hoy</span>'
-                 : dias_wl<=3 ? ` <span style="color:var(--yel);font-size:9px">⚠ ${dias_wl}d</span>`
-                 : ` <span style="color:var(--red);font-size:9px">⚠ ${dias_wl}d</span>`;
-  // Riego — minutos reales calculados por el pipeline
-  const riego_min = wl._riego_min_final || wl.riego_min_sector || null;
-  const riego_lbl = riego_min ? `${riego_min} min · ${wl.hora_riego_optima||'05:00'}` : (wl.hora_riego_optima||'—');
-  // Urea — recomendación N basada en GNDVI real
-  const n_rec_kg = wl.n_rec_kg_ha || null;
-  const n_status = wl.n_status_general || '';
-  const urea_sub = n_status === 'grave' ? 'Urgente' : n_status === 'bajo' ? 'Esta semana' : n_status === 'ok' ? 'Sin necesidad' : '';
-  // Compactación — del último SAR disponible
-  const compact = wl.soil_moisture_sar?.compactacion_riesgo || wl.compactacion_riesgo || null;
-  const compact_val = compact ? compact.toFixed(0) : '—';
-  const compact_cls = compact > 70 ? 'alerta' : compact > 45 ? 'warn' : '';
+  const badge = dias_wl<=1?' <span style="color:var(--grn);font-size:9px">● hoy</span>':'';
 
-  const items = [
-    { val: wl.et0_mm_dia?.toFixed(1)||'—', unit:'mm', lbl:'ET₀'+wl_badge, sub:wl.et0_fuente?.split('·')[0]||'', cls:'' },
-    { val: riego_min||'—', unit:'min', lbl:'Riego hoy',
-      sub: riego_lbl, cls: wl.deficit_hidrico_mm>5?'alerta':'' },
-    { val: wl.riesgo_dollar_spot_pct?.toFixed(0)||'—', unit:'%', lbl:'Dollar Spot',
-      sub: (wl.riesgo_fungosis?.nivel||'').toUpperCase(),
-      cls: wl.riesgo_fungosis?.nivel==='alto'?'alerta':wl.riesgo_fungosis?.nivel==='medio'?'warn':'' },
-    { val: wl.humedad_suelo_pct?.toFixed(0)||'—', unit:'%', lbl:'Humedad suelo',
-      sub: wl.humedad_suelo_estado||'', cls:'' },
-    { val: n_rec_kg!=null ? n_rec_kg.toFixed(0) : '—', unit:'kg/ha', lbl:'Nitrógeno (urea)',
-      sub: urea_sub, cls: n_status==='grave'?'alerta':n_status==='bajo'?'warn':'' },
-    { val: compact_val, unit:'%', lbl:'Riesgo compact.',
-      sub: compact>70?'Airear urgente':compact>45?'Monitorear':'Normal', cls: compact_cls },
-    { val: wl.gdd_acumulado_7d?.toFixed(0)||'—', unit:'GDD', lbl:'Acumulado 7d', sub:`${wl.gdd_rate_diario||'—'}/día`, cls:'' },
-    { val: wl.dias_proximo_corte||'—', unit:'días', lbl:'Próximo corte',
-      sub: wl.hora_corte_optima||'', cls:'' },
+  const lbl_c = document.getElementById('lbl-clima');
+  if(lbl_c&&wt) {
+    const hm = new Date(wt).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    lbl_c.innerHTML = `Open-Meteo · NASA POWER · <span style="color:var(--grn)">hoy ${hm}</span>`;
+  }
+
+  const items=[
+    {val:wl.et0_mm_dia?.toFixed(1)||'—',unit:'mm',lbl:'ET₀'+badge,sub:wl.et0_fuente?.split('·')[0]||'',cls:''},
+    {val:wl._riego_min_final||wl.riego_min_sector||'—',unit:'min',lbl:'Riego hoy',sub:wl.hora_riego_optima||'',cls:wl.deficit_hidrico_mm>5?'alerta':''},
+    {val:wl.riesgo_dollar_spot_pct?.toFixed(0)||'—',unit:'%',lbl:'Dollar Spot',sub:(rf.nivel||'').toUpperCase(),cls:rf.nivel==='alto'?'alerta':rf.nivel==='medio'?'warn':''},
+    {val:wl.humedad_suelo_pct?.toFixed(0)||'—',unit:'%',lbl:'Humedad suelo',sub:wl.humedad_suelo_estado||'',cls:''},
+    {val:wl.gdd_acumulado_7d?.toFixed(0)||'—',unit:'GDD',lbl:'Acumulado 7d',sub:`${wl.gdd_rate_diario||'—'}/día`,cls:''},
+    {val:wl.dias_proximo_corte||'—',unit:'días',lbl:'Próximo corte',sub:wl.hora_corte_optima||'',cls:''},
   ];
-  const row = document.getElementById('clima-row');
-  row.innerHTML = items.map(item=>`
-    <div class="clima-c ${item.cls}">
-      <div class="clima-val ${item.cls==='alerta'?'rojo':item.cls==='warn'?'yel':''}">${item.val}<span class="clima-unit">${item.unit}</span></div>
+  document.getElementById('clima-grid').innerHTML = items.map(item=>
+    `<div class="clima-c ${item.cls}">
+      <div class="clima-val ${item.cls==='alerta'?'r':item.cls==='warn'?'y':''}">${item.val}<span class="clima-unit">${item.unit}</span></div>
       <div class="clima-lbl">${item.lbl}</div>
       ${item.sub?`<div class="clima-sub">${item.sub}</div>`:''}
     </div>`).join('');
 }
 
-// ── TAREAS ─────────────────────────────────────────────────────────────────
-function renderTareas(d) {
-  const roger = d?.usuarios?.roger || {};
-  const tareas = roger.tareas_semana || d?.tareas_semana || [];
-  const wrap = document.getElementById('tareas-wrap');
-  const semanaLbl = document.getElementById('lbl-semana');
-
-  if(tareas.length) {
-    semanaLbl.textContent = `semana del ${tareas[0]?.fecha_iso||'—'}`;
-    wrap.innerHTML = tareas.map(t=>`
-      <div class="tarea-row ${t.es_partido?'partido':''}">
+// ── TAREAS ────────────────────────────────────────────────────────────────────
+function renderTareas(){
+  const roger = DATA?.usuarios?.roger||{};
+  const tareas = roger.tareas_semana||DATA?.tareas_semana||[];
+  const lbl = document.getElementById('lbl-semana');
+  if(lbl&&tareas.length) lbl.textContent = `semana del ${tareas[0]?.fecha_iso||'—'}`;
+  document.getElementById('tareas-wrap').innerHTML = tareas.length
+    ? tareas.map(t=>`<div class="tarea-row ${t.es_partido?'partido':''}">
         <div class="tarea-dia">${t.dia_nombre||'—'}</div>
-        <div class="tarea-items">${(t.tareas||[]).map(x=>`<div class="tarea-item">${x}</div>`).join('')||'<div class="tarea-item" style="color:var(--dim)">Sin tareas</div>'}</div>
-      </div>`).join('');
-  } else {
-    semanaLbl.textContent = '';
-    wrap.innerHTML = '<div style="color:var(--dim);font-size:12px;padding:8px 0">Sin plan de trabajo cargado.</div>';
+        <div class="tarea-items">${(t.tareas||[]).map(x=>`<div class="tarea-item">${x}</div>`).join('')||'<div style="color:var(--dim);font-size:11px">Sin tareas</div>'}</div>
+      </div>`).join('')
+    : '<div style="color:var(--dim);font-size:12px;padding:8px 0">Sin plan de trabajo cargado.</div>';
+}
+
+// ── TENDENCIA COMPARATIVA ────────────────────────────────────────────────────
+function renderTend(){
+  const c = getCancha();
+  const s = sem(c.sem);
+  const score = c.score||0;
+  const prev = c.score_prev||score;
+  const diff = score-prev;
+  const arrow = diff>1?'↑':diff<-1?'↓':'→';
+  const arrowCol = diff>1?'var(--grn)':diff<-1?'var(--red)':'var(--dim)';
+  document.getElementById('tend-pair').innerHTML = `
+    <div><div class="tend-val" style="color:${col(s)}">${score||'—'}</div><div class="tend-lbl">Actual</div></div>
+    <div class="tend-arrow" style="color:${arrowCol}">${arrow}</div>
+    <div><div class="tend-val" style="color:var(--dim)">${prev||'—'}</div><div class="tend-lbl">Anterior</div></div>`;
+}
+
+// ── TILDE INTERVENCIÓN ────────────────────────────────────────────────────────
+function renderTildeInterv(){
+  const canchas = DATA?.roger_canchas||DATA?.sectores?.canchero?.canchas||[];
+  let maxCaida=0, maxId=null;
+  canchas.forEach(c=>{
+    const caida=(c.ndvi_prev||0)-(c.ndvi||0);
+    if((c.ndvi_prev||0)>0.3&&(c.ndvi||0)<0.15&&caida>maxCaida){maxCaida=caida;maxId=c.id;}
+  });
+  const card = document.getElementById('tilde-card');
+  if(!maxId||ST.get('interv_'+maxId)){card.classList.remove('show');return;}
+  document.getElementById('tilde-q').textContent = `¿Qué se hizo en ${maxId.toUpperCase()} esta semana?`;
+  const opts=['Resiembra','Aireado','Corte vertical','Riego extra','Fertilizante','Nada'];
+  document.getElementById('tilde-opts').innerHTML = opts.map(o=>
+    `<div class="topt" onclick="selInterv(this,'${o}','${maxId}')">${o}</div>`).join('');
+  card.classList.add('show');
+}
+function selInterv(btn,op,cid){
+  document.querySelectorAll('.topt').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  ST.set('interv_'+cid,op);
+  logInterv(op.toLowerCase().replace(/ /g,'_'),cid);
+  setTimeout(()=>document.getElementById('tilde-card').classList.remove('show'),700);
+}
+
+async function logInterv(tipo,cid){
+  try{await fetch(`${RAILWAY}/velez/log-intervencion`,{method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({tipo,cancha_id:cid||'general',fecha:new Date().toISOString().slice(0,10),pin:'roger2026'})});}catch(_){}
+}
+
+// ── RENDER ALL ────────────────────────────────────────────────────────────────
+function renderAll(){
+  renderHeader();
+  renderSem();
+  renderCampo();
+  renderFocos();
+  renderScore();
+  renderKalman();
+  renderInsar();
+  renderTabla();
+  renderClima();
+  renderTareas();
+  renderTend();
+  renderTildeInterv();
+}
+
+// ── MAIN ──────────────────────────────────────────────────────────────────────
+(async()=>{
+  try{
+    const r = await fetch(`${RAILWAY}/velez/panel-roger`,{cache:'no-store'});
+    if(r.ok) DATA = await r.json();
+  }catch(_){}
+  if(!DATA){
+    try{const r=await fetch('../velez_data.json');if(r.ok)DATA=await r.json();}catch(_){}
   }
-}
-
-// ── INSAR ──────────────────────────────────────────────────────────────────
-function renderInsar(d) {
-  const sectores = d?.sectores || {};
-  const items = [
-    { lbl:'Amalfitani Norte', val: extractInsar(sectores.estadio?.detalle) },
-    { lbl:'Amalfitani Sur',   val: 0.60 },
-    { lbl:'Básquet',          val: extractInsar(sectores.poli?.detalle) || 0.85 },
-    { lbl:'Sede',             val: extractInsar(sectores.sede?.detalle) || 0.22 },
-  ];
-  document.getElementById('insar-row').innerHTML = items.map(item=>{
-    const v = item.val || 0;
-    const cls = v >= INSAR_UMBRAL ? 'crit' : v >= 1.0 ? 'warn' : 'ok';
-    const pct = Math.min(100, (v/3)*100);
-    return `<div class="insar-c">
-      <div class="insar-val ${cls}">${v.toFixed(2)}<span style="font-size:10px;color:var(--dim)"> mm</span></div>
-      <div class="insar-lbl">${item.lbl}</div>
-      <div class="insar-bar"><div class="insar-bar-fill" style="width:${pct}%;background:${cls==='crit'?'var(--red)':cls==='warn'?'var(--yel)':'var(--grn)'}"></div></div>
-    </div>`;
-  }).join('');
-}
-
-function extractInsar(detalle) {
-  if(!detalle) return null;
-  const m = String(detalle).match(/InSAR[\s:]*([0-9.]+)/i);
-  return m ? parseFloat(m[1]) : null;
-}
-
-// ── LOG INTERVENCIÓN (backend) ─────────────────────────────────────────────
-async function logIntervencion(tipo, cid) {
-  try {
-    await fetch(`${RAILWAY}/velez/log-intervencion`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ tipo, cancha_id: cid||'general',
-        fecha: new Date().toISOString().slice(0,10), pin:'roger2026' })
-    });
-  } catch(_) {}
-}
-
-
-// SVG CAMPO PRESCRIPCIÓN
-function buildCampoSVG(c, semCorregido) {
-  var s = semCorregido || sem(c.sem);
-  var ndvi = c.ndvi || 0;
-  var month2 = new Date().getMonth()+1;
-  var winter2 = month2>=5 && month2<=8;
-  // En invierno con NDVI normal: campo más verde (pasto real aunque NDVI sea bajo)
-  var fc = winter2 && ndvi>=0.03 ? '#1c3318' :
-           ndvi>0.45?'#1a3a20':ndvi>0.25?'#1e3818':ndvi>0.10?'#252a14':'#2a1a0e';
-  var W=260, H=160;
-  var zonas = [];
-  var detalle = c.detalle || '';
-  var month = new Date().getMonth()+1;
-  var winter = month>=5 && month<=8;
-  var ndvi_real = c.ndvi || 0;
-  // En invierno: mostrar OK salvo NDVI muy bajo (<0.03 = suelo desnudo real)
-  if(winter && ndvi_real >= 0.03) {
-    zonas.push({x:W*0.5,y:H*0.5,rx:20,ry:13,col:'#4a9e6a',lbl:'OK',op:0.18});
-  } else if(s==='rojo') {
-    zonas.push({x:W*0.5,y:H*0.5,rx:36,ry:20,col:'#d94f4f',lbl:'URGENTE',op:0.22});
-    if(detalle.indexOf('límite')!==-1||detalle.indexOf('120')!==-1) {
-      zonas.push({x:W*0.10,y:H*0.5,rx:16,ry:12,col:'#d94f4f',lbl:'',op:0.28});
-      zonas.push({x:W*0.90,y:H*0.5,rx:16,ry:12,col:'#d94f4f',lbl:'',op:0.28});
-    }
-  } else if(s==='amarillo') {
-    zonas.push({x:W*0.35,y:H*0.45,rx:24,ry:15,col:'#d4a017',lbl:'MONIT.',op:0.18});
-  } else {
-    zonas.push({x:W*0.5,y:H*0.5,rx:20,ry:13,col:'#4a9e6a',lbl:'OK',op:0.20});
-  }
-  var zsvg = zonas.map(function(z) {
-    return '<ellipse cx="'+z.x+'" cy="'+z.y+'" rx="'+z.rx+'" ry="'+z.ry+'" fill="'+z.col+'" fill-opacity="'+z.op+'" stroke="'+z.col+'" stroke-width="1.5" stroke-opacity=".7"/>'
-      +(z.lbl?'<text x="'+z.x+'" y="'+(z.y+4)+'" text-anchor="middle" font-size="8" font-weight="700" fill="'+z.col+'" opacity=".9">'+z.lbl+'</text>':'');
-  }).join('');
-  return '<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;border-radius:0 0 8px 8px">'
-    +'<rect x="8" y="5" width="'+(W-16)+'" height="'+(H-10)+'" rx="3" fill="'+fc+'" stroke="rgba(255,255,255,.12)" stroke-width="1"/>'
-    +'<line x1="'+(W/2)+'" y1="5" x2="'+(W/2)+'" y2="'+(H-5)+'" stroke="rgba(255,255,255,.18)" stroke-width=".8"/>'
-    +'<circle cx="'+(W/2)+'" cy="'+(H/2)+'" r="20" fill="none" stroke="rgba(255,255,255,.18)" stroke-width=".8"/>'
-    +'<circle cx="'+(W/2)+'" cy="'+(H/2)+'" r="2" fill="rgba(255,255,255,.25)"/>'
-    +'<rect x="8" y="'+(H/2-21)+'" width="28" height="42" fill="none" stroke="rgba(255,255,255,.14)" stroke-width=".8"/>'
-    +'<rect x="'+(W-36)+'" y="'+(H/2-21)+'" width="28" height="42" fill="none" stroke="rgba(255,255,255,.14)" stroke-width=".8"/>'
-    +'<rect x="8" y="'+(H/2-8)+'" width="7" height="16" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1.2"/>'
-    +'<rect x="'+(W-15)+'" y="'+(H/2-8)+'" width="7" height="16" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1.2"/>'
-    +zsvg
-    +'<text x="'+(W-10)+'" y="'+(H-8)+'" text-anchor="end" font-size="7" fill="rgba(255,255,255,.3)">NDVI '+fmtNdvi(c.ndvi)+'</text>'
-    +'</svg>';
-}
-
-// ── MAIN ───────────────────────────────────────────────────────────────────
-(async () => {
-  DATA = await loadData();
-  document.getElementById('loading').style.display = 'none';
-
-  if(!DATA) {
-    document.getElementById('wrap').innerHTML =
-      '<div style="padding:40px;text-align:center;color:var(--dim)">Sin conexión. Intentá en unos minutos.</div>';
+  document.getElementById('loading').style.display='none';
+  if(!DATA){
+    document.getElementById('content').innerHTML='<div style="padding:40px;text-align:center;color:var(--dim)">Sin conexión. Intentá en unos minutos.</div>';
     return;
   }
-
-  renderHeader(DATA);
-  renderLunes(DATA);
-  renderIntervGlobal(DATA);
-  renderAlertas(DATA);
-  renderCanchas(DATA);
-  renderClima(DATA);
-  renderTareas(DATA);
-  renderInsar(DATA);
+  buildTabs();
+  renderAll();
 })();
 </script>
 </body>
