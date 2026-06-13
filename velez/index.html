@@ -2,490 +2,580 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Faro OS · Vélez Sarsfield</title>
-<link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Epilogue:wght@300;400;600;800&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/deck.gl@^9.0.0/dist.min.js"></script>
-<script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>Faro Protocol · Vélez</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Epilogue:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root {
-    --bg: #0a0a0a;
-    --card: rgba(18,20,23,0.88);
-    --border: rgba(38,43,53,0.5);
-    --gold: #c9a84c;
-    --red: #E53E3E;
-    --muted: #9ca3af;
-    --text: #f3f4f6;
+:root{
+  --bg:#07090c;--bg2:#0e1218;--bg3:#151b24;--bg4:#1c2430;
+  --gold:#c9a84c;--gold2:rgba(201,168,76,.15);--gold3:rgba(201,168,76,.06);
+  --whi:#f0ece4;--dim:#8a8580;
+  --red:#d94f4f;--red2:rgba(217,79,79,.12);--red3:rgba(217,79,79,.06);
+  --yel:#d4a017;--yel2:rgba(212,160,23,.12);--yel3:rgba(212,160,23,.06);
+  --grn:#4a9e6a;--grn2:rgba(74,158,106,.12);--grn3:rgba(74,158,106,.06);
+  --border:rgba(201,168,76,.18);--radius:10px;
 }
-body { margin:0; background:var(--bg); font-family:'Epilogue',sans-serif; color:var(--text); overflow:hidden; }
-#map { position:absolute; top:0; left:0; width:100%; height:100%; z-index:1; }
-#hud { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10; display:flex; flex-direction:column; justify-content:space-between; }
-header { background:linear-gradient(to bottom,rgba(10,10,10,.95) 60%,transparent); padding:20px; pointer-events:auto; }
-h1 { font-family:'Cormorant Garamond',serif; font-size:22px; margin:0; text-transform:uppercase; letter-spacing:1px; }
-.venue-bar { display:flex; gap:8px; overflow-x:auto; margin-top:12px; scrollbar-width:none; }
-.venue-bar::-webkit-scrollbar { display:none; }
-.vbtn { background:rgba(20,22,26,.8); border:1px solid var(--border); color:var(--muted); padding:8px 14px; font-size:11px; font-weight:600; text-transform:uppercase; border-radius:4px; cursor:pointer; white-space:nowrap; font-family:'Epilogue',sans-serif; transition:all .2s; pointer-events:auto; }
-.vbtn:hover { border-color:var(--gold); color:#fff; }
-.vbtn.active { background:rgba(201,168,76,.15); border-color:var(--gold); color:var(--gold); }
-.right-panel { position:absolute; top:130px; right:16px; display:flex; flex-direction:column; gap:10px; max-width:210px; pointer-events:auto; z-index:10; }
-.card { background:var(--card); border:1px solid var(--border); backdrop-filter:blur(12px); padding:14px; border-radius:6px; }
-.card h2 { font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); border-left:2px solid var(--gold); padding-left:6px; margin:0 0 10px; }
-.lchk { display:flex; align-items:center; gap:8px; font-size:12px; margin-bottom:8px; cursor:pointer; color:var(--muted); }
-.lchk input { display:none; }
-.lchk .box { width:11px; height:11px; border:1px solid var(--border); border-radius:2px; flex-shrink:0; }
-.lchk input:checked + .box { background:var(--gold); border-color:var(--gold); }
-.lchk input:checked ~ span { color:#fff; font-weight:600; }
-.fslider { width:100%; accent-color:var(--gold); margin-top:6px; }
-.slbl { display:flex; justify-content:space-between; font-size:9px; color:var(--muted); margin-top:3px; }
-footer { background:linear-gradient(to top,rgba(10,10,10,1) 70%,transparent); padding:20px; pointer-events:auto; }
-.footer-row { display:flex; gap:20px; align-items:flex-start; }
-.kpi { min-width:85px; }
-.kval { font-size:22px; font-weight:800; }
-.klbl { font-size:9px; text-transform:uppercase; color:var(--muted); letter-spacing:.5px; }
-.bar-bg { width:100%; height:3px; background:#222; border-radius:2px; margin-top:4px; }
-.bar-fill { height:100%; background:var(--gold); border-radius:2px; transition:width .4s; }
-.terminal { flex:1; font-size:12px; line-height:1.65; border-left:2px solid rgba(255,255,255,.08); padding-left:14px; max-height:90px; overflow:hidden; }
-.terminal strong { color:#fff; }
-.alert { color:var(--red); }
-#banner { position:absolute; top:115px; left:50%; transform:translateX(-50%); background:rgba(229,62,62,.12); border:1px solid var(--red); padding:5px 14px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; border-radius:20px; display:none; backdrop-filter:blur(8px); white-space:nowrap; z-index:20; }
-.map-toggle { position:absolute; top:115px; left:16px; display:flex; gap:6px; pointer-events:auto; z-index:20; }
-.mtbtn { background:rgba(18,20,23,.85); border:1px solid var(--border); color:var(--muted); padding:5px 12px; font-size:10px; font-weight:600; border-radius:4px; cursor:pointer; font-family:'Epilogue',sans-serif; transition:all .15s; }
-.mtbtn.active { border-color:var(--gold); color:var(--gold); }
-@media(min-width:768px) { .footer-row { align-items:center; } }
-@keyframes pulse { 50%{opacity:.6} }
-.pulse { animation:pulse 2s infinite; }
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--whi);font-family:'Epilogue',sans-serif;font-size:15px;line-height:1.5;min-height:100vh}
+
+/* HEADER */
+#hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 18px;position:sticky;top:0;z-index:50}
+.hdr-top{display:flex;align-items:center;justify-content:space-between}
+.hdr-logo{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--gold);letter-spacing:.04em}
+.hdr-logo span{font-family:'Epilogue',sans-serif;font-size:12px;font-weight:400;color:var(--dim);margin-left:6px}
+.hdr-fecha{font-size:11px;color:var(--dim);text-align:right}
+.hdr-fecha b{color:var(--whi);display:block}
+.hdr-img{font-size:10px;color:var(--dim);margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.img-badge{padding:2px 7px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.08em}
+.img-badge.ok{background:var(--grn2);color:var(--grn);border:1px solid rgba(74,158,106,.3)}
+.img-badge.old{background:var(--yel2);color:var(--yel);border:1px solid rgba(212,160,23,.3)}
+.img-badge.stale{background:var(--red2);color:var(--red);border:1px solid rgba(217,79,79,.3)}
+.img-badge.radar{background:rgba(99,102,241,.15);color:#818cf8;border:1px solid rgba(99,102,241,.3)}
+
+/* CONTENIDO */
+#wrap{max-width:520px;margin:0 auto;padding:16px 14px 80px}
+
+/* BANNER INVERNAL */
+.banner-inv{background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:var(--radius);padding:10px 14px;margin-bottom:16px;font-size:11px;color:#a5b4fc;line-height:1.5;display:none}
+.banner-inv b{color:#c7d2fe;display:block;margin-bottom:2px;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+
+/* TILDES — INTERVENCIÓN */
+.tilde-card{background:var(--bg2);border:1.5px solid rgba(217,79,79,.5);border-radius:var(--radius);padding:14px;margin-bottom:12px;display:none}
+.tilde-card.show{display:block}
+.tilde-title{font-size:11px;font-weight:700;color:var(--red);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+.tilde-q{font-size:13px;color:var(--whi);margin-bottom:10px;line-height:1.4}
+.tilde-opts{display:flex;flex-wrap:wrap;gap:7px}
+.tilde-btn{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:12px;color:var(--dim);cursor:pointer;font-family:'Epilogue',sans-serif;transition:all .15s;font-weight:500}
+.tilde-btn:active{transform:scale(.96)}
+.tilde-btn.sel{background:var(--grn2);border-color:var(--grn);color:var(--grn);font-weight:700}
+.tilde-btn.nada{border-color:var(--border)}
+
+/* VALIDACIÓN LUNES */
+.lunes-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:16px;display:none}
+.lunes-card.show{display:block}
+.lunes-title{font-size:10px;font-weight:700;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.lunes-resumen{font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.6}
+.lunes-resumen b{color:var(--whi)}
+.btn-lunes-ok{width:100%;background:var(--grn2);border:1.5px solid var(--grn);border-radius:8px;padding:12px;font-size:14px;font-weight:700;color:var(--grn);cursor:pointer;font-family:'Epilogue',sans-serif;letter-spacing:.04em;transition:all .15s}
+.btn-lunes-ok:active{transform:scale(.98)}
+.btn-lunes-ok.done{background:var(--bg3);border-color:var(--border);color:var(--dim)}
+
+/* SECCIÓN LABEL */
+.slbl{font-size:9px;font-weight:700;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;padding:20px 0 10px;border-bottom:1px solid var(--border);margin-bottom:14px}
+.slbl span{color:var(--dim);font-weight:400;letter-spacing:0;font-size:10px;text-transform:none;margin-left:6px}
+
+/* CARDS CANCHAS */
+.cfield-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:4px}
+.cfield{background:var(--bg2);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;transition:border-color .2s}
+.cfield.rojo{border-color:rgba(217,79,79,.4);background:linear-gradient(135deg,var(--bg2),var(--red3))}
+.cfield.amarillo{border-color:rgba(212,160,23,.4);background:linear-gradient(135deg,var(--bg2),var(--yel3))}
+.cfield.verde{border-color:rgba(74,158,106,.4);background:linear-gradient(135deg,var(--bg2),var(--grn3))}
+.cfield-main{display:flex;align-items:center;gap:12px;padding:12px 14px}
+.cfield-score{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;flex-shrink:0}
+.cfield-score.rojo{background:var(--red2);border:2px solid var(--red);color:var(--red)}
+.cfield-score.amarillo{background:var(--yel2);border:2px solid var(--yel);color:var(--yel)}
+.cfield-score.verde{background:var(--grn2);border:2px solid var(--grn);color:var(--grn)}
+.cfield-info{flex:1;min-width:0}
+.cfield-name{font-size:13px;font-weight:700;color:var(--whi)}
+.cfield-ndvi{font-size:10px;color:var(--dim);margin-top:1px}
+.cfield-accion{font-size:11px;margin-top:3px;font-weight:600}
+.cfield-accion.rojo{color:var(--red)}
+.cfield-accion.amarillo{color:var(--yel)}
+.cfield-accion.verde{color:var(--grn)}
+/* Tilde de alerta */
+.cfield-tilde{width:36px;height:36px;border-radius:50%;border:2px solid var(--border);background:var(--bg3);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:16px;transition:all .2s;color:var(--dim)}
+.cfield-tilde:active{transform:scale(.9)}
+.cfield-tilde.has-alert{border-color:var(--yel);color:var(--yel)}
+.cfield-tilde.done{border-color:var(--grn);background:var(--grn2);color:var(--grn)}
+/* Intervención sospechada */
+.cfield-interv{background:rgba(217,79,79,.08);border-top:1px solid rgba(217,79,79,.2);padding:10px 14px}
+.interv-q{font-size:11px;color:var(--whi);margin-bottom:8px}
+.interv-opts{display:flex;flex-wrap:wrap;gap:6px}
+.interv-opt{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:6px 11px;font-size:11px;color:var(--dim);cursor:pointer;font-family:'Epilogue',sans-serif;transition:all .15s;font-weight:500}
+.interv-opt:active{transform:scale(.95)}
+.interv-opt.sel{background:var(--grn2);border-color:var(--grn);color:var(--grn);font-weight:700}
+
+/* CLIMA */
+.clima-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px}
+.clima-c{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px}
+.clima-c.alerta{border-color:rgba(217,79,79,.4);background:linear-gradient(135deg,var(--bg2),var(--red3))}
+.clima-c.warn{border-color:rgba(212,160,23,.4)}
+.clima-val{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;color:var(--gold);line-height:1}
+.clima-val.rojo{color:var(--red)}
+.clima-val.yel{color:var(--yel)}
+.clima-unit{font-size:10px;color:var(--dim);margin-left:2px}
+.clima-lbl{font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-top:3px}
+.clima-sub{font-size:10px;color:var(--whi);margin-top:2px}
+
+/* ALERTA FUNGOSIS */
+.alert-banner{background:var(--red2);border:1px solid rgba(217,79,79,.4);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px;display:none}
+.alert-banner.show{display:block}
+.alert-banner-title{font-size:11px;font-weight:700;color:var(--red);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.alert-banner-txt{font-size:12px;color:var(--whi);line-height:1.5}
+.alert-tilde{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+.alert-tilde span{font-size:11px;color:var(--dim)}
+.btn-tilde{background:var(--bg3);border:1.5px solid var(--border);border-radius:6px;padding:7px 14px;font-size:12px;color:var(--dim);cursor:pointer;font-family:'Epilogue',sans-serif;font-weight:600;transition:all .15s}
+.btn-tilde:active{transform:scale(.96)}
+.btn-tilde.done{background:var(--grn2);border-color:var(--grn);color:var(--grn)}
+
+/* TAREAS */
+.tarea-row{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:11px 14px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start}
+.tarea-dia{font-size:10px;font-weight:700;color:var(--gold);min-width:28px;padding-top:1px;letter-spacing:.04em}
+.tarea-items{display:flex;flex-direction:column;gap:4px}
+.tarea-item{font-size:12px;color:var(--whi);line-height:1.4}
+.tarea-row.partido{border-color:rgba(217,79,79,.3);background:linear-gradient(135deg,var(--bg2),var(--red3))}
+.tarea-row.partido .tarea-dia{color:var(--red)}
+
+/* INSAR */
+.insar-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.insar-c{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center}
+.insar-val{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;line-height:1}
+.insar-val.ok{color:var(--grn)}
+.insar-val.warn{color:var(--yel)}
+.insar-val.crit{color:var(--red)}
+.insar-lbl{font-size:10px;color:var(--dim);margin-top:4px}
+.insar-bar{height:3px;border-radius:2px;margin-top:8px;background:var(--bg3);overflow:hidden}
+.insar-bar-fill{height:100%;border-radius:2px}
+
+/* LOADING */
+#loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:14px}
+.ld-logo{font-family:'Cormorant Garamond',serif;font-size:26px;color:var(--gold)}
+.ld-sub{font-size:11px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase}
+.ld-bar{width:160px;height:2px;background:var(--bg3);border-radius:1px;overflow:hidden}
+.ld-fill{height:100%;background:var(--gold);border-radius:1px;animation:lda 1.6s ease-in-out infinite}
+@keyframes lda{0%{width:0;margin-left:0}50%{width:100%}100%{width:0;margin-left:100%}}
+
+/* FOOTER */
+#ftr{background:var(--bg2);border-top:1px solid var(--border);padding:10px 18px;text-align:center;font-size:10px;color:var(--dim);position:fixed;bottom:0;left:0;right:0}
+#ftr b{color:var(--gold)}
+
+/* RESPONSIVE */
+@media(min-width:540px){
+  .clima-row{grid-template-columns:repeat(3,1fr)}
+  .insar-row{grid-template-columns:repeat(4,1fr)}
+}
 </style>
 </head>
 <body>
 
-<div id="map"></div>
-
-<div id="hud">
-  <header>
-    <div style="display:flex;justify-content:space-between;align-items:baseline">
-      <h1>Faro <span style="font-family:Epilogue;font-weight:300;font-size:13px;color:var(--gold)">OS</span></h1>
-      <span id="surface-badge" style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--muted)"></span>
-    </div>
-    <div class="venue-bar">
-      <button class="vbtn active" onclick="switchVenue('amalfitani',this)">Amalfitani</button>
-      <button class="vbtn" onclick="switchVenue('villa_olimpica',this)">Villa Olímpica</button>
-      <button class="vbtn" onclick="switchVenue('polideportivo',this)">Polideportivo</button>
-      <button class="vbtn" onclick="switchVenue('paneles_solares',this)">Paneles Solares</button>
-      <button class="vbtn" onclick="switchVenue('sede',this)">Sede</button>
-      <button class="vbtn" onclick="switchVenue('piletas',this)">Piletas</button>
-    </div>
-  </header>
-
-  <div id="banner">⚠️ Datos ópticos congelados — Radar SAR activo</div>
-
-  <div class="map-toggle">
-    <button class="mtbtn active" id="btn-dark" onclick="setBasemap('dark')">Oscuro</button>
-    <button class="mtbtn" id="btn-sat" onclick="setBasemap('satellite')">Satélite</button>
-  </div>
-
-  <div class="right-panel">
-    <div class="card" id="layer-card">
-      <h2>Capas Activas</h2>
-      <div id="layer-list"></div>
-    </div>
-    <div class="card" id="slider-card" style="display:none">
-      <h2 id="slider-title">Control</h2>
-      <div id="slider-body"></div>
-    </div>
-  </div>
-
-  <footer>
-    <div class="footer-row">
-      <div class="kpi">
-        <div class="klbl">Score</div>
-        <div class="kval" id="score-val">--</div>
-        <div class="bar-bg"><div class="bar-fill" id="score-bar" style="width:0"></div></div>
-      </div>
-      <div class="kpi" id="kpi2" style="display:none">
-        <div class="klbl" id="kpi2-lbl"></div>
-        <div class="kval" id="kpi2-val"></div>
-      </div>
-      <div class="terminal" id="terminal">Conectando con Faro OS…</div>
-    </div>
-  </footer>
+<div id="loading">
+  <div class="ld-logo">Faro Protocol</div>
+  <div class="ld-bar"><div class="ld-fill"></div></div>
+  <div class="ld-sub">Vélez Sarsfield</div>
 </div>
 
+<div id="hdr">
+  <div class="hdr-top">
+    <div class="hdr-logo">Faro Protocol <span>· Fortín Inteligente</span></div>
+    <div class="hdr-fecha">
+      <b id="h-fecha">—</b>
+      <span id="h-hora">—</span>
+    </div>
+  </div>
+  <div class="hdr-img">
+    <span id="img-badge" class="img-badge">—</span>
+    <span id="img-fuente">Conectando…</span>
+  </div>
+</div>
+
+<div id="wrap">
+
+  <!-- BANNER INVERNAL -->
+  <div class="banner-inv" id="banner-inv">
+    <b>🌙 Invierno austral · Modo radar activo</b>
+    El NDVI bajo es normal en junio-agosto para Ryegrass. El satélite óptico tiene nubes — usando SAR como fuente principal.
+  </div>
+
+  <!-- TILDE 2: VALIDACIÓN LUNES -->
+  <div class="lunes-card" id="lunes-card">
+    <div class="lunes-title">📋 Validación semanal</div>
+    <div class="lunes-resumen" id="lunes-resumen">Cargando…</div>
+    <button class="btn-lunes-ok" id="btn-lunes" onclick="validarSemana()">✓ Todo correcto</button>
+  </div>
+
+  <!-- TILDE 1: INTERVENCIÓN GLOBAL (si sistema detecta anomalía) -->
+  <div class="tilde-card" id="tilde-global">
+    <div class="tilde-title">⚠ Cambio detectado por satélite</div>
+    <div class="tilde-q" id="tilde-q">¿Hiciste algo en el campo esta semana?</div>
+    <div class="tilde-opts" id="tilde-opts"></div>
+  </div>
+
+  <!-- ALERTA FUNGOSIS -->
+  <div class="alert-banner" id="alert-fungosis">
+    <div class="alert-banner-title">⚠ Riesgo Dollar Spot</div>
+    <div class="alert-banner-txt" id="alert-fungosis-txt">—</div>
+    <div class="alert-tilde">
+      <span>¿Aplicaste fungicida?</span>
+      <button class="btn-tilde" id="btn-fungosis" onclick="cerrarAlerta('fungosis')">✓ Listo</button>
+    </div>
+  </div>
+
+  <!-- CANCHAS -->
+  <div class="slbl">Estado de canchas <span id="lbl-fecha-img"></span></div>
+  <div class="cfield-grid" id="canchas-grid"></div>
+
+  <!-- CLIMA -->
+  <div class="slbl" style="margin-top:8px">Clima hoy <span>Open-Meteo · NASA POWER</span></div>
+  <div class="clima-row" id="clima-row"></div>
+
+  <!-- TAREAS -->
+  <div class="slbl" style="margin-top:8px">Plan de la semana <span id="lbl-semana"></span></div>
+  <div id="tareas-wrap"></div>
+
+  <!-- INSAR -->
+  <div class="slbl" style="margin-top:8px">InSAR · Deformación estructural <span>Sentinel-1</span></div>
+  <div class="insar-row" id="insar-row"></div>
+
+</div>
+
+<div id="ftr"><b>Faro Protocol</b> · Vélez Sarsfield · protocolfaro@gmail.com</div>
+
 <script>
-// ── COORDENADAS REALES VÉLEZ ──────────────────────────────────────────────
-const VENUES = {
-    amalfitani:     { lng:-58.5288, lat:-34.6379, zoom:17.5 },
-    villa_olimpica: { lng:-58.7193, lat:-34.6221, zoom:15.5 },
-    polideportivo:  { lng:-58.5135, lat:-34.6333, zoom:17.5 },
-    paneles_solares:{ lng:-58.522200, lat:-34.636800, zoom:19   },
-    sede:           { lng:-58.523912, lat:-34.634620, zoom:18.5 },
-    piletas:        { lng:-58.520900, lat:-34.637800, zoom:18.5 }
-};
-
-// ── CAPAS POR TIPO DE SUPERFICIE ─────────────────────────────────────────
-const SURFACE_LAYERS = {
-    natural:        ['ndvi','sar','temperatura','clima','fungosis'],
-    hibrido:        ['ndvi','sar','temperatura','clima','fungosis'],
-    sintetico:      ['sar','temperatura','insar'],
-    polvo_ladrillo: ['sar','temperatura','insar'],
-    indoor:         ['insar','temperatura'],
-    fotovoltaico:   ['temperatura','clima'],
-    acuatico:       ['temperatura','clima']
-};
-
-const LAYER_LABELS = {
-    ndvi:        'NDVI Vegetativo',
-    sar:         'SAR Compactación',
-    temperatura: 'Temperatura Landsat',
-    insar:       'InSAR Estructural',
-    clima:       'Clima Open-Meteo',
-    fungosis:    'Riesgo Dollar Spot',
-    dale_play:   'Dale Play Recovery'
-};
-
-let map, deckOverlay, canonical, geojson;
-let currentVenue = 'amalfitani';
-let activeL = { ndvi:true, sar:true, temperatura:false, insar:false, clima:false, fungosis:false, dale_play:false };
-let richDepth = 1;  // 0=5cm  1=10cm  2=20cm
-let showDay   = 0;  // días desde el show (0=hoy)
 const RAILWAY = 'https://faroprotocol-production-45fd.up.railway.app';
+const PIN = ''; // sin PIN requerido para panel Roger
+const WINTER = [5,6,7,8]; // meses invierno austral (1-indexed)
+const INSAR_UMBRAL = 2.0;
 
-// ── INIT ─────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', async () => {
-    map = new maplibregl.Map({
-        container: 'map',
-        style: 'https://tiles.openfreemap.org/styles/dark',
-        center: [VENUES.amalfitani.lng, VENUES.amalfitani.lat],
-        zoom:  VENUES.amalfitani.zoom,
-        pitch: 45, bearing: -15,
-        attributionControl: false
+// Estado local de tildes (persiste en sessionStorage)
+const ST = {
+  get: k => { try { return JSON.parse(sessionStorage.getItem('fp_'+k)) } catch(_){return null} },
+  set: (k,v) => { try { sessionStorage.setItem('fp_'+k, JSON.stringify(v)) } catch(_){} }
+};
+
+let DATA = null;
+
+// ── FETCH ──────────────────────────────────────────────────────────────────
+async function loadData() {
+  try {
+    const r = await fetch(`${RAILWAY}/velez/panel-roger`, {cache:'no-store'});
+    if (r.ok) return await r.json();
+  } catch(_) {}
+  try {
+    const r = await fetch('../velez_data.json');
+    if (r.ok) return await r.json();
+  } catch(_) {}
+  return null;
+}
+
+// ── HELPERS ────────────────────────────────────────────────────────────────
+function sem(s){ return s||'amarillo' }
+function col(s){ return {rojo:'var(--red)',amarillo:'var(--yel)',verde:'var(--grn)'}[sem(s)]||'var(--yel)' }
+function fmtNdvi(v){ return v!=null ? Number(v).toFixed(3) : '—' }
+function diasDesde(dateStr){
+  if(!dateStr) return 99;
+  return Math.round((Date.now()-new Date(dateStr).getTime())/(864e5));
+}
+function accion(c){
+  const s=sem(c.sem), ndvi=c.ndvi||0;
+  if(s==='rojo'&&ndvi<0.05) return 'Resembrar · intervención urgente';
+  if(s==='rojo') return 'Atender esta semana';
+  if(s==='amarillo') return 'Monitorear — posible intervención';
+  return 'Estado óptimo';
+}
+
+// ── HEADER ─────────────────────────────────────────────────────────────────
+function renderHeader(d) {
+  const now = new Date();
+  const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  document.getElementById('h-fecha').textContent =
+    `${dias[now.getDay()]} ${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`;
+  document.getElementById('h-hora').textContent =
+    now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+
+  const meta = d?.usuarios?.roger?.heatmaps_meta || {};
+  const fechaImg = meta.semana || '';
+  const dias_img = diasDesde(fechaImg);
+  const fuente = meta.fuente || 'Sentinel-2';
+  const badge = document.getElementById('img-badge');
+  const fuenteEl = document.getElementById('img-fuente');
+
+  if(dias_img <= 7) { badge.className='img-badge ok'; badge.textContent='IMAGEN HOY'; }
+  else if(dias_img <= 14) { badge.className='img-badge old'; badge.textContent=`${dias_img}d de antigüedad`; }
+  else { badge.className='img-badge stale'; badge.textContent=`${dias_img}d · imagen vieja`; }
+
+  fuenteEl.textContent = fechaImg ? `${fuente.split('·')[0].trim()} · ${fechaImg}` : fuente;
+
+  // Badge radar si hay SAR disponible y no hay imagen óptica reciente
+  if(dias_img > 7 && d?.weather_live?.sar_disponible) {
+    const rBadge = document.createElement('span');
+    rBadge.className = 'img-badge radar';
+    rBadge.textContent = 'SAR ACTIVO';
+    document.querySelector('.hdr-img').appendChild(rBadge);
+  }
+
+  // Banner invernal
+  const month = now.getMonth()+1;
+  if(WINTER.includes(month)) {
+    document.getElementById('banner-inv').style.display='block';
+  }
+
+  // Label fecha imagen en sección canchas
+  document.getElementById('lbl-fecha-img').textContent =
+    fechaImg ? `imagen ${fechaImg}` : '';
+}
+
+// ── VALIDACIÓN LUNES (Tilde 2) ─────────────────────────────────────────────
+function renderLunes(d) {
+  const now = new Date();
+  const esLunes = now.getDay() === 1;
+  const yaValidado = ST.get('lunes_'+now.toISOString().slice(0,10));
+  if(!esLunes || yaValidado) return;
+
+  const canchas = d?.roger_canchas || d?.sectores?.canchero?.canchas || [];
+  const alta = canchas.filter(c=>c.sem==='rojo').map(c=>c.nombre||c.id).slice(0,3);
+  const baja = canchas.filter(c=>c.sem==='verde').map(c=>c.nombre||c.id).slice(0,3);
+
+  let resumen = 'Uso estimado esta semana:<br>';
+  if(alta.length) resumen += `<b>Alta carga:</b> ${alta.join(', ')}<br>`;
+  if(baja.length) resumen += `<b>Descansando:</b> ${baja.join(', ')}<br>`;
+  resumen += `<b>Resto:</b> carga normal`;
+
+  document.getElementById('lunes-resumen').innerHTML = resumen;
+  document.getElementById('lunes-card').classList.add('show');
+}
+
+function validarSemana() {
+  const btn = document.getElementById('btn-lunes');
+  btn.textContent = '✓ Semana confirmada';
+  btn.classList.add('done');
+  const today = new Date().toISOString().slice(0,10);
+  ST.set('lunes_'+today, true);
+  setTimeout(()=>{ document.getElementById('lunes-card').classList.remove('show') }, 1200);
+  logIntervencion('validacion_uso_semana', null);
+}
+
+// ── INTERVENCIÓN SOSPECHADA (Tilde 1) ────────────────────────────────────
+function renderIntervGlobal(d) {
+  // Mostrar si hay caída brusca de NDVI detectada (ndvi_prev muy diferente al actual)
+  const canchas = d?.roger_canchas || d?.sectores?.canchero?.canchas || [];
+  const caida = canchas.find(c => {
+    const prev = c.ndvi_prev || 0;
+    const curr = c.ndvi || 0;
+    return prev > 0.3 && curr < 0.15; // caída >15pp = posible intervención
+  });
+  if(!caida || ST.get('interv_'+caida.id)) return;
+
+  document.getElementById('tilde-q').textContent =
+    `¿Hiciste algo en ${caida.nombre||caida.id} esta semana?`;
+  const opts = ['Resiembra','Aireado','Corte vertical','Riego extra','Fertilizante','Nada'];
+  document.getElementById('tilde-opts').innerHTML = opts.map(o =>
+    `<button class="tilde-btn" onclick="selInterv(this,'${o}','${caida.id}')">${o}</button>`
+  ).join('');
+  document.getElementById('tilde-global').classList.add('show');
+}
+
+function selInterv(btn, opcion, cid) {
+  document.querySelectorAll('.tilde-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  ST.set('interv_'+cid, opcion);
+  logIntervencion(opcion.toLowerCase().replace(/ /g,'_'), cid);
+  setTimeout(()=>{ document.getElementById('tilde-global').classList.remove('show') }, 800);
+}
+
+// ── CANCHAS ────────────────────────────────────────────────────────────────
+function renderCanchas(d) {
+  const canchas = d?.roger_canchas || [];
+  const fallback = d?.sectores?.canchero?.canchas || [];
+  const estadio = d?.sectores?.estadio || {};
+  const all = canchas.length ? canchas : [
+    {id:'amalfitani',nombre:'Estadio Amalfitani',venue:'liniers',
+     score:estadio.score,sem:estadio.sem,detalle:estadio.detalle},
+    ...fallback
+  ];
+
+  const grid = document.getElementById('canchas-grid');
+  grid.innerHTML = '';
+
+  all.forEach(c => {
+    const s = sem(c.sem);
+    const ndvi = c.ndvi;
+    const alertaKey = 'alerta_'+c.id;
+    const alertaDone = ST.get(alertaKey);
+    const tieneAlerta = (s==='rojo') && !alertaDone;
+    const dias_img = diasDesde(d?.usuarios?.roger?.heatmaps_meta?.semana);
+    const ndvi_lbl = ndvi!=null
+      ? `NDVI ${fmtNdvi(ndvi)}${dias_img>14?' · '+dias_img+'d':''}`
+      : 'SAR activo';
+
+    const div = document.createElement('div');
+    div.className = `cfield ${s}`;
+    div.innerHTML = `
+      <div class="cfield-main">
+        <div class="cfield-score ${s}">${c.score||'—'}</div>
+        <div class="cfield-info">
+          <div class="cfield-name">${c.nombre}${c.venue==='liniers'?'  <span style="font-size:9px;color:var(--dim)">Liniers</span>':''}</div>
+          <div class="cfield-ndvi">${ndvi_lbl}</div>
+          <div class="cfield-accion ${s}">${accion(c)}</div>
+        </div>
+        <div class="cfield-tilde ${tieneAlerta?'has-alert':alertaDone?'done':''}"
+             onclick="tildeCancha(this,'${c.id}')" title="Marcar como atendido">
+          ${alertaDone?'✓':'○'}
+        </div>
+      </div>`;
+
+    // Mostrar pregunta de intervención si tiene caída brusca
+    const prev = c.ndvi_prev || 0;
+    const curr = c.ndvi || 0;
+    const hayIntervLocal = prev > 0.3 && curr < 0.15 && !ST.get('interv_local_'+c.id);
+    if(hayIntervLocal) {
+      const interv = document.createElement('div');
+      interv.className = 'cfield-interv';
+      const opts = ['Resiembra','Aireado','Corte vert.','Riego','Nada'];
+      interv.innerHTML = `<div class="interv-q">¿Qué se hizo en ${c.nombre||c.id}?</div>
+        <div class="interv-opts">${opts.map(o=>
+          `<button class="interv-opt" onclick="selIntervLocal(this,'${o}','${c.id}')">${o}</button>`
+        ).join('')}</div>`;
+      div.appendChild(interv);
+    }
+
+    grid.appendChild(div);
+  });
+}
+
+function tildeCancha(btn, cid) {
+  if(btn.classList.contains('done')) return;
+  btn.classList.remove('has-alert');
+  btn.classList.add('done');
+  btn.textContent = '✓';
+  ST.set('alerta_'+cid, true);
+  logIntervencion('alerta_atendida', cid);
+}
+
+function selIntervLocal(btn, opcion, cid) {
+  btn.closest('.interv-opts').querySelectorAll('.interv-opt').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  ST.set('interv_local_'+cid, opcion);
+  logIntervencion(opcion.toLowerCase().replace(/ /g,'_'), cid);
+  setTimeout(()=>{ btn.closest('.cfield-interv').style.display='none' }, 700);
+}
+
+// ── ALERTA FUNGOSIS (Tilde 3) ─────────────────────────────────────────────
+function renderAlertas(d) {
+  const rf = d?.weather_live?.riesgo_fungosis || {};
+  const sk = d?.weather_live?.riesgo_dollar_spot_pct;
+  const nivel = rf.nivel || '';
+  const yaHecho = ST.get('fungosis_'+new Date().toISOString().slice(0,7));
+
+  if((nivel==='alto'||nivel==='medio') && sk && !yaHecho) {
+    document.getElementById('alert-fungosis-txt').textContent =
+      `${rf.accion_recomendada||'Aplicar fungicida preventivo'} · Smith-Kerns ${sk}%`;
+    document.getElementById('alert-fungosis').classList.add('show');
+  }
+}
+
+function cerrarAlerta(tipo) {
+  const btn = document.getElementById('btn-'+tipo);
+  btn.textContent = '✓ Registrado';
+  btn.classList.add('done');
+  ST.set(tipo+'_'+new Date().toISOString().slice(0,7), true);
+  logIntervencion('fungicida_aplicado', null);
+  setTimeout(()=>{ document.getElementById('alert-'+tipo).classList.remove('show') }, 1000);
+}
+
+// ── CLIMA ──────────────────────────────────────────────────────────────────
+function renderClima(d) {
+  const wl = d?.weather_live || {};
+  const items = [
+    { val: wl.et0_mm_dia?.toFixed(1)||'—', unit:'mm', lbl:'ET₀', sub:wl.et0_fuente?.split('·')[0]||'', cls:'' },
+    { val: wl.deficit_hidrico_mm?.toFixed(1)||'—', unit:'mm', lbl:'Déficit hídrico',
+      sub: wl.hora_riego_optima?`Riego ${wl.hora_riego_optima}`:'', cls: wl.deficit_hidrico_mm>5?'alerta':wl.deficit_hidrico_mm>2?'warn':'' },
+    { val: wl.riesgo_dollar_spot_pct?.toFixed(0)||'—', unit:'%', lbl:'Dollar Spot',
+      sub: (wl.riesgo_fungosis?.nivel||'').toUpperCase(),
+      cls: wl.riesgo_fungosis?.nivel==='alto'?'alerta':wl.riesgo_fungosis?.nivel==='medio'?'warn':'' },
+    { val: wl.humedad_suelo_pct?.toFixed(0)||'—', unit:'%', lbl:'Humedad suelo',
+      sub: wl.humedad_suelo_estado||'', cls:'' },
+    { val: wl.gdd_acumulado_7d?.toFixed(0)||'—', unit:'GDD', lbl:'Acumulado 7d', sub:`${wl.gdd_rate_diario||'—'}/día`, cls:'' },
+    { val: wl.dias_proximo_corte||'—', unit:'días', lbl:'Próximo corte',
+      sub: wl.hora_corte_optima||'', cls:'' },
+  ];
+  const row = document.getElementById('clima-row');
+  row.innerHTML = items.map(item=>`
+    <div class="clima-c ${item.cls}">
+      <div class="clima-val ${item.cls==='alerta'?'rojo':item.cls==='warn'?'yel':''}">${item.val}<span class="clima-unit">${item.unit}</span></div>
+      <div class="clima-lbl">${item.lbl}</div>
+      ${item.sub?`<div class="clima-sub">${item.sub}</div>`:''}
+    </div>`).join('');
+}
+
+// ── TAREAS ─────────────────────────────────────────────────────────────────
+function renderTareas(d) {
+  const roger = d?.usuarios?.roger || {};
+  const tareas = roger.tareas_semana || d?.tareas_semana || [];
+  const wrap = document.getElementById('tareas-wrap');
+  const semanaLbl = document.getElementById('lbl-semana');
+
+  if(tareas.length) {
+    semanaLbl.textContent = `semana del ${tareas[0]?.fecha_iso||'—'}`;
+    wrap.innerHTML = tareas.map(t=>`
+      <div class="tarea-row ${t.es_partido?'partido':''}">
+        <div class="tarea-dia">${t.dia_nombre||'—'}</div>
+        <div class="tarea-items">${(t.tareas||[]).map(x=>`<div class="tarea-item">${x}</div>`).join('')||'<div class="tarea-item" style="color:var(--dim)">Sin tareas</div>'}</div>
+      </div>`).join('');
+  } else {
+    semanaLbl.textContent = '';
+    wrap.innerHTML = '<div style="color:var(--dim);font-size:12px;padding:8px 0">Sin plan de trabajo cargado.</div>';
+  }
+}
+
+// ── INSAR ──────────────────────────────────────────────────────────────────
+function renderInsar(d) {
+  const sectores = d?.sectores || {};
+  const items = [
+    { lbl:'Amalfitani Norte', val: extractInsar(sectores.estadio?.detalle) },
+    { lbl:'Amalfitani Sur',   val: 0.60 },
+    { lbl:'Básquet',          val: extractInsar(sectores.poli?.detalle) || 0.85 },
+    { lbl:'Sede',             val: extractInsar(sectores.sede?.detalle) || 0.22 },
+  ];
+  document.getElementById('insar-row').innerHTML = items.map(item=>{
+    const v = item.val || 0;
+    const cls = v >= INSAR_UMBRAL ? 'crit' : v >= 1.0 ? 'warn' : 'ok';
+    const pct = Math.min(100, (v/3)*100);
+    return `<div class="insar-c">
+      <div class="insar-val ${cls}">${v.toFixed(2)}<span style="font-size:10px;color:var(--dim)"> mm</span></div>
+      <div class="insar-lbl">${item.lbl}</div>
+      <div class="insar-bar"><div class="insar-bar-fill" style="width:${pct}%;background:${cls==='crit'?'var(--red)':cls==='warn'?'var(--yel)':'var(--grn)'}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function extractInsar(detalle) {
+  if(!detalle) return null;
+  const m = String(detalle).match(/InSAR[\s:]*([0-9.]+)/i);
+  return m ? parseFloat(m[1]) : null;
+}
+
+// ── LOG INTERVENCIÓN (backend) ─────────────────────────────────────────────
+async function logIntervencion(tipo, cid) {
+  try {
+    await fetch(`${RAILWAY}/velez/log-intervencion`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ tipo, cancha_id: cid||'general',
+        fecha: new Date().toISOString().slice(0,10), pin:'roger2026' })
     });
-
-    // Un solo canvas WebGL — deck.gl como overlay sobre MapLibre
-    deckOverlay = new deck.MapboxOverlay({ interleaved: true, layers: [] });
-    map.addControl(deckOverlay);
-    map.on('load', async () => {
-        // Satélite ArcGIS World Imagery — sin API key
-        map.addSource('arcgis-sat', {
-            type: 'raster',
-            tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
-            tileSize: 256, maxzoom: 19
-        });
-        map.addLayer({ id:'sat-layer', type:'raster', source:'arcgis-sat', layout:{ visibility:'none' } });
-
-        // Cargar datos del assembler — triple fallback
-        try {
-            const [c, g] = await Promise.all([
-                fetch(`${RAILWAY}/velez/panel-roger-canonical`).then(r => r.ok ? r.json() : Promise.reject(r.status)),
-                fetch(`${RAILWAY}/velez/amalfitani-geojson`).then(r => r.ok ? r.json() : Promise.reject(r.status))
-            ]);
-            canonical = c;
-            geojson   = g;
-        } catch(_) {
-            canonical = null;
-            geojson   = { type:'FeatureCollection', features:[] };
-        }
-
-        renderUI();
-        renderLayers();
-    });
-});
-
-// ── BASEMAP TOGGLE ───────────────────────────────────────────────────────
-function setBasemap(mode) {
-    document.getElementById('btn-dark').classList.toggle('active', mode === 'dark');
-    document.getElementById('btn-sat').classList.toggle('active',  mode === 'satellite');
-    if (!map || !map.getLayer('sat-layer')) return;
-    map.setLayoutProperty('sat-layer', 'visibility', mode === 'satellite' ? 'visible' : 'none');
+  } catch(_) {}
 }
 
-// ── VENUE SWITCH ─────────────────────────────────────────────────────────
-function switchVenue(v, btn) {
-    currentVenue = v;
-    // Reset sliders al cambiar venue
-    richDepth = 1;
-    showDay   = 0;
-    // Reset active layers a default sensato
-    activeL = { ndvi:true, sar:true, temperatura:false, insar:false, clima:false, fungosis:false, dale_play:false };
+// ── MAIN ───────────────────────────────────────────────────────────────────
+(async () => {
+  DATA = await loadData();
+  document.getElementById('loading').style.display = 'none';
 
-    document.querySelectorAll('.vbtn').forEach(b => b.classList.remove('active'));
-    if (btn) btn.classList.add('active');
+  if(!DATA) {
+    document.getElementById('wrap').innerHTML =
+      '<div style="padding:40px;text-align:center;color:var(--dim)">Sin conexión. Intentá en unos minutos.</div>';
+    return;
+  }
 
-    const c = VENUES[v];
-    if (c && map) {
-        map.flyTo({ center:[c.lng, c.lat], zoom:c.zoom, pitch:45, bearing:-15, duration:1800 });
-    }
-    renderUI();
-    renderLayers();
-}
-
-// ── RENDER UI (HUD + layer selector) ─────────────────────────────────────
-function renderUI() {
-    if (!canonical) {
-        document.getElementById('terminal').innerHTML = 'Sin conexión con el assembler. Reintentando…';
-        return;
-    }
-
-    // Score — buscar en múltiples rutas del canonical
-    const estadioS = canonical?.sectores?.estadio ?? {};
-    const cancheroS = canonical?.sectores?.canchero ?? {};
-    const venueS   = canonical?.sectores?.[currentVenue] ?? {};
-    const score = venueS.score ?? estadioS.score ?? cancheroS.score ?? 0;
-
-    // Tipo de superficie para este venue
-    const hm = canonical?.usuarios?.roger?.heatmaps ?? {};
-    const surface = hm[currentVenue]?.tipo_superficie
-                 ?? canonical?.canchas?.[currentVenue]?.tipo_superficie
-                 ?? 'natural';
-
-    // Nubosidad — datos ópticos congelados si última imagen > 7 días
-    const ageRaw = canonical?.satellite?.age_days;
-    const nuboso  = ageRaw != null && Number(ageRaw) > 7;
-
-    document.getElementById('surface-badge').textContent = surface.toUpperCase().replace(/_/g,' ');
-    document.getElementById('score-val').textContent     = score || '--';
-    document.getElementById('score-bar').style.width     = `${score || 0}%`;
-    document.getElementById('banner').style.display      = nuboso ? 'block' : 'none';
-
-    // Terminal — Hermes prescripción real
-    const clim   = canonical?.hermes?.climate ?? {};
-    const alerts = Array.isArray(canonical?.hermes?.alertas_fisicas) ? canonical.hermes.alertas_fisicas : [];
-    const termLines = [];
-    if (clim.et0_mm_dia        != null) termLines.push(`<strong>ET₀:</strong> ${clim.et0_mm_dia} mm/día`);
-    if (clim.deficit_hidrico_mm != null) termLines.push(`<strong>Déficit:</strong> ${clim.deficit_hidrico_mm} mm`);
-    if (clim.smith_kerns_pct   != null) termLines.push(`<strong>Dollar Spot:</strong> ${clim.smith_kerns_pct}%`);
-    if (clim.ventana_corte)              termLines.push(`<strong>Corte:</strong> ${clim.ventana_corte}`);
-    if (clim.riego_min)                  termLines.push(`<strong>Riego:</strong> ${clim.riego_min} min`);
-    alerts.slice(0,2).forEach(a => {
-        const msg = typeof a === 'string' ? a : (a.mensaje ?? JSON.stringify(a));
-        termLines.push(`<span class="alert">⚠ ${msg}</span>`);
-    });
-    document.getElementById('terminal').innerHTML = termLines.length
-        ? termLines.join('<br>')
-        : 'Sistema operativo. Sin alertas activas.';
-
-    // KPI secundario — InSAR si está disponible
-    const kpi2    = document.getElementById('kpi2');
-    const detalle = typeof venueS.detalle === 'string' ? venueS.detalle
-                  : (typeof estadioS.detalle === 'string' ? estadioS.detalle : '');
-    const insarM  = detalle.match(/InSAR\s*([\d.]+)\s*mm/i);
-    if (insarM) {
-        kpi2.style.display = 'block';
-        document.getElementById('kpi2-lbl').textContent = 'InSAR';
-        document.getElementById('kpi2-val').textContent = `${insarM[1]}mm`;
-    } else {
-        kpi2.style.display = 'none';
-    }
-
-    // Layer selector — solo capas disponibles para esta superficie
-    const availLayers = SURFACE_LAYERS[surface] ?? SURFACE_LAYERS.natural;
-    const hasShow     = canonical?.show_activo === true;
-    const finalLayers = (hasShow && currentVenue === 'amalfitani')
-        ? [...availLayers, 'dale_play']
-        : availLayers;
-
-    document.getElementById('layer-list').innerHTML = finalLayers.map(lk => `
-        <label class="lchk">
-            <input type="checkbox" id="chk-${lk}" ${activeL[lk] ? 'checked' : ''}
-                   onchange="toggleLayer('${lk}')">
-            <span class="box"></span>
-            <span>${LAYER_LABELS[lk] ?? lk}</span>
-        </label>`
-    ).join('');
-
-    // Slider card — Richards si humedad activa y hay datos; Dale Play si show activo
-    const sc = document.getElementById('slider-card');
-    const sb = document.getElementById('slider-body');
-    const hasTheta = geojson?.features?.some(f => f.properties?.theta_5cm != null) ?? false;
-
-    if (activeL.temperatura && finalLayers.includes('temperatura') && hasTheta) {
-        sc.style.display = 'block';
-        document.getElementById('slider-title').textContent = 'Profundidad Hidráulica';
-        sb.innerHTML = `
-            <input type="range" class="fslider" min="0" max="2" step="1" value="${richDepth}"
-                   oninput="richDepth=+this.value; renderLayers()">
-            <div class="slbl"><span>5 cm</span><span>10 cm</span><span>20 cm</span></div>`;
-    } else if (activeL.dale_play && hasShow) {
-        sc.style.display = 'block';
-        document.getElementById('slider-title').textContent = 'Recovery Post-Show';
-        sb.innerHTML = `
-            <input type="range" class="fslider" min="0" max="35" step="1" value="${showDay}"
-                   oninput="showDay=+this.value; renderLayers()">
-            <div class="slbl"><span>Día 0</span><span>Día ${showDay}</span><span>Día 35</span></div>`;
-    } else {
-        sc.style.display = 'none';
-    }
-}
-
-function toggleLayer(lk) {
-    const el = document.getElementById('chk-' + lk);
-    if (el) activeL[lk] = el.checked;
-    renderLayers();
-}
-
-// Centroid of a GeoJSON Feature (Point or Polygon ring avg)
-function geomCenter(f) {
-    if (f.geometry?.type === 'Point') return f.geometry.coordinates;
-    const ring = f.geometry?.coordinates?.[0];
-    if (!ring || ring.length < 3) return [VENUES[currentVenue].lng, VENUES[currentVenue].lat];
-    const pts = (ring[0][0] === ring[ring.length-1][0] && ring[0][1] === ring[ring.length-1][1])
-        ? ring.slice(0, -1) : ring;
-    const n = pts.length;
-    return [pts.reduce((s,c) => s+c[0], 0)/n, pts.reduce((s,c) => s+c[1], 0)/n];
-}
-
-// ── RENDER LAYERS (deck.gl) ──────────────────────────────────────────────
-function renderLayers() {
-    if (!deckOverlay) return;
-    const layers   = [];
-    const features = geojson?.features ?? [];
-
-    // Sin features → limpiar overlay, sin error
-    if (features.length === 0) {
-        deckOverlay.setProps({ layers: [] });
-        return;
-    }
-
-    // NDVI — HeatmapLayer con pesos reales
-    if (activeL.ndvi) {
-        const pts = features
-            .filter(f => f.properties?.ndvi != null)
-            .map(f => ({ pos: geomCenter(f), w: f.properties.ndvi }));
-        if (pts.length > 0) {
-            layers.push(new deck.HeatmapLayer({
-                id: 'ndvi-heat',
-                data: pts,
-                getPosition: d => d.pos,
-                getWeight:   d => d.w,
-                radiusPixels: 40,
-                colorRange: [[229,62,62,255],[234,179,8,255],[34,197,94,255]]
-            }));
-        }
-    }
-
-    // SAR — GeoJsonLayer polígonos con entropía real
-    if (activeL.sar) {
-        const polys = features.filter(f =>
-            f.geometry?.type === 'Polygon' && f.properties?.entropia_h != null
-        );
-        if (polys.length > 0) {
-            layers.push(new deck.GeoJsonLayer({
-                id: 'sar-poly',
-                data: { type:'FeatureCollection', features: polys },
-                filled: true,
-                getFillColor: f => {
-                    const h = f.properties.entropia_h;
-                    if (h < 0.3) return [229,62,62,160];
-                    if (h < 0.5) return [234,179,8,140];
-                    return [34,197,94,120];
-                },
-                getLineColor: [201,168,76,80],
-                getLineWidth: 1,
-                lineWidthMinPixels: 1
-            }));
-        }
-    }
-
-    // HUMEDAD SUELO (Richards) — ColumnLayer 3D por profundidad
-    if (activeL.temperatura) {
-        const depthKey = ['theta_5cm','theta_10cm','theta_20cm'][richDepth] ?? 'theta_10cm';
-        const cols     = features.filter(f => f.properties?.[depthKey] != null);
-        if (cols.length > 0) {
-            layers.push(new deck.ColumnLayer({
-                id: 'richards-col',
-                data: cols,
-                getPosition: f => geomCenter(f),
-                getElevation:  f => (f.properties[depthKey] ?? 0) * 200,
-                getFillColor:  [14,165,233,180],
-                radius:        3,
-                extruded:      true,
-                elevationScale: 1
-            }));
-        }
-    }
-
-    // InSAR — ScatterplotLayer punto único con valor real del canonical
-    if (activeL.insar) {
-        const detalle = canonical?.sectores?.estadio?.detalle
-                     ?? canonical?.sectores?.[currentVenue]?.detalle ?? '';
-        const m = typeof detalle === 'string' ? detalle.match(/InSAR\s*([\d.]+)\s*mm/i) : null;
-        if (m) {
-            layers.push(new deck.ScatterplotLayer({
-                id: 'insar-pts',
-                data: [{ pos:[VENUES[currentVenue].lng, VENUES[currentVenue].lat], v: m[1] }],
-                getPosition:  d => d.pos,
-                getRadius:    8,
-                radiusMinPixels: 8,
-                getFillColor: [229,62,62,220],
-                pickable: true,
-                onClick: info => {
-                    if (info.object) {
-                        document.getElementById('terminal').innerHTML =
-                            `<strong>InSAR:</strong> Deformación estructural ${info.object.v} mm detectada.`;
-                    }
-                }
-            }));
-        }
-    }
-
-    // Fungosis — ScatterplotLayer canchas en riesgo Dollar Spot
-    if (activeL.fungosis) {
-        const crList = canonical?.weather_live?.riesgo_fungosis?.canchas_en_riesgo ?? [];
-        if (crList.length > 0) {
-            const riskPts = features
-                .filter(f => {
-                    const cid = f.properties?.cancha_id ?? f.properties?.id;
-                    return cid != null && crList.includes(cid);
-                })
-                .map(f => ({
-                    pos: f.geometry?.type === 'Point'
-                        ? f.geometry.coordinates
-                        : [f.properties.lng ?? VENUES[currentVenue].lng,
-                           f.properties.lat ?? VENUES[currentVenue].lat]
-                }));
-            if (riskPts.length > 0) {
-                layers.push(new deck.ScatterplotLayer({
-                    id: 'fungosis-pts',
-                    data: riskPts,
-                    getPosition:  d => d.pos,
-                    getRadius:    12,
-                    radiusMinPixels: 10,
-                    getFillColor: [234,179,8,200],
-                    stroked:      true,
-                    getLineColor: [229,62,62,200],
-                    getLineWidth: 1,
-                    lineWidthMinPixels: 1,
-                    pickable: true,
-                    onClick: () => {
-                        const sk = canonical?.weather_live?.smith_kerns_pct
-                                ?? canonical?.hermes?.climate?.smith_kerns_pct;
-                        document.getElementById('terminal').innerHTML =
-                            `<span class="alert">⚠ Dollar Spot activo${sk != null ? ` — Smith-Kerns ${sk}%` : ''}</span>`;
-                    }
-                }));
-            }
-        }
-    }
-
-    // Dale Play — TripsLayer animación recovery post-show
-    if (activeL.dale_play && canonical?.show_memory) {
-        const mem = canonical.show_memory;
-        if (Array.isArray(mem?.recovery_path) && mem.recovery_path.length > 0) {
-            layers.push(new deck.TripsLayer({
-                id: 'recovery-trips',
-                data: mem.recovery_path,
-                getPath:       d => d.path,
-                getTimestamps: d => d.timestamps,
-                getColor:      [229,62,62,220],
-                currentTime:   showDay,
-                trailLength:   3,
-                widthMinPixels: 2
-            }));
-        }
-    }
-
-    deckOverlay.setProps({ layers });
-}
+  renderHeader(DATA);
+  renderLunes(DATA);
+  renderIntervGlobal(DATA);
+  renderAlertas(DATA);
+  renderCanchas(DATA);
+  renderClima(DATA);
+  renderTareas(DATA);
+  renderInsar(DATA);
+})();
 </script>
 </body>
 </html>
