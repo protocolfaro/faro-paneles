@@ -454,40 +454,67 @@ function renderCampo(){
   const month = new Date().getMonth()+1;
   const winter = month>=5&&month<=8;
   const W=400,H=240;
-  // Color campo basado en NDVI real de esa cancha
-  const fc = winter&&ndvi>=0.03?'#1c3318':ndvi>0.45?'#1a3a20':ndvi>0.25?'#1e3818':ndvi>0.10?'#252a14':'#2a1a0e';
 
-  // Parsear detalle de la cancha para extraer uso real
+  // Color del campo basado en NDVI REAL de esa cancha
+  const fc = winter&&ndvi>=0.03?'#1c3318':
+             ndvi>0.45?'#1a3a20':ndvi>0.25?'#1e3818':ndvi>0.10?'#252a14':'#2a1a0e';
+
+  // Parsear uso real del detalle de ESTA cancha
   const det = c.detalle||'';
-  const pers_m = det.match(/(\d+)\s*pers/);
-  const hs_m = det.match(/([\d.]+)\s*h/);
-  const pers = pers_m ? parseInt(pers_m[1]) : 0;
-  const hs = hs_m ? parseFloat(hs_m[1]) : 0;
+  const pers = parseInt((det.match(/(\d+)\s*pers/)||[0,0])[1])||0;
+  const hs   = parseFloat((det.match(/([\d.]+)\s*h(?!r)/)||[0,0])[1])||0;
+  const descansada = det.includes('descansada');
 
-  // Zonas basadas en estado REAL de esa cancha
+  // Acciones específicas de ESTA cancha
+  const acciones = DATA?.usuarios?.roger?.acciones||[];
+  const cid_up = c.id.toUpperCase();
+  const accion_c = acciones.filter(a=>a.includes(cid_up)||a.includes(c.nombre||''));
+  const tiene_fungicida = accion_c.some(a=>a.toLowerCase().includes('fungicida'));
+  const tiene_resembrar = accion_c.some(a=>a.toLowerCase().includes('resembrar'));
+  const tiene_fertilizar = accion_c.some(a=>a.toLowerCase().includes('fertiliz'));
+  const tiene_drenaje = accion_c.some(a=>a.toLowerCase().includes('drenaje'));
+
+  // Fungosis en riesgo para esta cancha
+  const en_riesgo_fungosis = (DATA?.weather_live?.riesgo_fungosis?.canchas_en_riesgo||[]).includes(c.id);
+
+  // CONSTRUIR ZONAS según datos reales de esta cancha
   let zonas = [];
-  if(winter&&ndvi>=0.03&&s_raw!=='rojo'){
-    // Invierno normal — zona verde central
-    zonas=[{x:W*.5,y:H*.5,rx:30,ry:18,c:'#4a9e6a',lbl:'OK',op:.18}];
-  } else if(s_raw==='rojo'||(!winter&&ndvi<0.25)){
-    // Urgente — zona central roja + porterías si hubo uso intensivo
-    zonas=[{x:W*.5,y:H*.5,rx:38,ry:22,c:'#d94f4f',lbl:'INTERVENIR',op:.22}];
-    if(pers>80||hs>10){
-      // Uso intensivo — marcar porterías
-      zonas.push({x:W*.12,y:H*.5,rx:16,ry:12,c:'#d94f4f',lbl:'',op:.28});
-      zonas.push({x:W*.88,y:H*.5,rx:16,ry:12,c:'#d94f4f',lbl:'',op:.28});
+
+  if(winter && s_raw!=='rojo' && !tiene_resembrar && !tiene_fungicida) {
+    // Invierno sin alertas — verde OK
+    zonas=[{x:W*.5,y:H*.5,rx:32,ry:20,c:'#4a9e6a',lbl:'OK',op:.18}];
+  } else if(tiene_resembrar || (s_raw==='rojo' && ndvi<0.05)) {
+    // Resembrar urgente — zona central grande
+    zonas.push({x:W*.5,y:H*.5,rx:40,ry:24,c:'#d94f4f',lbl:'RESEMBRAR',op:.24});
+    if(pers>80||hs>10) {
+      // Porterías dañadas por uso intensivo
+      zonas.push({x:W*.11,y:H*.5,rx:16,ry:12,c:'#d94f4f',lbl:'',op:.30});
+      zonas.push({x:W*.89,y:H*.5,rx:16,ry:12,c:'#d94f4f',lbl:'',op:.30});
     }
-    if(hs>5&&pers>20){
-      // Zona lateral de mayor uso
-      zonas.push({x:W*.3,y:H*.6,rx:22,ry:14,c:'#d4a017',lbl:'DESGASTE',op:.18});
-    }
-  } else if(s_raw==='amarillo'){
-    zonas=[
-      {x:W*.38,y:H*.45,rx:26,ry:16,c:'#d4a017',lbl:'TRATAR',op:.20},
-      {x:W*.65,y:H*.55,rx:16,ry:11,c:'#d4a017',lbl:'',op:.14},
-    ];
+  } else if(tiene_fungicida || en_riesgo_fungosis) {
+    // Fungicida — focos en zonas típicas de Dollar Spot
+    zonas.push({x:W*.35,y:H*.38,rx:26,ry:16,c:'#c084fc',lbl:'FUNGICIDA',op:.22});
+    zonas.push({x:W*.65,y:H*.62,rx:20,ry:13,c:'#c084fc',lbl:'',op:.18});
+    if(pers>30) zonas.push({x:W*.5,y:H*.5,rx:16,ry:10,c:'#c084fc',lbl:'',op:.14});
+  } else if(tiene_fertilizar) {
+    // Fertilización — zona uniforme central
+    zonas.push({x:W*.5,y:H*.5,rx:60,ry:38,c:'#f59e0b',lbl:'FERTILIZAR',op:.14});
+  } else if(tiene_drenaje) {
+    // Drenaje — zona lateral izquierda típica
+    zonas.push({x:W*.2,y:H*.55,rx:28,ry:18,c:'#38bdf8',lbl:'DRENAJE',op:.22});
+  } else if(s_raw==='rojo') {
+    // Rojo sin acción específica — zona general
+    zonas.push({x:W*.5,y:H*.5,rx:34,ry:20,c:'#d94f4f',lbl:'ATENDER',op:.20});
+    if(hs>5) zonas.push({x:W*.5,y:H*.65,rx:20,ry:12,c:'#d4a017',lbl:'USO ALTO',op:.16});
+  } else if(s_raw==='amarillo') {
+    zonas.push({x:W*.4,y:H*.45,rx:26,ry:16,c:'#d4a017',lbl:'MONITOREAR',op:.18});
   } else {
     zonas=[{x:W*.5,y:H*.5,rx:28,ry:18,c:'#4a9e6a',lbl:'OK',op:.18}];
+  }
+
+  // Zona de uso — si hubo uso intensivo marcar zona central con intensidad
+  if(hs>8&&!tiene_resembrar){
+    zonas.push({x:W*.5,y:H*.45,rx:18,ry:12,c:'#94a3b8',lbl:`${hs}h`,op:.20});
   }
 
   const zsvg = zonas.map(z=>
@@ -495,67 +522,82 @@ function renderCampo(){
     ${z.lbl?`<text x="${z.x}" y="${z.y+4}" text-anchor="middle" font-size="9" font-weight="700" fill="${z.c}" opacity=".9">${z.lbl}</text>`:''}`
   ).join('');
 
+  // Info de uso real en el campo
+  const uso_txt = pers>0 ? `${pers} pers · ${hs}h` : descansada ? 'descansando' : '';
+
   document.getElementById('campo-svg').innerHTML = `
     <rect x="10" y="8" width="${W-20}" height="${H-16}" rx="4" fill="${fc}" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
     <line x1="${W/2}" y1="8" x2="${W/2}" y2="${H-8}" stroke="rgba(255,255,255,.15)" stroke-width=".8"/>
     <circle cx="${W/2}" cy="${H/2}" r="26" fill="none" stroke="rgba(255,255,255,.15)" stroke-width=".8"/>
     <circle cx="${W/2}" cy="${H/2}" r="2.5" fill="rgba(255,255,255,.3)"/>
-    <rect x="10" y="${H/2-28}" width="36" height="56" fill="none" stroke="rgba(255,255,255,.13)" stroke-width=".8"/>
-    <rect x="${W-46}" y="${H/2-28}" width="36" height="56" fill="none" stroke="rgba(255,255,255,.13)" stroke-width=".8"/>
+    <rect x="10" y="${H/2-28}" width="36" height="56" fill="none" stroke="rgba(255,255,255,.12)" stroke-width=".8"/>
+    <rect x="${W-46}" y="${H/2-28}" width="36" height="56" fill="none" stroke="rgba(255,255,255,.12)" stroke-width=".8"/>
     <rect x="10" y="${H/2-11}" width="9" height="22" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.2"/>
     <rect x="${W-19}" y="${H/2-11}" width="9" height="22" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.2"/>
     ${zsvg}
-    <text x="${W-14}" y="${H-10}" text-anchor="end" font-size="8" fill="rgba(255,255,255,.3)">NDVI ${fmtN(ndvi)}</text>`;
+    <text x="${W-14}" y="${H-10}" text-anchor="end" font-size="8" fill="rgba(255,255,255,.3)">NDVI ${ndvi.toFixed(3)}</text>
+    ${uso_txt?`<text x="20" y="${H-10}" font-size="8" fill="rgba(255,255,255,.3)">${uso_txt}</text>`:''}`;
 }
 
-// ── PANEL 2 — FOCOS ALERTAS ──────────────────────────────────────────────────
 function renderFocos(){
   const c = getCancha();
   const s_raw = c.sem||'amarillo';
-  const wl = DATA?.weather_live||{};
-  const rf = wl.riesgo_fungosis||{};
-  const W=400,H=240;
-
-  // Buscar acciones específicas de esta cancha en roger.acciones
-  const acciones = DATA?.usuarios?.roger?.acciones||[];
-  const cid = c.id.toUpperCase();
-  const accionCancha = acciones.filter(a=>a.includes(cid)||a.includes(c.nombre||''));
-
-  // Determinar focos REALES para esta cancha
-  const focos = [];
-  const det = c.detalle||'';
   const ndvi = c.ndvi||0;
   const month = new Date().getMonth()+1;
+  const winter = month>=5&&month<=8;
+  const W=400,H=240;
+  const fc='#1c3318';
 
-  // Hongo: riesgo fungosis global + mencion en detalle/acciones
-  const tieneHongo = (rf.nivel==='alto'||rf.nivel==='medio') &&
-    (accionCancha.some(a=>a.toLowerCase().includes('fungicida')||a.toLowerCase().includes('hongo'))||
-     s_raw==='rojo');
-  if(tieneHongo) focos.push({x:W*.35,y:H*.38,r:24,n:1,c:'#c084fc',lbl:'Hongo'});
+  // Acciones reales de esta cancha
+  const acciones = DATA?.usuarios?.roger?.acciones||[];
+  const cid_up = c.id.toUpperCase();
+  const accion_c = acciones.filter(a=>a.includes(cid_up)||a.includes(c.nombre||''));
+  const rf = DATA?.weather_live?.riesgo_fungosis||{};
+  const en_riesgo = (rf.canchas_en_riesgo||[]).includes(c.id);
 
-  // Agua/drenaje: mencion en acciones o detalle
-  const tieneDrenaje = accionCancha.some(a=>a.toLowerCase().includes('drenaje')||a.toLowerCase().includes('riego'));
-  if(tieneDrenaje) focos.push({x:W*.65,y:H*.55,r:20,n:2,c:'#38bdf8',lbl:'Agua'});
+  // Parsear uso real
+  const det = c.detalle||'';
+  const pers = parseInt((det.match(/(\d+)\s*pers/)||[0,0])[1])||0;
+  const hs   = parseFloat((det.match(/([\d.]+)\s*h(?!r)/)||[0,0])[1])||0;
 
-  // Resembrar: NDVI muy bajo y fuera de invierno, o mencion explícita
-  const tieneResembrar = accionCancha.some(a=>a.toLowerCase().includes('resembrar')||a.toLowerCase().includes('semilla')) ||
-    (ndvi<0.12&&s_raw==='rojo'&&month>8);
-  if(tieneResembrar) focos.push({x:W*.5,y:H*.62,r:22,n:4,c:'#d94f4f',lbl:'Resembrar'});
+  // Focos REALES basados en datos de esta cancha
+  const focos = [];
 
-  // Fertilización: mencion en acciones
-  const tieneFertil = accionCancha.some(a=>a.toLowerCase().includes('fertiliz')||a.toLowerCase().includes('nitrógeno')||a.toLowerCase().includes('urea'));
-  if(tieneFertil) focos.push({x:W*.25,y:H*.42,r:18,n:3,c:'#fb923c',lbl:'Nutri.'});
-
-  if(!focos.length){
-    focos.push({x:W*.5,y:H*.5,r:18,n:0,c:'#4a9e6a',lbl:'Sin alertas'});
+  // 1 — HONGO: Dollar Spot confirmado en esta cancha
+  if(en_riesgo||accion_c.some(a=>a.toLowerCase().includes('fungicida'))) {
+    focos.push({x:W*.32,y:H*.35,r:24,n:1,c:'#c084fc',lbl:'Hongo'});
+    if(s_raw==='rojo') focos.push({x:W*.68,y:H*.65,r:18,n:1,c:'#c084fc',lbl:''});
   }
 
-  const fc = '#1c3318';
-  const fsvg = focos.map(f=>f.n>0
+  // 2 — AGUA: drenaje o déficit hídrico
+  if(accion_c.some(a=>a.toLowerCase().includes('drenaje'))||
+     accion_c.some(a=>a.toLowerCase().includes('regar'))||
+     (DATA?.weather_live?.deficit_hidrico_mm||0)>3) {
+    focos.push({x:W*.62,y:H*.52,r:20,n:2,c:'#38bdf8',lbl:'Agua'});
+  }
+
+  // 3 — MALEZA / NUTRICIÓN
+  if(accion_c.some(a=>a.toLowerCase().includes('fertiliz'))) {
+    focos.push({x:W*.5,y:H*.5,r:55,c:'#f59e0b',n:3,lbl:'Nutri.',borde:true});
+  }
+
+  // 4 — RESEMBRAR
+  if(accion_c.some(a=>a.toLowerCase().includes('resembrar'))||
+    (ndvi<0.05&&s_raw==='rojo'&&!winter)) {
+    focos.push({x:W*.5,y:H*.6,r:26,n:4,c:'#d94f4f',lbl:'Resembrar'});
+    if(pers>50) focos.push({x:W*.5,y:H*.35,r:20,n:4,c:'#d94f4f',lbl:''});
+  }
+
+  // Sin alertas reales para esta cancha
+  if(!focos.length) {
+    focos.push({x:W*.5,y:H*.5,r:20,n:0,c:'#4a9e6a',lbl:'Sin alertas'});
+  }
+
+  const fsvg = focos.map(f=> f.n>0
     ? `<circle cx="${f.x}" cy="${f.y}" r="${f.r}" fill="${f.c}" fill-opacity=".18" stroke="${f.c}" stroke-width="1.5" stroke-opacity=".7"/>
-       <text x="${f.x}" y="${f.y+5}" text-anchor="middle" font-size="12" font-weight="700" fill="${f.c}">${f.n}</text>`
-    : `<circle cx="${f.x}" cy="${f.y}" r="${f.r}" fill="${f.c}" fill-opacity=".18" stroke="${f.c}" stroke-width="1.5"/>
-       <text x="${f.x}" y="${f.y+4}" text-anchor="middle" font-size="8" fill="${f.c}">${f.lbl}</text>`
+       <text x="${f.x}" y="${f.y+5}" text-anchor="middle" font-size="13" font-weight="700" fill="${f.c}">${f.n}</text>`
+    : `<circle cx="${f.x}" cy="${f.y}" r="${f.r}" fill="${f.c}" fill-opacity=".15" stroke="${f.c}" stroke-width="1.5"/>
+       <text x="${f.x}" y="${f.y+4}" text-anchor="middle" font-size="9" fill="${f.c}">${f.lbl}</text>`
   ).join('');
 
   document.getElementById('focos-svg').innerHTML = `
@@ -566,18 +608,18 @@ function renderFocos(){
     <rect x="${W-46}" y="${H/2-28}" width="36" height="56" fill="none" stroke="rgba(255,255,255,.1)" stroke-width=".8"/>
     ${fsvg}`;
 
-  const leyItems = [
+  // Leyenda con solo los focos presentes
+  const leyItems=[
     {n:1,c:'#c084fc',txt:'Hongo — Aplicar fungicida en ese punto'},
-    {n:2,c:'#38bdf8',txt:'Agua — Problema de drenaje o riego'},
-    {n:3,c:'#fb923c',txt:'Maleza — Arrancar / herbicida en ese punto'},
-    {n:4,c:'#d94f4f',txt:'Resembrar — Colocar semilla nueva en ese punto'},
-  ];
+    {n:2,c:'#38bdf8',txt:'Agua/Drenaje — Problema de riego o drenaje'},
+    {n:3,c:'#f59e0b',txt:'Nutrición — Fertilizar en esa zona'},
+    {n:4,c:'#d94f4f',txt:'Resembrar — Colocar semilla nueva'},
+  ].filter(x=>focos.some(f=>f.n===x.n));
   document.getElementById('focos-leyenda').innerHTML = leyItems.map(x=>
     `<div class="fleg"><div class="fleg-num" style="background:${x.c}22;border:1px solid ${x.c};color:${x.c}">${x.n}</div><span style="color:var(--dim)">${x.txt}</span></div>`
-  ).join('');
+  ).join('') || '<div style="color:var(--grn);font-size:11px;padding:4px 0">✓ Sin alertas activas para esta cancha</div>';
 }
 
-// ── PANEL 3 — SCORE ───────────────────────────────────────────────────────────
 function renderScore(){
   const c = getCancha();
   const s = sem(c.sem);
