@@ -88,6 +88,7 @@ html,body{background:var(--bg);color:var(--whi);font-family:'Epilogue',sans-seri
 .cfield-tilde:active{transform:scale(.9)}
 .cfield-tilde.has-alert{border-color:var(--yel);color:var(--yel)}
 .cfield-tilde.done{border-color:var(--grn);background:var(--grn2);color:var(--grn)}
+.cfield-tilde.confirming{border-color:var(--gold);background:var(--gold2);color:var(--gold)}
 /* Intervención sospechada */
 .cfield-interv{background:rgba(217,79,79,.08);border-top:1px solid rgba(217,79,79,.2);padding:10px 14px}
 .interv-q{font-size:11px;color:var(--whi);margin-bottom:8px}
@@ -126,6 +127,14 @@ html,body{background:var(--bg);color:var(--whi);font-family:'Epilogue',sans-seri
 .tarea-item{font-size:12px;color:var(--whi);line-height:1.4}
 .tarea-row.partido{border-color:rgba(217,79,79,.3);background:linear-gradient(135deg,var(--bg2),var(--red3))}
 .tarea-row.partido .tarea-dia{color:var(--red)}
+
+/* CAMPO SVG */
+.campo-toggle{padding:7px 14px 8px;font-size:10px;color:var(--dim);cursor:pointer;display:flex;align-items:center;gap:5px;border-top:1px solid rgba(255,255,255,.05);user-select:none}
+.campo-toggle:hover{color:var(--gold)}
+.campo-arr{font-size:10px;transition:transform .25s}
+.campo-toggle.open .campo-arr{transform:rotate(180deg)}
+.campo-svg-wrap{display:none;background:var(--bg3)}
+.campo-svg-wrap.open{display:block}
 
 /* INSAR */
 .insar-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
@@ -429,17 +438,49 @@ function renderCanchas(d) {
       div.appendChild(interv);
     }
 
+    // Toggle mapa prescripción
+    var tog = document.createElement('div');
+    tog.className = 'campo-toggle';
+    tog.innerHTML = 'Ver mapa de prescripción <span class="campo-arr">▼</span>';
+    var svgW = document.createElement('div');
+    svgW.className = 'campo-svg-wrap';
+    svgW.innerHTML = buildCampoSVG(c);
+    tog.onclick = function() {
+      this.classList.toggle('open');
+      svgW.classList.toggle('open');
+    };
+    div.appendChild(tog);
+    div.appendChild(svgW);
+
     grid.appendChild(div);
   });
 }
 
 function tildeCancha(btn, cid) {
-  if(btn.classList.contains('done')) return;
-  btn.classList.remove('has-alert');
-  btn.classList.add('done');
-  btn.textContent = '✓';
-  ST.set('alerta_'+cid, true);
-  logIntervencion('alerta_atendida', cid);
+  if(btn.classList.contains('done')) {
+    btn.classList.remove('done');
+    btn.classList.add('has-alert');
+    btn.textContent = '○';
+    ST.set('alerta_'+cid, false);
+    return;
+  }
+  if(btn.classList.contains('confirming')) {
+    btn.classList.remove('confirming');
+    btn.classList.add('done');
+    btn.textContent = '✓';
+    ST.set('alerta_'+cid, true);
+    logIntervencion('alerta_atendida', cid);
+    clearTimeout(btn._t);
+    return;
+  }
+  btn.classList.add('confirming');
+  btn.textContent = '?';
+  btn._t = setTimeout(function() {
+    if(btn.classList.contains('confirming')) {
+      btn.classList.remove('confirming');
+      btn.textContent = '○';
+    }
+  }, 3000);
 }
 
 function selIntervLocal(btn, opcion, cid) {
@@ -554,6 +595,45 @@ async function logIntervencion(tipo, cid) {
         fecha: new Date().toISOString().slice(0,10), pin:'roger2026' })
     });
   } catch(_) {}
+}
+
+
+// SVG CAMPO PRESCRIPCIÓN
+function buildCampoSVG(c) {
+  var s = sem(c.sem);
+  var ndvi = c.ndvi || 0;
+  var fc = ndvi>0.45?'#1a3a20':ndvi>0.25?'#1e3818':ndvi>0.10?'#252a14':'#2a1a0e';
+  var W=260, H=160;
+  var zonas = [];
+  var detalle = c.detalle || '';
+  if(s==='rojo') {
+    zonas.push({x:W*0.5,y:H*0.5,rx:36,ry:20,col:'#d94f4f',lbl:'URGENTE',op:0.22});
+    if(detalle.indexOf('límite')!==-1||detalle.indexOf('120')!==-1) {
+      zonas.push({x:W*0.10,y:H*0.5,rx:16,ry:12,col:'#d94f4f',lbl:'',op:0.28});
+      zonas.push({x:W*0.90,y:H*0.5,rx:16,ry:12,col:'#d94f4f',lbl:'',op:0.28});
+    }
+  } else if(s==='amarillo') {
+    zonas.push({x:W*0.35,y:H*0.45,rx:24,ry:15,col:'#d4a017',lbl:'TRATAR',op:0.22});
+    zonas.push({x:W*0.65,y:H*0.55,rx:16,ry:11,col:'#d4a017',lbl:'',op:0.16});
+  } else {
+    zonas.push({x:W*0.5,y:H*0.5,rx:20,ry:13,col:'#4a9e6a',lbl:'OK',op:0.20});
+  }
+  var zsvg = zonas.map(function(z) {
+    return '<ellipse cx="'+z.x+'" cy="'+z.y+'" rx="'+z.rx+'" ry="'+z.ry+'" fill="'+z.col+'" fill-opacity="'+z.op+'" stroke="'+z.col+'" stroke-width="1.5" stroke-opacity=".7"/>'
+      +(z.lbl?'<text x="'+z.x+'" y="'+(z.y+4)+'" text-anchor="middle" font-size="8" font-weight="700" fill="'+z.col+'" opacity=".9">'+z.lbl+'</text>':'');
+  }).join('');
+  return '<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;border-radius:0 0 8px 8px">'
+    +'<rect x="8" y="5" width="'+(W-16)+'" height="'+(H-10)+'" rx="3" fill="'+fc+'" stroke="rgba(255,255,255,.12)" stroke-width="1"/>'
+    +'<line x1="'+(W/2)+'" y1="5" x2="'+(W/2)+'" y2="'+(H-5)+'" stroke="rgba(255,255,255,.18)" stroke-width=".8"/>'
+    +'<circle cx="'+(W/2)+'" cy="'+(H/2)+'" r="20" fill="none" stroke="rgba(255,255,255,.18)" stroke-width=".8"/>'
+    +'<circle cx="'+(W/2)+'" cy="'+(H/2)+'" r="2" fill="rgba(255,255,255,.25)"/>'
+    +'<rect x="8" y="'+(H/2-21)+'" width="28" height="42" fill="none" stroke="rgba(255,255,255,.14)" stroke-width=".8"/>'
+    +'<rect x="'+(W-36)+'" y="'+(H/2-21)+'" width="28" height="42" fill="none" stroke="rgba(255,255,255,.14)" stroke-width=".8"/>'
+    +'<rect x="8" y="'+(H/2-8)+'" width="7" height="16" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1.2"/>'
+    +'<rect x="'+(W-15)+'" y="'+(H/2-8)+'" width="7" height="16" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1.2"/>'
+    +zsvg
+    +'<text x="'+(W-10)+'" y="'+(H-8)+'" text-anchor="end" font-size="7" fill="rgba(255,255,255,.3)">NDVI '+fmtNdvi(c.ndvi)+'</text>'
+    +'</svg>';
 }
 
 // ── MAIN ───────────────────────────────────────────────────────────────────
