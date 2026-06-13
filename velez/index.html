@@ -501,7 +501,7 @@ function renderCanchas(d) {
     tog.innerHTML = 'Ver mapa de prescripción <span class="campo-arr">▼</span>';
     var svgW = document.createElement('div');
     svgW.className = 'campo-svg-wrap';
-    svgW.innerHTML = buildCampoSVG(c);
+    svgW.innerHTML = buildCampoSVG(c, sem(c.sem));
     tog.onclick = function() {
       this.classList.toggle('open');
       svgW.classList.toggle('open');
@@ -580,15 +580,31 @@ function renderClima(d) {
   const wl_badge = dias_wl<=1 ? ' <span style="color:var(--grn);font-size:9px">● hoy</span>'
                  : dias_wl<=3 ? ` <span style="color:var(--yel);font-size:9px">⚠ ${dias_wl}d</span>`
                  : ` <span style="color:var(--red);font-size:9px">⚠ ${dias_wl}d</span>`;
+  // Riego — minutos reales calculados por el pipeline
+  const riego_min = wl._riego_min_final || wl.riego_min_sector || null;
+  const riego_lbl = riego_min ? `${riego_min} min · ${wl.hora_riego_optima||'05:00'}` : (wl.hora_riego_optima||'—');
+  // Urea — recomendación N basada en GNDVI real
+  const n_rec_kg = wl.n_rec_kg_ha || null;
+  const n_status = wl.n_status_general || '';
+  const urea_sub = n_status === 'grave' ? 'Urgente' : n_status === 'bajo' ? 'Esta semana' : n_status === 'ok' ? 'Sin necesidad' : '';
+  // Compactación — del último SAR disponible
+  const compact = wl.soil_moisture_sar?.compactacion_riesgo || wl.compactacion_riesgo || null;
+  const compact_val = compact ? compact.toFixed(0) : '—';
+  const compact_cls = compact > 70 ? 'alerta' : compact > 45 ? 'warn' : '';
+
   const items = [
     { val: wl.et0_mm_dia?.toFixed(1)||'—', unit:'mm', lbl:'ET₀'+wl_badge, sub:wl.et0_fuente?.split('·')[0]||'', cls:'' },
-    { val: wl.deficit_hidrico_mm?.toFixed(1)||'—', unit:'mm', lbl:'Déficit hídrico',
-      sub: wl.hora_riego_optima?`Riego ${wl.hora_riego_optima}`:'', cls: wl.deficit_hidrico_mm>5?'alerta':wl.deficit_hidrico_mm>2?'warn':'' },
+    { val: riego_min||'—', unit:'min', lbl:'Riego hoy',
+      sub: riego_lbl, cls: wl.deficit_hidrico_mm>5?'alerta':'' },
     { val: wl.riesgo_dollar_spot_pct?.toFixed(0)||'—', unit:'%', lbl:'Dollar Spot',
       sub: (wl.riesgo_fungosis?.nivel||'').toUpperCase(),
       cls: wl.riesgo_fungosis?.nivel==='alto'?'alerta':wl.riesgo_fungosis?.nivel==='medio'?'warn':'' },
     { val: wl.humedad_suelo_pct?.toFixed(0)||'—', unit:'%', lbl:'Humedad suelo',
       sub: wl.humedad_suelo_estado||'', cls:'' },
+    { val: n_rec_kg!=null ? n_rec_kg.toFixed(0) : '—', unit:'kg/ha', lbl:'Nitrógeno (urea)',
+      sub: urea_sub, cls: n_status==='grave'?'alerta':n_status==='bajo'?'warn':'' },
+    { val: compact_val, unit:'%', lbl:'Riesgo compact.',
+      sub: compact>70?'Airear urgente':compact>45?'Monitorear':'Normal', cls: compact_cls },
     { val: wl.gdd_acumulado_7d?.toFixed(0)||'—', unit:'GDD', lbl:'Acumulado 7d', sub:`${wl.gdd_rate_diario||'—'}/día`, cls:'' },
     { val: wl.dias_proximo_corte||'—', unit:'días', lbl:'Próximo corte',
       sub: wl.hora_corte_optima||'', cls:'' },
@@ -662,8 +678,8 @@ async function logIntervencion(tipo, cid) {
 
 
 // SVG CAMPO PRESCRIPCIÓN
-function buildCampoSVG(c) {
-  var s = sem(c.sem);
+function buildCampoSVG(c, semCorregido) {
+  var s = semCorregido || sem(c.sem);
   var ndvi = c.ndvi || 0;
   var fc = ndvi>0.45?'#1a3a20':ndvi>0.25?'#1e3818':ndvi>0.10?'#252a14':'#2a1a0e';
   var W=260, H=160;
