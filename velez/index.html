@@ -474,9 +474,6 @@ function renderCampo(){
   const tiene_fertilizar = accion_c.some(a=>a.toLowerCase().includes('fertiliz'));
   const tiene_drenaje = accion_c.some(a=>a.toLowerCase().includes('drenaje'));
 
-  // Fungosis en riesgo para esta cancha
-  const en_riesgo_fungosis = (DATA?.weather_live?.riesgo_fungosis?.canchas_en_riesgo||[]).includes(c.id);
-
   // CONSTRUIR ZONAS según datos reales de esta cancha
   let zonas = [];
 
@@ -491,7 +488,7 @@ function renderCampo(){
       zonas.push({x:W*.11,y:H*.5,rx:16,ry:12,c:'#d94f4f',lbl:'',op:.30});
       zonas.push({x:W*.89,y:H*.5,rx:16,ry:12,c:'#d94f4f',lbl:'',op:.30});
     }
-  } else if(tiene_fungicida || en_riesgo_fungosis) {
+  } else if(tiene_fungicida) {
     // Fungicida -- focos en zonas típicas de Dollar Spot
     zonas.push({x:W*.35,y:H*.38,rx:26,ry:16,c:'#c084fc',lbl:'FUNGICIDA',op:.22});
     zonas.push({x:W*.65,y:H*.62,rx:20,ry:13,c:'#c084fc',lbl:'',op:.18});
@@ -552,27 +549,24 @@ function renderFocos(){
   const acciones = DATA?.usuarios?.roger?.acciones||[];
   const cid_up = c.id.toUpperCase();
   const accion_c = acciones.filter(a=>a.includes(cid_up)||a.includes(c.nombre||''));
-  const rf = DATA?.weather_live?.riesgo_fungosis||{};
-  const en_riesgo = (rf.canchas_en_riesgo||[]).includes(c.id);
 
   // Parsear uso real
   const det = c.detalle||'';
   const pers = parseInt((det.match(/(\d+)\s*pers/)||[0,0])[1])||0;
   const hs   = parseFloat((det.match(/([\d.]+)\s*h(?!r)/)||[0,0])[1])||0;
 
-  // Focos REALES basados en datos de esta cancha
+  // Focos REALES basados en acciones específicas de Roger para esta cancha
   const focos = [];
 
-  // 1 -- HONGO: Dollar Spot confirmado en esta cancha
-  if(en_riesgo||accion_c.some(a=>a.toLowerCase().includes('fungicida'))) {
+  // 1 -- HONGO: solo si Roger prescribió fungicida para ESTA cancha
+  if(accion_c.some(a=>a.toLowerCase().includes('fungicida'))) {
     focos.push({x:W*.32,y:H*.35,r:24,n:1,c:'#c084fc',lbl:'Hongo'});
     if(s_raw==='rojo') focos.push({x:W*.68,y:H*.65,r:18,n:1,c:'#c084fc',lbl:''});
   }
 
-  // 2 -- AGUA: drenaje o déficit hídrico
+  // 2 -- AGUA: solo si Roger prescribió drenaje o riego para ESTA cancha
   if(accion_c.some(a=>a.toLowerCase().includes('drenaje'))||
-     accion_c.some(a=>a.toLowerCase().includes('regar'))||
-     (DATA?.weather_live?.deficit_hidrico_mm||0)>3) {
+     accion_c.some(a=>a.toLowerCase().includes('regar'))) {
     focos.push({x:W*.62,y:H*.52,r:20,n:2,c:'#38bdf8',lbl:'Agua'});
   }
 
