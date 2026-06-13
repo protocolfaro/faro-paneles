@@ -268,7 +268,16 @@ async function loadData() {
 }
 
 // ── HELPERS ────────────────────────────────────────────────────────────────
-function sem(s){ return s||'amarillo' }
+function sem(s){
+  // En invierno austral: bajar un nivel el semáforo si es solo por NDVI
+  // rojo -> amarillo (no hay urgencia real), amarillo -> verde (dormancia normal)
+  const month = new Date().getMonth()+1;
+  const winter = month>=5 && month<=8;
+  const raw = s||'amarillo';
+  if(winter && raw==='rojo') return 'amarillo';    // rojo por NDVI invernal -> atención
+  if(winter && raw==='amarillo') return 'verde';   // amarillo invernal -> ok
+  return raw;
+}
 function col(s){ return {rojo:'var(--red)',amarillo:'var(--yel)',verde:'var(--grn)'}[sem(s)]||'var(--yel)' }
 function fmtNdvi(v){ return v!=null ? Number(v).toFixed(3) : '—' }
 function diasDesde(dateStr){
@@ -282,6 +291,18 @@ function diasDesde(dateStr){
 }
 function accion(c){
   const s=sem(c.sem), ndvi=c.ndvi||0;
+  const month = new Date().getMonth()+1;
+  const winter = month>=5 && month<=8;
+  // En invierno austral: NDVI bajo es normal para Ryegrass
+  // Solo mostrar urgencia si hay dato SAR o alerta real — no por NDVI solo
+  if(winter) {
+    if(c.hermes_alertas && c.hermes_alertas.length) return c.hermes_alertas[0];
+    if(s==='rojo' && ndvi<0.03) return 'NDVI muy bajo — verificar en campo';
+    if(s==='rojo') return 'Dormancia invernal — monitorear';
+    if(s==='amarillo') return 'Normal para junio-agosto';
+    return 'Pasto en dormancia — estado esperado';
+  }
+  // Verano: lógica normal
   if(s==='rojo'&&ndvi<0.05) return 'Resembrar · intervención urgente';
   if(s==='rojo') return 'Atender esta semana';
   if(s==='amarillo') return 'Monitorear — posible intervención';
@@ -433,9 +454,9 @@ function renderCanchas(d) {
     let ndvi_lbl = '';
     if(ndvi!=null) {
       ndvi_lbl = `NDVI ${fmtNdvi(ndvi)}`;
-      if(dias_img<=3)  ndvi_lbl += ` <span style="color:var(--grn);font-size:9px">● HOY</span>`;
+      if(dias_img<=3)  ndvi_lbl += ` <span style="color:var(--grn);font-size:9px">● hoy</span>`;
       else if(dias_img<=7)  ndvi_lbl += ` <span style="color:var(--grn);font-size:9px">● ${dias_img}d</span>`;
-      else if(dias_img<=14) ndvi_lbl += ` <span style="color:var(--yel);font-size:9px">⚠ ${dias_img}d</span>`;
+      else if(dias_img<=21) ndvi_lbl += ` <span style="color:var(--yel);font-size:9px">⚠ ${dias_img}d</span>`;
       else ndvi_lbl += ` <span style="color:var(--red);font-size:9px">⚠ ${dias_img}d · ${img_fecha}</span>`;
     } else {
       ndvi_lbl = '<span style="color:#818cf8;font-size:10px">● SAR activo</span>';
