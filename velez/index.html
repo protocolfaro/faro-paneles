@@ -448,27 +448,43 @@ function tildeCancha(btn,cid){
 // ── PANEL 1 — CAMPO SVG ──────────────────────────────────────────────────────
 function renderCampo(){
   const c = getCancha();
-  const s = sem(c.sem);
+  const s_raw = c.sem||'amarillo';
+  const s = sem(s_raw);
   const ndvi = c.ndvi||0;
   const month = new Date().getMonth()+1;
   const winter = month>=5&&month<=8;
   const W=400,H=240;
+  // Color campo basado en NDVI real de esa cancha
   const fc = winter&&ndvi>=0.03?'#1c3318':ndvi>0.45?'#1a3a20':ndvi>0.25?'#1e3818':ndvi>0.10?'#252a14':'#2a1a0e';
 
-  // Zonas según estado real
+  // Parsear detalle de la cancha para extraer uso real
+  const det = c.detalle||'';
+  const pers_m = det.match(/(\d+)\s*pers/);
+  const hs_m = det.match(/([\d.]+)\s*h/);
+  const pers = pers_m ? parseInt(pers_m[1]) : 0;
+  const hs = hs_m ? parseFloat(hs_m[1]) : 0;
+
+  // Zonas basadas en estado REAL de esa cancha
   let zonas = [];
-  if(winter&&ndvi>=0.03){
-    zonas=[{x:W*.5,y:H*.5,rx:28,ry:18,c:'#4a9e6a',lbl:'OK',op:.18}];
-  } else if(s==='rojo'){
+  if(winter&&ndvi>=0.03&&s_raw!=='rojo'){
+    // Invierno normal — zona verde central
+    zonas=[{x:W*.5,y:H*.5,rx:30,ry:18,c:'#4a9e6a',lbl:'OK',op:.18}];
+  } else if(s_raw==='rojo'||(!winter&&ndvi<0.25)){
+    // Urgente — zona central roja + porterías si hubo uso intensivo
+    zonas=[{x:W*.5,y:H*.5,rx:38,ry:22,c:'#d94f4f',lbl:'INTERVENIR',op:.22}];
+    if(pers>80||hs>10){
+      // Uso intensivo — marcar porterías
+      zonas.push({x:W*.12,y:H*.5,rx:16,ry:12,c:'#d94f4f',lbl:'',op:.28});
+      zonas.push({x:W*.88,y:H*.5,rx:16,ry:12,c:'#d94f4f',lbl:'',op:.28});
+    }
+    if(hs>5&&pers>20){
+      // Zona lateral de mayor uso
+      zonas.push({x:W*.3,y:H*.6,rx:22,ry:14,c:'#d4a017',lbl:'DESGASTE',op:.18});
+    }
+  } else if(s_raw==='amarillo'){
     zonas=[
-      {x:W*.5,y:H*.5,rx:40,ry:22,c:'#d94f4f',lbl:'INTERVENIR',op:.22},
-      {x:W*.15,y:H*.5,rx:18,ry:13,c:'#d94f4f',lbl:'',op:.28},
-      {x:W*.85,y:H*.5,rx:18,ry:13,c:'#d94f4f',lbl:'',op:.28},
-    ];
-  } else if(s==='amarillo'){
-    zonas=[
-      {x:W*.4,y:H*.45,rx:26,ry:16,c:'#d4a017',lbl:'TRATAR',op:.20},
-      {x:W*.65,y:H*.55,rx:18,ry:12,c:'#d4a017',lbl:'',op:.16},
+      {x:W*.38,y:H*.45,rx:26,ry:16,c:'#d4a017',lbl:'TRATAR',op:.20},
+      {x:W*.65,y:H*.55,rx:16,ry:11,c:'#d4a017',lbl:'',op:.14},
     ];
   } else {
     zonas=[{x:W*.5,y:H*.5,rx:28,ry:18,c:'#4a9e6a',lbl:'OK',op:.18}];
@@ -495,25 +511,43 @@ function renderCampo(){
 // ── PANEL 2 — FOCOS ALERTAS ──────────────────────────────────────────────────
 function renderFocos(){
   const c = getCancha();
-  const s = sem(c.sem);
+  const s_raw = c.sem||'amarillo';
   const wl = DATA?.weather_live||{};
   const rf = wl.riesgo_fungosis||{};
   const W=400,H=240;
 
-  // Focos basados en datos reales
+  // Buscar acciones específicas de esta cancha en roger.acciones
+  const acciones = DATA?.usuarios?.roger?.acciones||[];
+  const cid = c.id.toUpperCase();
+  const accionCancha = acciones.filter(a=>a.includes(cid)||a.includes(c.nombre||''));
+
+  // Determinar focos REALES para esta cancha
   const focos = [];
-  if(rf.nivel==='alto'||rf.nivel==='medio'){
-    focos.push({x:W*.35,y:H*.4,r:22,n:1,c:'#c084fc',lbl:'Hongo'});
-  }
-  if(wl.deficit_hidrico_mm>3){
-    focos.push({x:W*.6,y:H*.55,r:18,n:2,c:'#38bdf8',lbl:'Agua'});
-  }
-  if((c.ndvi||0)<0.05 && new Date().getMonth()+1>8){
-    focos.push({x:W*.5,y:H*.6,r:20,n:3,c:'#fb923c',lbl:'Maleza'});
-    focos.push({x:W*.3,y:H*.45,r:24,n:4,c:'#d94f4f',lbl:'Resembrar'});
-  }
+  const det = c.detalle||'';
+  const ndvi = c.ndvi||0;
+  const month = new Date().getMonth()+1;
+
+  // Hongo: riesgo fungosis global + mencion en detalle/acciones
+  const tieneHongo = (rf.nivel==='alto'||rf.nivel==='medio') &&
+    (accionCancha.some(a=>a.toLowerCase().includes('fungicida')||a.toLowerCase().includes('hongo'))||
+     s_raw==='rojo');
+  if(tieneHongo) focos.push({x:W*.35,y:H*.38,r:24,n:1,c:'#c084fc',lbl:'Hongo'});
+
+  // Agua/drenaje: mencion en acciones o detalle
+  const tieneDrenaje = accionCancha.some(a=>a.toLowerCase().includes('drenaje')||a.toLowerCase().includes('riego'));
+  if(tieneDrenaje) focos.push({x:W*.65,y:H*.55,r:20,n:2,c:'#38bdf8',lbl:'Agua'});
+
+  // Resembrar: NDVI muy bajo y fuera de invierno, o mencion explícita
+  const tieneResembrar = accionCancha.some(a=>a.toLowerCase().includes('resembrar')||a.toLowerCase().includes('semilla')) ||
+    (ndvi<0.12&&s_raw==='rojo'&&month>8);
+  if(tieneResembrar) focos.push({x:W*.5,y:H*.62,r:22,n:4,c:'#d94f4f',lbl:'Resembrar'});
+
+  // Fertilización: mencion en acciones
+  const tieneFertil = accionCancha.some(a=>a.toLowerCase().includes('fertiliz')||a.toLowerCase().includes('nitrógeno')||a.toLowerCase().includes('urea'));
+  if(tieneFertil) focos.push({x:W*.25,y:H*.42,r:18,n:3,c:'#fb923c',lbl:'Nutri.'});
+
   if(!focos.length){
-    focos.push({x:W*.5,y:H*.5,r:16,n:0,c:'#4a9e6a',lbl:'Sin alertas'});
+    focos.push({x:W*.5,y:H*.5,r:18,n:0,c:'#4a9e6a',lbl:'Sin alertas'});
   }
 
   const fc = '#1c3318';
