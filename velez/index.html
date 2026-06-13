@@ -273,7 +273,12 @@ function col(s){ return {rojo:'var(--red)',amarillo:'var(--yel)',verde:'var(--gr
 function fmtNdvi(v){ return v!=null ? Number(v).toFixed(3) : '—' }
 function diasDesde(dateStr){
   if(!dateStr) return 99;
-  return Math.round((Date.now()-new Date(dateStr).getTime())/(864e5));
+  // Forzar parse como fecha local — evita bug de timezone UTC
+  const parts = String(dateStr).slice(0,10).split('-');
+  if(parts.length !== 3) return 99;
+  const d = new Date(+parts[0], +parts[1]-1, +parts[2]);
+  if(isNaN(d.getTime())) return 99;
+  return Math.round((Date.now()-d.getTime())/(864e5));
 }
 function accion(c){
   const s=sem(c.sem), ndvi=c.ndvi||0;
@@ -405,6 +410,18 @@ function renderCanchas(d) {
   const grid = document.getElementById('canchas-grid');
   grid.innerHTML = '';
 
+  // Encontrar la cancha con mayor caída de NDVI (la única que pregunta intervención)
+  let _maxCaida = 0, _maxCaidaId = null;
+  all.forEach(c => {
+    const prev = c.ndvi_prev || 0;
+    const curr = c.ndvi || 0;
+    const caida = prev - curr;
+    if(prev > 0.3 && curr < 0.15 && caida > _maxCaida) {
+      _maxCaida = caida;
+      _maxCaidaId = c.id;
+    }
+  });
+
   all.forEach(c => {
     const s = sem(c.sem);
     const ndvi = c.ndvi;
@@ -443,7 +460,9 @@ function renderCanchas(d) {
     // Mostrar pregunta de intervención si tiene caída brusca
     const prev = c.ndvi_prev || 0;
     const curr = c.ndvi || 0;
-    const hayIntervLocal = prev > 0.3 && curr < 0.15 && !ST.get('interv_local_'+c.id);
+    // Solo mostrar pregunta en la cancha con MAYOR caída de NDVI
+    // Se calcula fuera del loop y se pasa como parámetro
+    const hayIntervLocal = (c.id === _maxCaidaId) && !ST.get('interv_local_'+c.id);
     if(hayIntervLocal) {
       const interv = document.createElement('div');
       interv.className = 'cfield-interv';
