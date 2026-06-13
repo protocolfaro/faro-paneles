@@ -500,7 +500,7 @@ function renderCanchas(d) {
     tog.className = 'campo-toggle';
     tog.innerHTML = 'Ver mapa de prescripción <span class="campo-arr">▼</span>';
     var svgW = document.createElement('div');
-    svgW.className = 'campo-svg-wrap';
+    svgW.className = 'campo-svg-wrap'; // cerrado por defecto — display:none en CSS
     svgW.innerHTML = buildCampoSVG(c, sem(c.sem));
     tog.onclick = function() {
       this.classList.toggle('open');
@@ -681,19 +681,28 @@ async function logIntervencion(tipo, cid) {
 function buildCampoSVG(c, semCorregido) {
   var s = semCorregido || sem(c.sem);
   var ndvi = c.ndvi || 0;
-  var fc = ndvi>0.45?'#1a3a20':ndvi>0.25?'#1e3818':ndvi>0.10?'#252a14':'#2a1a0e';
+  var month2 = new Date().getMonth()+1;
+  var winter2 = month2>=5 && month2<=8;
+  // En invierno con NDVI normal: campo más verde (pasto real aunque NDVI sea bajo)
+  var fc = winter2 && ndvi>=0.03 ? '#1c3318' :
+           ndvi>0.45?'#1a3a20':ndvi>0.25?'#1e3818':ndvi>0.10?'#252a14':'#2a1a0e';
   var W=260, H=160;
   var zonas = [];
   var detalle = c.detalle || '';
-  if(s==='rojo') {
+  var month = new Date().getMonth()+1;
+  var winter = month>=5 && month<=8;
+  var ndvi_real = c.ndvi || 0;
+  // En invierno: mostrar OK salvo NDVI muy bajo (<0.03 = suelo desnudo real)
+  if(winter && ndvi_real >= 0.03) {
+    zonas.push({x:W*0.5,y:H*0.5,rx:20,ry:13,col:'#4a9e6a',lbl:'OK',op:0.18});
+  } else if(s==='rojo') {
     zonas.push({x:W*0.5,y:H*0.5,rx:36,ry:20,col:'#d94f4f',lbl:'URGENTE',op:0.22});
     if(detalle.indexOf('límite')!==-1||detalle.indexOf('120')!==-1) {
       zonas.push({x:W*0.10,y:H*0.5,rx:16,ry:12,col:'#d94f4f',lbl:'',op:0.28});
       zonas.push({x:W*0.90,y:H*0.5,rx:16,ry:12,col:'#d94f4f',lbl:'',op:0.28});
     }
   } else if(s==='amarillo') {
-    zonas.push({x:W*0.35,y:H*0.45,rx:24,ry:15,col:'#d4a017',lbl:'TRATAR',op:0.22});
-    zonas.push({x:W*0.65,y:H*0.55,rx:16,ry:11,col:'#d4a017',lbl:'',op:0.16});
+    zonas.push({x:W*0.35,y:H*0.45,rx:24,ry:15,col:'#d4a017',lbl:'MONIT.',op:0.18});
   } else {
     zonas.push({x:W*0.5,y:H*0.5,rx:20,ry:13,col:'#4a9e6a',lbl:'OK',op:0.20});
   }
