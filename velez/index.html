@@ -573,17 +573,30 @@ const SEM_COLOR = { verde: '#27ae60', amarillo: '#f0b429', rojo: '#e74c3c' };
 const SEM_ESTADO = { verde: 'ÓPTIMO', amarillo: 'ATENCIÓN', rojo: 'CRÍTICA' };
 
 // ── DATA LOAD ─────────────────────────────────────────────────────────────
+// El pipeline actualiza velez_data.json diariamente a las 09:00 UTC (06:00 ART)
+// con datos reales: Open-Meteo, NASA POWER, Sentinel-2 NDVI (Kalman cuando hay nubes),
+// SAR Van Genuchten, SoilGrids, SMAP. El endpoint Railway agrega Hermes (IA) pero
+// puede tardar > 10s. Fuente primaria = JSON del repo (mismo dato, carga instantánea).
+const RAW_JSON = 'https://raw.githubusercontent.com/protocolfaro/faro-paneles/main/velez/velez_data.json';
+
 async function loadData() {
+  // 1. JSON del repo — dato vivo del ultimo ciclo satelital, sin latencia de Hermes
   try {
-    const ctrl = new AbortController();
-    const tid  = setTimeout(() => ctrl.abort(), 5000);
-    const r = await fetch(`${RAILWAY}/velez/panel-roger-canonical`, { signal: ctrl.signal });
-    clearTimeout(tid);
-    if (r.ok) return await r.json();
+    const r = await fetch(RAW_JSON + '?t=' + Date.now());
+    if (r.ok) { const d = await r.json(); d._source = 'live'; return d; }
   } catch(_) {}
+  // 2. Relativo (browser cache)
   try {
     const r = await fetch('./velez_data.json');
-    if (r.ok) return await r.json();
+    if (r.ok) { const d = await r.json(); d._source = 'cache'; return d; }
+  } catch(_) {}
+  // 3. Railway con Hermes — enriquecido, pero puede tardar > 10s
+  try {
+    const ctrl = new AbortController();
+    const tid  = setTimeout(() => ctrl.abort(), 14000);
+    const r = await fetch(`${RAILWAY}/velez/panel-roger-canonical`, { signal: ctrl.signal });
+    clearTimeout(tid);
+    if (r.ok) { const d = await r.json(); d._source = 'railway'; return d; }
   } catch(_) {}
   return null;
 }
@@ -782,8 +795,15 @@ function hashStr(s) {
 function renderHeader(data) {
   const fecha = data.meta?.fecha ?? data.updated_at?.slice(0,10) ?? '—';
   const hora  = data.updated_at ? new Date(data.updated_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}) : '—';
-  document.getElementById('hdr-fecha').textContent = `Escaneo satelital: ${fecha} · ${hora} UTC−3`;
-  document.getElementById('hdr-badge').textContent = `MAPA SIMPLIFICADO · USO OPERATIVO · ${fecha}`;
+  const src   = data._source === 'railway' ? 'Railway+Hermes' : data._source === 'cache' ? 'cache local' : 'en vivo';
+  const nub   = data.weather_live?.gndvi_por_cancha?.nubosidad_pct;
+  const metodo = data.weather_live?.gndvi_por_cancha?.metodo_generacion ?? '';
+  const ndviSrc = nub != null
+    ? (nub > 70 ? `NDVI Kalman (nubes ${nub}%)` : `NDVI Sentinel-2 (nub ${nub}%)`)
+    : 'NDVI —';
+  document.getElementById('hdr-fecha').textContent =
+    `Escaneo satelital: ${fecha} · ${hora} UTC−3 · ${ndviSrc} · fuente: ${src}`;
+  document.getElementById('hdr-badge').textContent = `DATOS VIVOS · ACTUALIZACIÓN DIARIA 06:00 ART · ${fecha}`;
 }
 
 function renderSemaforo(data) {
