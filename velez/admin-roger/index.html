@@ -123,10 +123,10 @@ body{
 
 <!-- NAV TABS -->
 <nav class="nav">
-  <button class="tab active" onclick="switchCancha('amalfitani',this)">Amalfitani</button>
+  <button class="tab" onclick="switchCancha('amalfitani',this)">Amalfitani</button>
   <button class="tab" onclick="switchCancha('1fp',this)">1FP</button>
   <button class="tab" onclick="switchCancha('2fp',this)">2FP</button>
-  <button class="tab" onclick="switchCancha('1fa',this)">1FA</button>
+  <button class="tab active" onclick="switchCancha('1fa',this)">1FA</button>
   <button class="tab" onclick="switchCancha('2fa',this)">2FA</button>
   <button class="tab" onclick="switchCancha('3fa',this)">3FA</button>
   <button class="tab" onclick="switchCancha('4fa',this)">4FA</button>
@@ -247,7 +247,7 @@ let _heatmaps = {};   // {cid: {estado_detectado, prescripcion_operativa, ndvi, 
 let _canchas  = [];   // array from canchero list (fallback)
 let _estadio  = {};   // Amalfitani sector (fallback)
 let _weather  = {};
-let _active   = 'amalfitani';
+let _active   = '1fa';
 
 /* ── FIELD PAINT ─────────────────────────────────────────────────────────── */
 function _colorFor(estado) {
@@ -282,6 +282,7 @@ function _getEstado(cid) {
 function _getPrescripcion(cid) {
   return _getCancha(cid).prescripcion_operativa
       || _getHeatmap(cid).prescripcion_operativa
+      || _getHeatmap(cid).n_rec
       || null;
 }
 
