@@ -2,1072 +2,490 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Faro OS · Vélez · Canchero</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Epilogue:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Faro OS · Vélez Sarsfield</title>
+<link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Epilogue:wght@300;400;600;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/deck.gl@^9.0.0/dist.min.js"></script>
+<script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
 <style>
 :root {
-  --bg:    #06080b;
-  --bg2:   #0d1117;
-  --bg3:   #141c24;
-  --gold:  #c9a84c;
-  --goldl: #e2c97e;
-  --w:     #f2ede4;
-  --wdim:  #9aa0a8;
-  --red:   #c0392b;
-  --redl:  #e74c3c;
-  --redxl: #ff6b6b;
-  --yel:   #d4a017;
-  --yell:  #f0b429;
-  --grn:   #1e8449;
-  --grnl:  #27ae60;
-  --blue:  #4fc3f7;
+    --bg: #0a0a0a;
+    --card: rgba(18,20,23,0.88);
+    --border: rgba(38,43,53,0.5);
+    --gold: #c9a84c;
+    --red: #E53E3E;
+    --muted: #9ca3af;
+    --text: #f3f4f6;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  background: var(--bg);
-  color: var(--w);
-  font-family: 'Epilogue', sans-serif;
-  overflow-x: hidden;
-}
-#loading {
-  display: flex; align-items: center; justify-content: center;
-  height: 100vh;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 14px;
-  color: var(--gold);
-  letter-spacing: 1px;
-}
-#report { display: none; }
-
-/* ── HEADER ── */
-.hdr-bar { width: 100%; height: 6px; background: var(--gold); }
-.hdr-body {
-  background: var(--bg2);
-  padding: 20px;
-  text-align: center;
-  border-bottom: 1px solid rgba(201,168,76,.3);
-}
-.hdr-title {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: clamp(14px, 2.5vw, 20px);
-  font-weight: 700;
-  color: var(--gold);
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-.hdr-sub {
-  font-family: 'Epilogue', sans-serif;
-  font-size: clamp(11px, 1.8vw, 15px);
-  font-weight: 600;
-  color: var(--w);
-  margin: 6px 0 4px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-.hdr-meta {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: clamp(8px, 1.2vw, 10px);
-  color: var(--wdim);
-  margin: 2px 0;
-}
-.hdr-badge {
-  display: inline-block;
-  margin-top: 10px;
-  padding: 4px 18px;
-  border: 1px solid var(--gold);
-  border-radius: 2px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  color: var(--gold);
-  letter-spacing: 1px;
-  background: var(--bg3);
-}
-.hdr-logos {
-  display: flex; justify-content: center; gap: 8px; margin-top: 10px;
-}
-.hdr-logo {
-  padding: 3px 10px;
-  border: 1px solid rgba(201,168,76,.4);
-  border-radius: 2px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 8px;
-  color: var(--gold);
-  background: var(--bg3);
-}
-
-/* ── SECTION ── */
-.section {
-  background: var(--bg2);
-  border-top: 1px solid rgba(201,168,76,.15);
-  padding: 16px 20px;
-}
-.section-title {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: clamp(9px, 1.3vw, 11px);
-  font-weight: 700;
-  color: var(--gold);
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  margin-bottom: 4px;
-}
-.section-sub {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: clamp(7px, 1vw, 9px);
-  color: var(--w);
-  margin-bottom: 12px;
-}
-.divider { height: 1px; background: rgba(201,168,76,.25); margin: 4px 0 14px; }
-
-/* ── SEMÁFORO ── */
-.sem-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 8px;
-}
-.sem-card {
-  border-radius: 4px;
-  padding: 12px 10px;
-  border: 1px solid rgba(201,168,76,.2);
-  background: var(--bg3);
-  text-align: center;
-  position: relative;
-}
-.sem-card.sem-rojo   { background: #1a0505; border-color: var(--redl); border-width: 2px; }
-.sem-card.sem-amarillo { background: #181200; border-color: var(--yell); }
-.sem-card.sem-verde  { background: #061208; border-color: var(--grnl); }
-.sem-nombre {
-  font-family: 'Epilogue', sans-serif;
-  font-size: 10px; font-weight: 700;
-  color: var(--w);
-  margin-bottom: 8px;
-  text-transform: uppercase; letter-spacing: .5px;
-}
-.sem-dot {
-  width: 36px; height: 36px; border-radius: 50%;
-  margin: 0 auto 6px;
-  display: flex; align-items: center; justify-content: center;
-}
-.sem-dot-glow {
-  width: 52px; height: 52px; border-radius: 50%;
-  margin: 0 auto 6px;
-  display: flex; align-items: center; justify-content: center;
-}
-.sem-estado {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px; font-weight: 700;
-  letter-spacing: .5px;
-  margin-bottom: 6px;
-}
-.sem-accion {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 8px;
-  color: var(--w);
-  line-height: 1.4;
-  min-height: 28px;
-}
-.sem-accion.urgent { color: var(--redxl); }
-
-/* ── FIELD MAPS ── */
-.field-layout {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 12px;
-  align-items: start;
-}
-.canchas-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-.field-wrap {
-  position: relative;
-}
-.field-wrap svg { width: 100%; height: auto; display: block; }
-.field-accion-label {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px; font-weight: 700;
-  text-align: center;
-  margin-top: 4px;
-  padding: 3px 8px;
-  border-radius: 2px;
-  line-height: 1.4;
-}
-
-/* ── LEGEND ── */
-.legend {
-  display: flex; flex-wrap: wrap; gap: 10px;
-  margin-top: 14px;
-  padding: 10px 14px;
-  background: var(--bg3);
-  border-radius: 4px;
-  border: 1px solid rgba(201,168,76,.2);
-}
-.legend-title {
-  width: 100%;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px; font-weight: 700;
-  color: var(--gold);
-  margin-bottom: 4px;
-  text-transform: uppercase;
-}
-.legend-item {
-  display: flex; align-items: center; gap: 6px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 8px;
-  color: var(--w);
-}
-.legend-dot {
-  width: 14px; height: 14px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 7px; font-weight: 700; color: black;
-  flex-shrink: 0;
-}
-
-/* ── FUSIÓN ── */
-.fusion-bar {
-  position: relative;
-  height: 20px;
-  border-radius: 2px;
-  background: linear-gradient(to right, #8B0000, #c0392b, #d4a017, #f0b429, #1e8449, #27ae60);
-  margin: 8px 0 4px;
-  border: 1px solid rgba(255,255,255,.1);
-}
-.fusion-tick {
-  position: absolute;
-  top: -16px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 8px;
-  color: var(--wdim);
-  transform: translateX(-50%);
-}
-.fusion-tick-line {
-  position: absolute;
-  top: 0; bottom: 0;
-  width: 1px; background: rgba(255,255,255,.4);
-}
-.fusion-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 8px;
-  margin-top: 20px;
-}
-.fusion-card {
-  text-align: center;
-  padding: 10px 8px;
-  background: var(--bg3);
-  border-radius: 4px;
-  position: relative;
-}
-.fusion-nombre {
-  font-size: 9px; font-weight: 700;
-  color: var(--w);
-  text-transform: uppercase; letter-spacing: .5px;
-  margin-bottom: 6px;
-}
-.fusion-score {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 28px; font-weight: 700;
-  line-height: 1;
-  margin-bottom: 4px;
-}
-.fusion-dot {
-  width: 20px; height: 20px; border-radius: 50%;
-  margin: 0 auto 4px;
-  display: flex; align-items: center; justify-content: center;
-}
-.fusion-ptr {
-  position: absolute;
-  bottom: 6px; left: 50%; transform: translateX(-50%);
-  font-size: 7px;
-  color: var(--wdim);
-  font-family: 'JetBrains Mono', monospace;
-}
-
-/* ── TABLA ── */
-.tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-table {
-  width: 100%; border-collapse: collapse;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: clamp(7px, 1.1vw, 9px);
-  min-width: 700px;
-}
-th {
-  background: var(--bg3);
-  color: var(--gold);
-  font-size: clamp(7px, 1vw, 8.5px);
-  font-weight: 700;
-  padding: 7px 6px;
-  text-align: center;
-  border: 1px solid rgba(201,168,76,.2);
-  text-transform: uppercase;
-  letter-spacing: .5px;
-}
-td {
-  padding: 7px 6px;
-  text-align: center;
-  border: 1px solid rgba(201,168,76,.1);
-  vertical-align: middle;
-  line-height: 1.3;
-}
-tr.sem-rojo td    { background: #1a0505; }
-tr.sem-amarillo td { background: #181200; }
-tr.sem-verde td   { background: #061208; }
-tr.sem-rojo    { border: 1px solid var(--redl); }
-tr.sem-critico td { border-top: 1px solid var(--redl); border-bottom: 1px solid var(--redl); }
-td.td-nombre   { color: var(--w); font-weight: 700; text-align: left; white-space: nowrap; }
-td.td-accion   { text-align: left; font-weight: 700; }
-td.td-prior    { font-size: 14px; font-weight: 700; }
-
-/* ── COMPARATIVA ── */
-.comp-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 10px;
-}
-.comp-card {
-  background: var(--bg3);
-  border-radius: 4px;
-  padding: 12px 10px;
-  text-align: center;
-  border: 1px solid rgba(201,168,76,.15);
-}
-.comp-nombre {
-  font-size: 9px; font-weight: 700;
-  color: var(--w);
-  text-transform: uppercase; letter-spacing: .5px;
-  margin-bottom: 6px;
-}
-.comp-arrow {
-  font-size: 26px; font-weight: 700;
-  line-height: 1;
-  margin-bottom: 4px;
-}
-.comp-current {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 14px; font-weight: 700;
-  margin-bottom: 2px;
-}
-.comp-prev {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 8px;
-  color: var(--wdim);
-}
-.comp-legend {
-  text-align: center;
-  margin-top: 12px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  color: var(--wdim);
-}
-
-/* ── TAREAS SEMANA ── */
-.tareas-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
-}
-.tarea-dia {
-  background: var(--bg3);
-  border-radius: 3px;
-  padding: 8px 6px;
-  border: 1px solid rgba(201,168,76,.15);
-  min-height: 90px;
-}
-.tarea-dia.partido { border-color: var(--gold); }
-.tarea-dia-nombre {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px; font-weight: 700;
-  color: var(--gold);
-  text-transform: uppercase; letter-spacing: .5px;
-  margin-bottom: 2px;
-}
-.tarea-dia-fecha {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 7px; color: var(--wdim);
-  margin-bottom: 6px;
-}
-.tarea-item {
-  font-size: 8px;
-  color: var(--w);
-  line-height: 1.45;
-  margin-bottom: 3px;
-  padding-left: 8px;
-  position: relative;
-}
-.tarea-item::before { content: '·'; position: absolute; left: 0; color: var(--gold); }
-
-/* ── FOOTER ── */
-footer {
-  background: var(--bg);
-  border-top: 2px solid var(--gold);
-  padding: 20px;
-  text-align: center;
-}
-.ftr-next {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px; font-weight: 700;
-  color: var(--gold);
-  margin-bottom: 6px;
-}
-.ftr-org {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px; color: var(--wdim);
-  margin-bottom: 6px;
-}
-.ftr-hash {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 8px;
-  color: rgba(201,168,76,.5);
-  word-break: break-all;
-  margin-bottom: 6px;
-}
-.ftr-powered {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 8px; color: var(--wdim);
-}
-
-/* ── RESPONSIVE ── */
-@media (max-width: 600px) {
-  .field-layout { grid-template-columns: 1fr; }
-  .tareas-grid  { grid-template-columns: repeat(4, 1fr); }
-}
-@media (max-width: 400px) {
-  .tareas-grid  { grid-template-columns: repeat(2, 1fr); }
-  .sem-grid     { grid-template-columns: repeat(3, 1fr); }
-}
+body { margin:0; background:var(--bg); font-family:'Epilogue',sans-serif; color:var(--text); overflow:hidden; }
+#map { position:absolute; top:0; left:0; width:100%; height:100%; z-index:1; }
+#hud { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10; display:flex; flex-direction:column; justify-content:space-between; }
+header { background:linear-gradient(to bottom,rgba(10,10,10,.95) 60%,transparent); padding:20px; pointer-events:auto; }
+h1 { font-family:'Cormorant Garamond',serif; font-size:22px; margin:0; text-transform:uppercase; letter-spacing:1px; }
+.venue-bar { display:flex; gap:8px; overflow-x:auto; margin-top:12px; scrollbar-width:none; }
+.venue-bar::-webkit-scrollbar { display:none; }
+.vbtn { background:rgba(20,22,26,.8); border:1px solid var(--border); color:var(--muted); padding:8px 14px; font-size:11px; font-weight:600; text-transform:uppercase; border-radius:4px; cursor:pointer; white-space:nowrap; font-family:'Epilogue',sans-serif; transition:all .2s; pointer-events:auto; }
+.vbtn:hover { border-color:var(--gold); color:#fff; }
+.vbtn.active { background:rgba(201,168,76,.15); border-color:var(--gold); color:var(--gold); }
+.right-panel { position:absolute; top:130px; right:16px; display:flex; flex-direction:column; gap:10px; max-width:210px; pointer-events:auto; z-index:10; }
+.card { background:var(--card); border:1px solid var(--border); backdrop-filter:blur(12px); padding:14px; border-radius:6px; }
+.card h2 { font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); border-left:2px solid var(--gold); padding-left:6px; margin:0 0 10px; }
+.lchk { display:flex; align-items:center; gap:8px; font-size:12px; margin-bottom:8px; cursor:pointer; color:var(--muted); }
+.lchk input { display:none; }
+.lchk .box { width:11px; height:11px; border:1px solid var(--border); border-radius:2px; flex-shrink:0; }
+.lchk input:checked + .box { background:var(--gold); border-color:var(--gold); }
+.lchk input:checked ~ span { color:#fff; font-weight:600; }
+.fslider { width:100%; accent-color:var(--gold); margin-top:6px; }
+.slbl { display:flex; justify-content:space-between; font-size:9px; color:var(--muted); margin-top:3px; }
+footer { background:linear-gradient(to top,rgba(10,10,10,1) 70%,transparent); padding:20px; pointer-events:auto; }
+.footer-row { display:flex; gap:20px; align-items:flex-start; }
+.kpi { min-width:85px; }
+.kval { font-size:22px; font-weight:800; }
+.klbl { font-size:9px; text-transform:uppercase; color:var(--muted); letter-spacing:.5px; }
+.bar-bg { width:100%; height:3px; background:#222; border-radius:2px; margin-top:4px; }
+.bar-fill { height:100%; background:var(--gold); border-radius:2px; transition:width .4s; }
+.terminal { flex:1; font-size:12px; line-height:1.65; border-left:2px solid rgba(255,255,255,.08); padding-left:14px; max-height:90px; overflow:hidden; }
+.terminal strong { color:#fff; }
+.alert { color:var(--red); }
+#banner { position:absolute; top:115px; left:50%; transform:translateX(-50%); background:rgba(229,62,62,.12); border:1px solid var(--red); padding:5px 14px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; border-radius:20px; display:none; backdrop-filter:blur(8px); white-space:nowrap; z-index:20; }
+.map-toggle { position:absolute; top:115px; left:16px; display:flex; gap:6px; pointer-events:auto; z-index:20; }
+.mtbtn { background:rgba(18,20,23,.85); border:1px solid var(--border); color:var(--muted); padding:5px 12px; font-size:10px; font-weight:600; border-radius:4px; cursor:pointer; font-family:'Epilogue',sans-serif; transition:all .15s; }
+.mtbtn.active { border-color:var(--gold); color:var(--gold); }
+@media(min-width:768px) { .footer-row { align-items:center; } }
+@keyframes pulse { 50%{opacity:.6} }
+.pulse { animation:pulse 2s infinite; }
 </style>
 </head>
 <body>
 
-<div id="loading">FARO OS · conectando…</div>
+<div id="map"></div>
 
-<div id="report">
+<div id="hud">
+  <header>
+    <div style="display:flex;justify-content:space-between;align-items:baseline">
+      <h1>Faro <span style="font-family:Epilogue;font-weight:300;font-size:13px;color:var(--gold)">OS</span></h1>
+      <span id="surface-badge" style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--muted)"></span>
+    </div>
+    <div class="venue-bar">
+      <button class="vbtn active" onclick="switchVenue('amalfitani',this)">Amalfitani</button>
+      <button class="vbtn" onclick="switchVenue('villa_olimpica',this)">Villa Olímpica</button>
+      <button class="vbtn" onclick="switchVenue('polideportivo',this)">Polideportivo</button>
+      <button class="vbtn" onclick="switchVenue('paneles_solares',this)">Paneles Solares</button>
+      <button class="vbtn" onclick="switchVenue('sede',this)">Sede</button>
+      <button class="vbtn" onclick="switchVenue('piletas',this)">Piletas</button>
+    </div>
+  </header>
 
-<!-- ══ HEADER ══════════════════════════════════════════════════════ -->
-<div class="hdr-bar"></div>
-<div class="hdr-body">
-  <div class="hdr-title">FARO PROTOCOL — FORTÍN INTELIGENTE</div>
-  <div class="hdr-sub">Vélez Sarsfield · Mapa de Trabajo para el Canchero</div>
-  <div class="hdr-meta" id="hdr-fecha">Escaneo satelital: —</div>
-  <div class="hdr-meta">Lat −34.6394 · Lon −58.5297 · WGS-84</div>
-  <div class="hdr-badge" id="hdr-badge">MAPA SIMPLIFICADO · USO OPERATIVO</div>
-  <div class="hdr-logos">
-    <span class="hdr-logo">ESA</span>
-    <span class="hdr-logo">COP</span>
-    <span class="hdr-logo">NASA</span>
-    <span class="hdr-logo">SMAP</span>
+  <div id="banner">⚠️ Datos ópticos congelados — Radar SAR activo</div>
+
+  <div class="map-toggle">
+    <button class="mtbtn active" id="btn-dark" onclick="setBasemap('dark')">Oscuro</button>
+    <button class="mtbtn" id="btn-sat" onclick="setBasemap('satellite')">Satélite</button>
   </div>
-</div>
 
-<!-- ══ SEMÁFORO ═══════════════════════════════════════════════════ -->
-<div class="section">
-  <div class="section-title">Panel 0 · Semáforo Ejecutivo — Lectura en 3 Segundos</div>
-  <div class="section-sub">ROJO = acción urgente o cancha sobreusada &nbsp;·&nbsp; VERDE = descansada esta semana &nbsp;·&nbsp; AMARILLO = atención preventiva</div>
-  <div class="divider"></div>
-  <div class="sem-grid" id="sem-grid"></div>
-</div>
-
-<!-- ══ MAPA PRESCRIPCIÓN ══════════════════════════════════════════ -->
-<div class="section" style="background:var(--bg);">
-  <div class="section-title">Panel 1 · Mapa de Prescripción — Dónde Trabajar Esta Semana</div>
-  <div class="section-sub">[ROJO] = trabajar HOY &nbsp;&nbsp; [AMARILLO] = trabajar esta semana</div>
-  <div class="divider"></div>
-  <div class="field-layout">
-    <div class="field-wrap" id="map1-amalfitani"></div>
-    <div class="canchas-grid" id="map1-canchas"></div>
-  </div>
-  <div class="legend" id="legend1">
-    <div class="legend-title">Leyenda — Qué significan los círculos</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--redl)"></div> ROJO GRANDE — zona crítica, trabajar HOY sin falta</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--yell)"></div> AMARILLO — zona de atención, trabajar esta semana</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--grnl)"></div> VERDE — zona OK, solo monitorear</div>
-  </div>
-</div>
-
-<!-- ══ MAPA ALERTAS ═══════════════════════════════════════════════ -->
-<div class="section">
-  <div class="section-title">Panel 2 · Mapa de Alertas — Focos Exactos por Cancha</div>
-  <div class="section-sub">1=HONGO &nbsp; 2=AGUA/DRENAJE &nbsp; 3=MALEZA &nbsp; 4=RESEMBRAR — cada número = lugar exacto</div>
-  <div class="divider"></div>
-  <div class="field-layout">
-    <div class="field-wrap" id="map2-amalfitani"></div>
-    <div class="canchas-grid" id="map2-canchas"></div>
-  </div>
-  <div class="legend" id="legend2">
-    <div class="legend-title">Leyenda — Qué es cada número</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--redl)">1</div> HONGO — aplicar fungicida en ese punto</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--blue)">2</div> AGUA — problema de drenaje o riego</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--yell)">3</div> MALEZA — arrancar / herbicida en ese punto</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--redl)">4</div> RESEMBRAR — colocar semilla nueva en ese punto</div>
-  </div>
-</div>
-
-<!-- ══ ÍNDICE FUSIÓN ══════════════════════════════════════════════ -->
-<div class="section" style="background:var(--bg);">
-  <div class="section-title">Panel 3 · Índice Fusión Faro — Puntuación Integrada por Zona</div>
-  <div class="divider"></div>
-  <div style="position:relative; margin: 20px 0 8px;">
-    <div class="fusion-tick" style="left:0%">0<br>Crítico</div>
-    <div class="fusion-tick" style="left:50%">50<br>Normal</div>
-    <div class="fusion-tick" style="left:100%">100<br>Óptimo</div>
-    <div class="fusion-bar">
-      <div class="fusion-tick-line" style="left:0%"></div>
-      <div class="fusion-tick-line" style="left:50%"></div>
-      <div class="fusion-tick-line" style="left:100%"></div>
+  <div class="right-panel">
+    <div class="card" id="layer-card">
+      <h2>Capas Activas</h2>
+      <div id="layer-list"></div>
+    </div>
+    <div class="card" id="slider-card" style="display:none">
+      <h2 id="slider-title">Control</h2>
+      <div id="slider-body"></div>
     </div>
   </div>
-  <div class="fusion-grid" id="fusion-grid"></div>
+
+  <footer>
+    <div class="footer-row">
+      <div class="kpi">
+        <div class="klbl">Score</div>
+        <div class="kval" id="score-val">--</div>
+        <div class="bar-bg"><div class="bar-fill" id="score-bar" style="width:0"></div></div>
+      </div>
+      <div class="kpi" id="kpi2" style="display:none">
+        <div class="klbl" id="kpi2-lbl"></div>
+        <div class="kval" id="kpi2-val"></div>
+      </div>
+      <div class="terminal" id="terminal">Conectando con Faro OS…</div>
+    </div>
+  </footer>
 </div>
-
-<!-- ══ TABLA PRESCRIPCIÓN ════════════════════════════════════════ -->
-<div class="section">
-  <div class="section-title">Tabla de Prescripción Agronómica</div>
-  <div class="divider"></div>
-  <div class="tbl-wrap">
-    <table id="prescripcion-table">
-      <thead>
-        <tr>
-          <th>Zona</th><th>NDVI</th><th>Score</th>
-          <th>Uso semanal</th><th>Hongos</th><th>Drenaje</th>
-          <th>Prior.</th><th>Timeline</th><th>Acción inmediata</th>
-        </tr>
-      </thead>
-      <tbody id="prescripcion-tbody"></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- ══ COMPARATIVA ═══════════════════════════════════════════════ -->
-<div class="section" style="background:var(--bg);">
-  <div class="section-title">Comparativa · Tendencia vs. Escaneo Anterior</div>
-  <div class="divider"></div>
-  <div class="comp-grid" id="comp-grid"></div>
-  <div class="comp-legend" id="comp-legend">↑ Mejoró &nbsp;&nbsp; → Estable &nbsp;&nbsp; ↓ Empeoró</div>
-</div>
-
-<!-- ══ TAREAS SEMANA ══════════════════════════════════════════════ -->
-<div class="section">
-  <div class="section-title">Tareas de la Semana — Cronograma Roger Bernal</div>
-  <div class="divider"></div>
-  <div class="tareas-grid" id="tareas-grid"></div>
-</div>
-
-<!-- ══ FOOTER ════════════════════════════════════════════════════ -->
-<footer>
-  <div class="ftr-next" id="ftr-next">Próximo escaneo automático: —</div>
-  <div class="ftr-org">Sistema Fortín Inteligente · Faro Protocol · protocolfaro@gmail.com</div>
-  <div class="ftr-hash" id="ftr-hash">SHA-256: —</div>
-  <div class="ftr-powered">Generado automáticamente · Sentinel-2 / SAR / InSAR · datos vivos</div>
-  <div class="hdr-logos" style="margin-top:12px">
-    <span class="hdr-logo">ESA</span>
-    <span class="hdr-logo">COP</span>
-    <span class="hdr-logo">NASA</span>
-  </div>
-</footer>
-
-</div><!-- #report -->
 
 <script>
+// ── COORDENADAS REALES VÉLEZ ──────────────────────────────────────────────
+const VENUES = {
+    amalfitani:     { lng:-58.5288, lat:-34.6379, zoom:17.5 },
+    villa_olimpica: { lng:-58.7193, lat:-34.6221, zoom:15.5 },
+    polideportivo:  { lng:-58.5135, lat:-34.6333, zoom:17.5 },
+    paneles_solares:{ lng:-58.522200, lat:-34.636800, zoom:19   },
+    sede:           { lng:-58.523912, lat:-34.634620, zoom:18.5 },
+    piletas:        { lng:-58.520900, lat:-34.637800, zoom:18.5 }
+};
+
+// ── CAPAS POR TIPO DE SUPERFICIE ─────────────────────────────────────────
+const SURFACE_LAYERS = {
+    natural:        ['ndvi','sar','temperatura','clima','fungosis'],
+    hibrido:        ['ndvi','sar','temperatura','clima','fungosis'],
+    sintetico:      ['sar','temperatura','insar'],
+    polvo_ladrillo: ['sar','temperatura','insar'],
+    indoor:         ['insar','temperatura'],
+    fotovoltaico:   ['temperatura','clima'],
+    acuatico:       ['temperatura','clima']
+};
+
+const LAYER_LABELS = {
+    ndvi:        'NDVI Vegetativo',
+    sar:         'SAR Compactación',
+    temperatura: 'Temperatura Landsat',
+    insar:       'InSAR Estructural',
+    clima:       'Clima Open-Meteo',
+    fungosis:    'Riesgo Dollar Spot',
+    dale_play:   'Dale Play Recovery'
+};
+
+let map, deckOverlay, canonical, geojson;
+let currentVenue = 'amalfitani';
+let activeL = { ndvi:true, sar:true, temperatura:false, insar:false, clima:false, fungosis:false, dale_play:false };
+let richDepth = 1;  // 0=5cm  1=10cm  2=20cm
+let showDay   = 0;  // días desde el show (0=hoy)
 const RAILWAY = 'https://faroprotocol-production-45fd.up.railway.app';
-const SEM_COLOR = { verde: '#27ae60', amarillo: '#f0b429', rojo: '#e74c3c' };
-const SEM_ESTADO = { verde: 'ÓPTIMO', amarillo: 'ATENCIÓN', rojo: 'CRÍTICA' };
 
-// ── DATA LOAD ─────────────────────────────────────────────────────────────
-// El pipeline actualiza velez_data.json diariamente a las 09:00 UTC (06:00 ART)
-// con datos reales: Open-Meteo, NASA POWER, Sentinel-2 NDVI (Kalman cuando hay nubes),
-// SAR Van Genuchten, SoilGrids, SMAP. El endpoint Railway agrega Hermes (IA) pero
-// puede tardar > 10s. Fuente primaria = JSON del repo (mismo dato, carga instantánea).
-const RAW_JSON = 'https://raw.githubusercontent.com/protocolfaro/faro-paneles/main/velez/velez_data.json';
+// ── INIT ─────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+    map = new maplibregl.Map({
+        container: 'map',
+        style: 'https://tiles.openfreemap.org/styles/dark',
+        center: [VENUES.amalfitani.lng, VENUES.amalfitani.lat],
+        zoom:  VENUES.amalfitani.zoom,
+        pitch: 45, bearing: -15,
+        attributionControl: false
+    });
 
-async function loadData() {
-  // 1. JSON del repo — dato vivo del ultimo ciclo satelital, sin latencia de Hermes
-  try {
-    const r = await fetch(RAW_JSON + '?t=' + Date.now());
-    if (r.ok) { const d = await r.json(); d._source = 'live'; return d; }
-  } catch(_) {}
-  // 2. Relativo (browser cache)
-  try {
-    const r = await fetch('./velez_data.json');
-    if (r.ok) { const d = await r.json(); d._source = 'cache'; return d; }
-  } catch(_) {}
-  // 3. Railway con Hermes — enriquecido, pero puede tardar > 10s
-  try {
-    const ctrl = new AbortController();
-    const tid  = setTimeout(() => ctrl.abort(), 14000);
-    const r = await fetch(`${RAILWAY}/velez/panel-roger-canonical`, { signal: ctrl.signal });
-    clearTimeout(tid);
-    if (r.ok) { const d = await r.json(); d._source = 'railway'; return d; }
-  } catch(_) {}
-  return null;
-}
+    // Un solo canvas WebGL — deck.gl como overlay sobre MapLibre
+    deckOverlay = new deck.MapboxOverlay({ interleaved: true, layers: [] });
+    map.addControl(deckOverlay);
+    map.on('load', async () => {
+        // Satélite ArcGIS World Imagery — sin API key
+        map.addSource('arcgis-sat', {
+            type: 'raster',
+            tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+            tileSize: 256, maxzoom: 19
+        });
+        map.addLayer({ id:'sat-layer', type:'raster', source:'arcgis-sat', layout:{ visibility:'none' } });
 
-// ── SVG SOCCER FIELD ──────────────────────────────────────────────────────
-function makefield(opts) {
-  const { title, sem, isCrit, focos } = opts;
-  const sc = SEM_COLOR[sem] || '#f0b429';
-  const F1 = '#2d5a1b', F2 = '#275218', LN = 'rgba(255,255,255,0.85)';
-
-  // viewBox coordinates
-  const vbw = 100, vbh = 168;
-  const mx = 5;
-  const fy0 = 8, fh = 154, fw = vbw - 2*mx, fx0 = mx;
-  const fcx = fx0 + fw/2, fcy = fy0 + fh/2;
-
-  const el = [];
-
-  // Stripes (horizontal bands)
-  const ns = 8;
-  for (let i = 0; i < ns; i++) {
-    const sy = fy0 + i * fh/ns, sh = fh/ns;
-    el.push(`<rect x="${fx0}" y="${sy}" width="${fw}" height="${sh}" fill="${i%2===0 ? F1 : F2}"/>`);
-  }
-
-  // Critical overlay
-  if (isCrit) el.push(`<rect x="${fx0}" y="${fy0}" width="${fw}" height="${fh}" fill="#c0392b" opacity="0.20"/>`);
-
-  // Boundary
-  const bw = isCrit ? 2.5 : 1.5;
-  el.push(`<rect x="${fx0+.5}" y="${fy0+.5}" width="${fw-1}" height="${fh-1}" fill="none" stroke="${sc}" stroke-width="${bw}"/>`);
-
-  // Halfway line
-  const hy = fy0 + fh/2;
-  el.push(`<line x1="${fx0}" y1="${hy}" x2="${fx0+fw}" y2="${hy}" stroke="${LN}" stroke-width="0.8"/>`);
-
-  // Center circle + spot
-  const rc = Math.min(fw, fh) * 0.14;
-  el.push(`<circle cx="${fcx}" cy="${hy}" r="${rc}" fill="none" stroke="${LN}" stroke-width="0.7"/>`);
-  el.push(`<circle cx="${fcx}" cy="${hy}" r="1.5" fill="${LN}"/>`);
-
-  // Penalty areas
-  const paw = fw * 0.62, pah = fh * 0.17, pax = fx0 + (fw-paw)/2;
-  el.push(`<rect x="${pax}" y="${fy0}" width="${paw}" height="${pah}" fill="none" stroke="${LN}" stroke-width="0.6"/>`);
-  el.push(`<rect x="${pax}" y="${fy0+fh-pah}" width="${paw}" height="${pah}" fill="none" stroke="${LN}" stroke-width="0.6"/>`);
-
-  // Goal areas (6-yard box)
-  const gaw = fw * 0.30, gah = fh * 0.065, gax = fx0 + (fw-gaw)/2;
-  el.push(`<rect x="${gax}" y="${fy0}" width="${gaw}" height="${gah}" fill="none" stroke="${LN}" stroke-width="0.5"/>`);
-  el.push(`<rect x="${gax}" y="${fy0+fh-gah}" width="${gaw}" height="${gah}" fill="none" stroke="${LN}" stroke-width="0.5"/>`);
-
-  // Goals (outside field)
-  const gw = fw * 0.12, gd = fh * 0.025, gx = fx0 + (fw-gw)/2;
-  el.push(`<rect x="${gx}" y="${fy0-gd}" width="${gw}" height="${gd}" fill="none" stroke="${LN}" stroke-width="1.2"/>`);
-  el.push(`<rect x="${gx}" y="${fy0+fh}" width="${gw}" height="${gd}" fill="none" stroke="${LN}" stroke-width="1.2"/>`);
-
-  // Penalty spots
-  const ps_top = fy0 + fh * 0.115, ps_bot = fy0 + fh - fh * 0.115;
-  el.push(`<circle cx="${fcx}" cy="${ps_top}" r="1.5" fill="${LN}"/>`);
-  el.push(`<circle cx="${fcx}" cy="${ps_bot}" r="1.5" fill="${LN}"/>`);
-
-  // Title badge (at top of field)
-  el.push(`<rect x="${fx0+1}" y="${fy0+1}" width="${fw-2}" height="13" rx="2" fill="rgba(0,0,0,0.85)" stroke="${sc}" stroke-width="0.6"/>`);
-  el.push(`<circle cx="${fx0+8}" cy="${fy0+7.5}" r="3.5" fill="${sc}"/>`);
-  el.push(`<text x="${fcx+3}" y="${fy0+9}" fill="white" font-size="6.5" font-weight="700" text-anchor="middle" font-family="'JetBrains Mono',monospace">${esc(title)}</text>`);
-
-  // Critical text
-  if (isCrit) {
-    el.push(`<rect x="${fcx-22}" y="${fcy-10}" width="44" height="18" rx="3" fill="#1a0000" stroke="${sc}" stroke-width="1.2"/>`);
-    el.push(`<text x="${fcx}" y="${fcy+3}" fill="#ff6b6b" font-size="9" font-weight="700" text-anchor="middle" font-family="monospace">⚠ CRÍTICA</text>`);
-  }
-
-  // Focos circles
-  if (focos && focos.length) {
-    focos.forEach(f => {
-      const ffx = fx0 + f.x * fw;
-      const ffy = fy0 + (1 - f.y) * fh; // invert Y
-      const fr  = (f.size || 0.09) * Math.min(fw, fh);
-      const fc  = f.color;
-      const lbl = f.label || '';
-      const num = f.num != null ? String(f.num) : '';
-
-      el.push(`<circle cx="${ffx}" cy="${ffy}" r="${fr*1.35}" fill="${fc}" opacity="0.18"/>`);
-      el.push(`<circle cx="${ffx}" cy="${ffy}" r="${fr}" fill="${fc}" opacity="0.85" stroke="white" stroke-width="0.8"/>`);
-
-      if (num) {
-        el.push(`<text x="${ffx}" y="${ffy+3.5}" fill="black" font-size="${Math.max(fr*0.85,5.5)}" font-weight="700" text-anchor="middle" font-family="monospace">${num}</text>`);
-        if (lbl) el.push(`<text x="${ffx}" y="${ffy+fr+8}" fill="${fc}" font-size="5" font-weight="700" text-anchor="middle" font-family="monospace">${esc(lbl)}</text>`);
-      } else {
-        const lines = lbl.split('\n');
-        if (lines.length > 1) {
-          el.push(`<text x="${ffx}" y="${ffy+1}" fill="black" font-size="5.2" font-weight="700" text-anchor="middle" font-family="monospace">${esc(lines[0])}</text>`);
-          el.push(`<text x="${ffx}" y="${ffy+7}" fill="black" font-size="5.2" font-weight="700" text-anchor="middle" font-family="monospace">${esc(lines[1])}</text>`);
-        } else if (lbl) {
-          el.push(`<text x="${ffx}" y="${ffy+3}" fill="black" font-size="5.2" font-weight="700" text-anchor="middle" font-family="monospace">${esc(lbl)}</text>`);
+        // Cargar datos del assembler — triple fallback
+        try {
+            const [c, g] = await Promise.all([
+                fetch(`${RAILWAY}/velez/panel-roger-canonical`).then(r => r.ok ? r.json() : Promise.reject(r.status)),
+                fetch(`${RAILWAY}/velez/amalfitani-geojson`).then(r => r.ok ? r.json() : Promise.reject(r.status))
+            ]);
+            canonical = c;
+            geojson   = g;
+        } catch(_) {
+            canonical = null;
+            geojson   = { type:'FeatureCollection', features:[] };
         }
-      }
+
+        renderUI();
+        renderLayers();
     });
-  }
+});
 
-  return `<svg viewBox="0 0 ${vbw} ${vbh}" xmlns="http://www.w3.org/2000/svg">${el.join('')}</svg>`;
+// ── BASEMAP TOGGLE ───────────────────────────────────────────────────────
+function setBasemap(mode) {
+    document.getElementById('btn-dark').classList.toggle('active', mode === 'dark');
+    document.getElementById('btn-sat').classList.toggle('active',  mode === 'satellite');
+    if (!map || !map.getLayer('sat-layer')) return;
+    map.setLayoutProperty('sat-layer', 'visibility', mode === 'satellite' ? 'visible' : 'none');
 }
 
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+// ── VENUE SWITCH ─────────────────────────────────────────────────────────
+function switchVenue(v, btn) {
+    currentVenue = v;
+    // Reset sliders al cambiar venue
+    richDepth = 1;
+    showDay   = 0;
+    // Reset active layers a default sensato
+    activeL = { ndvi:true, sar:true, temperatura:false, insar:false, clima:false, fungosis:false, dale_play:false };
 
-// ── FOCOS DERIVATION ──────────────────────────────────────────────────────
-function derivePrescripcionFocos(accion_c, sem) {
-  const focos = [], a = accion_c.join(' ').toLowerCase();
-  const isRed = sem === 'rojo';
+    document.querySelectorAll('.vbtn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
 
-  if (a.includes('aerificar')) {
-    focos.push({ x:.5, y:.88, label:'AERIFICAR\nACÁ', color:'#f0b429', size:.09 });
-    focos.push({ x:.5, y:.12, label:'AERIFICAR\nACÁ', color:'#f0b429', size:.09 });
-    focos.push({ x:.5, y:.50, label:'COMPAC.', color:'#f0b429', size:.07 });
-  }
-  if (a.includes('fungicida') || a.includes('hongo')) {
-    focos.push({ x:.28, y:.72, label:'FUNGICIDA\nACÁ', color: isRed ? '#e74c3c' : '#f0b429', size:.10 });
-    focos.push({ x:.72, y:.28, label:'REGAR\nACÁ',    color: isRed ? '#e74c3c' : '#f0b429', size:.08 });
-  }
-  if (a.includes('drenaje')) {
-    focos.push({ x:.75, y:.20, label:'DRENAJE', color:'#4fc3f7', size:.10 });
-  }
-  if (a.includes('resembrar')) {
-    focos.push({ x:.50, y:.50, label:'RESEMBRAR\nACÁ', color:'#e74c3c', size:.11 });
-    if (a.includes('hoy') || a.includes('urgente')) {
-      focos.push({ x:.22, y:.36, label:'RESEMBRAR\nACÁ', color:'#e74c3c', size:.09 });
+    const c = VENUES[v];
+    if (c && map) {
+        map.flyTo({ center:[c.lng, c.lat], zoom:c.zoom, pitch:45, bearing:-15, duration:1800 });
     }
-  }
-  if (a.includes('fertilizar')) {
-    focos.push({ x:.50, y:.55, label:'FERTILIZAR\nACÁ', color:'#f0b429', size:.12 });
-    focos.push({ x:.76, y:.76, label:'MALEZAS\nACÁ', color:'#f0b429', size:.07 });
-  }
-  return focos;
+    renderUI();
+    renderLayers();
 }
 
-function deriveAlertasFocos(accion_c, sem, cid, fungRisk) {
-  const focos = [], a = accion_c.join(' ').toLowerCase();
-  const isRed = sem === 'rojo';
-  let n = 1;
-
-  if (a.includes('fungicida') || a.includes('hongo') || fungRisk.includes(cid)) {
-    focos.push({ x:.28, y:.72, num:n++, label:'HONGO', color: isRed ? '#e74c3c' : '#f0b429', size:.10 });
-  }
-  if (a.includes('drenaje')) {
-    focos.push({ x:.75, y:.20, num:n++, label:'AGUA', color:'#4fc3f7', size:.10 });
-  }
-  if (a.includes('fertilizar') || a.includes('maleza')) {
-    focos.push({ x:.76, y:.76, num:n++, label:'MALEZA', color:'#f0b429', size:.08 });
-  }
-  if (a.includes('resembrar')) {
-    focos.push({ x:.50, y:.50, num:n++, label:'RESEMBRAR', color:'#e74c3c', size:.10 });
-    if (a.includes('hoy') || a.includes('urgente')) {
-      focos.push({ x:.22, y:.36, num:n++, label:'RESEMBRAR', color:'#e74c3c', size:.09 });
+// ── RENDER UI (HUD + layer selector) ─────────────────────────────────────
+function renderUI() {
+    if (!canonical) {
+        document.getElementById('terminal').innerHTML = 'Sin conexión con el assembler. Reintentando…';
+        return;
     }
-  }
-  if (a.includes('aerificar')) {
-    focos.push({ x:.5, y:.88, num:n++, label:'AERIFICAR', color:'#f0b429', size:.09 });
-    focos.push({ x:.5, y:.12, num:n++, label:'AERIFICAR', color:'#f0b429', size:.09 });
-  }
-  return focos;
-}
 
-// ── HELPERS ───────────────────────────────────────────────────────────────
-function semColor(sem) { return SEM_COLOR[sem] || '#f0b429'; }
-function semClass(sem) { return 'sem-' + (sem || 'amarillo'); }
+    // Score — buscar en múltiples rutas del canonical
+    const estadioS = canonical?.sectores?.estadio ?? {};
+    const cancheroS = canonical?.sectores?.canchero ?? {};
+    const venueS   = canonical?.sectores?.[currentVenue] ?? {};
+    const score = venueS.score ?? estadioS.score ?? cancheroS.score ?? 0;
 
-function accionForCancha(acciones, cid, nombre) {
-  const up = cid.toUpperCase();
-  const nom = nombre || '____';
-  return acciones.filter(a => a.includes(up) || a.includes(nom));
-}
+    // Tipo de superficie para este venue
+    const hm = canonical?.usuarios?.roger?.heatmaps ?? {};
+    const surface = hm[currentVenue]?.tipo_superficie
+                 ?? canonical?.canchas?.[currentVenue]?.tipo_superficie
+                 ?? 'natural';
 
-function accionForAmalfitani(data) {
-  const tareas = data.usuarios?.roger?.tareas_semana ?? [];
-  return tareas.flatMap(d => d.tareas ?? []).filter(t =>
-    /amalfitani|campo principal|estadio/i.test(t)
-  );
-}
+    // Nubosidad — datos ópticos congelados si última imagen > 7 días
+    const ageRaw = canonical?.satellite?.age_days;
+    const nuboso  = ageRaw != null && Number(ageRaw) > 7;
 
-// Semáforo operacional: prioriza IPOS (uso real) sobre score de fusión.
-// Cancha descansada (IPOS=verde) + sin acción urgente = verde aunque NDVI invernal sea bajo.
-function effectiveSem(c, accion_c, data) {
-  const ipos_sem = data.usuarios?.roger?.heatmaps?.[c.id]?.semaforo;
-  const isUrgent = accion_c.some(a => /hoy|urgente/i.test(a));
-  if (isUrgent) return 'rojo';
-  if (accion_c.length > 0) return ipos_sem === 'rojo' ? 'rojo' : 'amarillo';
-  if (ipos_sem === 'verde') return 'verde';
-  return ipos_sem || c.sem || 'amarillo';
-}
+    document.getElementById('surface-badge').textContent = surface.toUpperCase().replace(/_/g,' ');
+    document.getElementById('score-val').textContent     = score || '--';
+    document.getElementById('score-bar').style.width     = `${score || 0}%`;
+    document.getElementById('banner').style.display      = nuboso ? 'block' : 'none';
 
-function extractUso(detalle) {
-  const m = (detalle || '').match(/(\d+\.?\d*)h(?:[\s·]|$)/);
-  return m ? m[1] + 'h' : '—';
-}
-
-function nextScanDate(meta) {
-  if (!meta?.fecha) return 'próximo lunes';
-  const d = new Date(meta.fecha);
-  d.setDate(d.getDate() + 7);
-  return d.toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-}
-
-function hashStr(s) {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) {
-    h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-  }
-  return Math.abs(h).toString(16).padStart(8,'0').repeat(8).slice(0,64);
-}
-
-// ── RENDER SECTIONS ───────────────────────────────────────────────────────
-function renderHeader(data) {
-  const fecha = data.meta?.fecha ?? data.updated_at?.slice(0,10) ?? '—';
-  const hora  = data.updated_at ? new Date(data.updated_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}) : '—';
-  const src   = data._source === 'railway' ? 'Railway+Hermes' : data._source === 'cache' ? 'cache local' : 'en vivo';
-  const nub   = data.weather_live?.gndvi_por_cancha?.nubosidad_pct;
-  const metodo = data.weather_live?.gndvi_por_cancha?.metodo_generacion ?? '';
-  const ndviSrc = nub != null
-    ? (nub > 70 ? `NDVI Kalman (nubes ${nub}%)` : `NDVI Sentinel-2 (nub ${nub}%)`)
-    : 'NDVI —';
-  document.getElementById('hdr-fecha').textContent =
-    `Escaneo satelital: ${fecha} · ${hora} UTC−3 · ${ndviSrc} · fuente: ${src}`;
-  document.getElementById('hdr-badge').textContent = `DATOS VIVOS · ACTUALIZACIÓN DIARIA 06:00 ART · ${fecha}`;
-}
-
-function renderSemaforo(data) {
-  const canchas  = data.sectores?.canchero?.canchas ?? [];
-  const estadio  = data.sectores?.estadio ?? {};
-  const acciones = data.usuarios?.roger?.acciones ?? [];
-
-  const all = [
-    ...canchas,
-    {
-      id:'amalfitani', nombre:'Amalfitani',
-      score: estadio.score ?? 78,
-      sem: estadio.sem ?? 'amarillo',
-      ndvi: data.usuarios?.roger?.heatmaps?.amalfitani?.ndvi ?? 0.048,
-      detalle: estadio.detalle ?? ''
-    }
-  ];
-
-  const el = document.getElementById('sem-grid');
-  el.innerHTML = all.map(c => {
-    const accion_c = c.id === 'amalfitani'
-      ? accionForAmalfitani(data)
-      : accionForCancha(acciones, c.id, c.nombre);
-    const sem    = effectiveSem(c, accion_c, data);
-    const sc     = semColor(sem);
-    const estado = SEM_ESTADO[sem] || 'ATENCIÓN';
-    const iposTxt = data.usuarios?.roger?.heatmaps?.[c.id]?.texto ?? '';
-    const isUrgent = accion_c.some(a => /hoy|urgente/i.test(a));
-    const accionTxt = accion_c.length
-      ? accion_c[0].replace(/^[^:]+:/, '').trim()
-      : (sem === 'verde' ? (iposTxt || 'Monitorear') : 'Verificar estado');
-
-    return `<div class="sem-card ${semClass(sem)}">
-      <div class="sem-nombre">${esc(c.nombre ?? c.id.toUpperCase())}</div>
-      <div style="position:relative;width:52px;height:52px;margin:0 auto 6px">
-        <div style="position:absolute;inset:0;border-radius:50%;background:${sc};opacity:.12;"></div>
-        <div style="position:absolute;inset:8px;border-radius:50%;background:${sc};"></div>
-      </div>
-      <div class="sem-estado" style="color:${sc}">${estado}</div>
-      ${sem === 'verde' && iposTxt ? `<div style="font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--wdim);margin-bottom:3px">${esc(iposTxt)}</div>` : ''}
-      <div class="sem-accion${isUrgent ? ' urgent' : ''}">${esc(accionTxt)}</div>
-    </div>`;
-  }).join('');
-}
-
-function renderMapSection(data, panelId, isAlerta) {
-  const canchas  = data.sectores?.canchero?.canchas ?? [];
-  const estadio  = data.sectores?.estadio ?? {};
-  const acciones = data.usuarios?.roger?.acciones ?? [];
-  const fungRisk = data.weather_live?.riesgo_fungosis?.canchas_en_riesgo ?? [];
-
-  // Determine which canchas have Roger actions
-  const activeCanchas = canchas.filter(c => accionForCancha(acciones, c.id, c.nombre).length > 0);
-  // Fallback: show top 4 by score desc if none have actions
-  const displayCanchas = activeCanchas.length > 0
-    ? activeCanchas.slice(0, 4)
-    : [...canchas].sort((a,b) => a.score - b.score).slice(0, 4);
-
-  // Amalfitani
-  const amalfitani = {
-    id: 'amalfitani', nombre: 'Campo Amalfitani',
-    score: estadio.score ?? 78,
-    sem: estadio.sem ?? 'amarillo',
-    ndvi: data.usuarios?.roger?.heatmaps?.amalfitani?.ndvi ?? 0.048,
-    detalle: estadio.detalle ?? ''
-  };
-
-  function buildCard(c) {
-    const accion_c = c.id === 'amalfitani'
-      ? accionForAmalfitani(data)
-      : accionForCancha(acciones, c.id, c.nombre);
-    const sem  = effectiveSem(c, accion_c, data);
-    const focos = isAlerta
-      ? deriveAlertasFocos(accion_c, sem, c.id, fungRisk)
-      : derivePrescripcionFocos(accion_c, sem);
-    const accionLabel = accion_c[0] ?? '';
-    const sc = semColor(sem);
-
-    const svgHtml = makefield({
-      title: c.nombre ?? c.id.toUpperCase(),
-      sem, isCrit: sem === 'rojo' && accion_c.some(a => /hoy|urgente/i.test(a)),
-      focos
+    // Terminal — Hermes prescripción real
+    const clim   = canonical?.hermes?.climate ?? {};
+    const alerts = Array.isArray(canonical?.hermes?.alertas_fisicas) ? canonical.hermes.alertas_fisicas : [];
+    const termLines = [];
+    if (clim.et0_mm_dia        != null) termLines.push(`<strong>ET₀:</strong> ${clim.et0_mm_dia} mm/día`);
+    if (clim.deficit_hidrico_mm != null) termLines.push(`<strong>Déficit:</strong> ${clim.deficit_hidrico_mm} mm`);
+    if (clim.smith_kerns_pct   != null) termLines.push(`<strong>Dollar Spot:</strong> ${clim.smith_kerns_pct}%`);
+    if (clim.ventana_corte)              termLines.push(`<strong>Corte:</strong> ${clim.ventana_corte}`);
+    if (clim.riego_min)                  termLines.push(`<strong>Riego:</strong> ${clim.riego_min} min`);
+    alerts.slice(0,2).forEach(a => {
+        const msg = typeof a === 'string' ? a : (a.mensaje ?? JSON.stringify(a));
+        termLines.push(`<span class="alert">⚠ ${msg}</span>`);
     });
+    document.getElementById('terminal').innerHTML = termLines.length
+        ? termLines.join('<br>')
+        : 'Sistema operativo. Sin alertas activas.';
 
-    return `<div class="field-wrap">
-      ${svgHtml}
-      ${accionLabel ? `<div class="field-accion-label" style="color:${sc};background:rgba(0,0,0,.7);border:1px solid ${sc}44">${esc(accionLabel)}</div>` : ''}
-    </div>`;
-  }
+    // KPI secundario — InSAR si está disponible
+    const kpi2    = document.getElementById('kpi2');
+    const detalle = typeof venueS.detalle === 'string' ? venueS.detalle
+                  : (typeof estadioS.detalle === 'string' ? estadioS.detalle : '');
+    const insarM  = detalle.match(/InSAR\s*([\d.]+)\s*mm/i);
+    if (insarM) {
+        kpi2.style.display = 'block';
+        document.getElementById('kpi2-lbl').textContent = 'InSAR';
+        document.getElementById('kpi2-val').textContent = `${insarM[1]}mm`;
+    } else {
+        kpi2.style.display = 'none';
+    }
 
-  document.getElementById(`${panelId}-amalfitani`).innerHTML = buildCard(amalfitani);
-  document.getElementById(`${panelId}-canchas`).innerHTML = displayCanchas.map(buildCard).join('');
+    // Layer selector — solo capas disponibles para esta superficie
+    const availLayers = SURFACE_LAYERS[surface] ?? SURFACE_LAYERS.natural;
+    const hasShow     = canonical?.show_activo === true;
+    const finalLayers = (hasShow && currentVenue === 'amalfitani')
+        ? [...availLayers, 'dale_play']
+        : availLayers;
+
+    document.getElementById('layer-list').innerHTML = finalLayers.map(lk => `
+        <label class="lchk">
+            <input type="checkbox" id="chk-${lk}" ${activeL[lk] ? 'checked' : ''}
+                   onchange="toggleLayer('${lk}')">
+            <span class="box"></span>
+            <span>${LAYER_LABELS[lk] ?? lk}</span>
+        </label>`
+    ).join('');
+
+    // Slider card — Richards si humedad activa y hay datos; Dale Play si show activo
+    const sc = document.getElementById('slider-card');
+    const sb = document.getElementById('slider-body');
+    const hasTheta = geojson?.features?.some(f => f.properties?.theta_5cm != null) ?? false;
+
+    if (activeL.temperatura && finalLayers.includes('temperatura') && hasTheta) {
+        sc.style.display = 'block';
+        document.getElementById('slider-title').textContent = 'Profundidad Hidráulica';
+        sb.innerHTML = `
+            <input type="range" class="fslider" min="0" max="2" step="1" value="${richDepth}"
+                   oninput="richDepth=+this.value; renderLayers()">
+            <div class="slbl"><span>5 cm</span><span>10 cm</span><span>20 cm</span></div>`;
+    } else if (activeL.dale_play && hasShow) {
+        sc.style.display = 'block';
+        document.getElementById('slider-title').textContent = 'Recovery Post-Show';
+        sb.innerHTML = `
+            <input type="range" class="fslider" min="0" max="35" step="1" value="${showDay}"
+                   oninput="showDay=+this.value; renderLayers()">
+            <div class="slbl"><span>Día 0</span><span>Día ${showDay}</span><span>Día 35</span></div>`;
+    } else {
+        sc.style.display = 'none';
+    }
 }
 
-function renderFusion(data) {
-  const canchas = data.sectores?.canchero?.canchas ?? [];
-  const estadio = data.sectores?.estadio ?? {};
-  const all = [
-    ...canchas,
-    { id:'amalfitani', nombre:'Amalfitani', score: estadio.score ?? 78, score_prev: estadio.score_prev, sem: estadio.sem ?? 'amarillo' }
-  ];
-
-  const el = document.getElementById('fusion-grid');
-  el.innerHTML = all.map(c => {
-    const sc = semColor(c.sem);
-    const pct = Math.min(100, Math.max(0, c.score ?? 0));
-    return `<div class="fusion-card">
-      <div class="fusion-nombre">${esc(c.nombre ?? c.id.toUpperCase())}</div>
-      <div class="fusion-score" style="color:${sc}">${c.score ?? '—'}</div>
-      <div style="width:20px;height:20px;border-radius:50%;background:${sc};margin:0 auto 4px;box-shadow:0 0 8px ${sc}66;"></div>
-      <div style="font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--wdim)">
-        ↓ pos en escala
-      </div>
-      <!-- pointer to scale: left % = score -->
-      <div style="position:relative;height:3px;background:linear-gradient(to right,#8B0000,#e74c3c,#d4a017,#f0b429,#1e8449,#27ae60);border-radius:2px;margin-top:6px;">
-        <div style="position:absolute;top:-3px;left:${pct}%;transform:translateX(-50%);width:7px;height:9px;background:${sc};clip-path:polygon(50% 0%,100% 100%,0% 100%)"></div>
-      </div>
-    </div>`;
-  }).join('');
+function toggleLayer(lk) {
+    const el = document.getElementById('chk-' + lk);
+    if (el) activeL[lk] = el.checked;
+    renderLayers();
 }
 
-function renderTabla(data) {
-  const canchas = data.sectores?.canchero?.canchas ?? [];
-  const acciones = data.usuarios?.roger?.acciones ?? [];
-  const fungRisk = data.weather_live?.riesgo_fungosis?.canchas_en_riesgo ?? [];
-
-  // NDVI thresholds ajustados por estación: bermuda/kikuyo entra en dormancia Jun–Ago (invierno ARG)
-  const mes = new Date().getMonth();
-  const isWinter = mes >= 4 && mes <= 7;
-  const ndviRed  = isWinter ? 0.05 : 0.15;
-  const ndviYell = isWinter ? 0.09 : 0.20;
-
-  const tbody = document.getElementById('prescripcion-tbody');
-  tbody.innerHTML = canchas.map(c => {
-    const accion_c = accionForCancha(acciones, c.id, c.nombre);
-    const sem = effectiveSem(c, accion_c, data);
-    const sc  = semColor(sem);
-    const hm  = data.usuarios?.roger?.heatmaps?.[c.id] ?? {};
-    const uso = extractUso(c.detalle ?? '');
-    const hasFung = fungRisk.includes(c.id);
-    const drenajeMatch = (accion_c.join(' ') + (hm.texto || '')).toLowerCase().includes('drenaje');
-    const isUrgent = accion_c.some(a => /hoy|urgente/i.test(a));
-    const ndviColor = (c.ndvi||0) < ndviRed ? 'var(--redl)' : (c.ndvi||0) < ndviYell ? 'var(--yell)' : 'var(--grnl)';
-
-    const timeline = accion_c.length
-      ? (isUrgent ? 'HOY — URGENTE' : 'Esta semana')
-      : '—';
-
-    return `<tr class="${semClass(sem)}">
-      <td class="td-nombre">${esc(c.nombre ?? c.id.toUpperCase())}</td>
-      <td style="color:${ndviColor}">${(c.ndvi ?? 0).toFixed(3)}</td>
-      <td style="color:${sc};font-weight:700">${c.score ?? '—'}</td>
-      <td>${uso}</td>
-      <td style="color:${hasFung ? 'var(--redl)' : 'var(--wdim)'}">${hasFung ? 'ACTIVOS' : 'No'}</td>
-      <td style="color:${drenajeMatch ? 'var(--yell)' : 'var(--wdim)'}">${drenajeMatch ? 'Deficiente' : 'OK'}</td>
-      <td class="td-prior" style="color:${sc}">●</td>
-      <td style="color:${isUrgent ? 'var(--redl)' : 'var(--yell)'};font-weight:700">${timeline}</td>
-      <td class="td-accion" style="color:${sc}">${esc(accion_c[0] ?? (sem !== 'verde' ? 'Verificar estado' : 'Monitorear'))}</td>
-    </tr>`;
-  }).join('');
+// Centroid of a GeoJSON Feature (Point or Polygon ring avg)
+function geomCenter(f) {
+    if (f.geometry?.type === 'Point') return f.geometry.coordinates;
+    const ring = f.geometry?.coordinates?.[0];
+    if (!ring || ring.length < 3) return [VENUES[currentVenue].lng, VENUES[currentVenue].lat];
+    const pts = (ring[0][0] === ring[ring.length-1][0] && ring[0][1] === ring[ring.length-1][1])
+        ? ring.slice(0, -1) : ring;
+    const n = pts.length;
+    return [pts.reduce((s,c) => s+c[0], 0)/n, pts.reduce((s,c) => s+c[1], 0)/n];
 }
 
-function renderComparativa(data) {
-  const canchas = data.sectores?.canchero?.canchas ?? [];
-  const estadio = data.sectores?.estadio ?? {};
-  const all = [
-    ...canchas,
-    { id:'amalfitani', nombre:'Amalfitani', score: estadio.score ?? 78, score_prev: estadio.score_prev ?? null, sem: estadio.sem ?? 'amarillo' }
-  ];
+// ── RENDER LAYERS (deck.gl) ──────────────────────────────────────────────
+function renderLayers() {
+    if (!deckOverlay) return;
+    const layers   = [];
+    const features = geojson?.features ?? [];
 
-  const el = document.getElementById('comp-grid');
-  el.innerHTML = all.map(c => {
-    const sc = semColor(c.sem);
-    const cur = c.score ?? 0;
-    const prev = c.score_prev ?? cur;
-    const delta = cur - prev;
-    let arrow = '→', arrowColor = '#9aa0a8';
-    if (delta > 2)  { arrow = '↑'; arrowColor = '#27ae60'; }
-    if (delta < -2) { arrow = '↓'; arrowColor = '#e74c3c'; }
+    // Sin features → limpiar overlay, sin error
+    if (features.length === 0) {
+        deckOverlay.setProps({ layers: [] });
+        return;
+    }
 
-    return `<div class="comp-card">
-      <div class="comp-nombre">${esc(c.nombre ?? c.id.toUpperCase())}</div>
-      <div class="comp-arrow" style="color:${arrowColor}">${arrow}</div>
-      <div class="comp-current" style="color:${sc}">${cur}</div>
-      <div class="comp-prev">prev: ${prev}</div>
-    </div>`;
-  }).join('');
+    // NDVI — HeatmapLayer con pesos reales
+    if (activeL.ndvi) {
+        const pts = features
+            .filter(f => f.properties?.ndvi != null)
+            .map(f => ({ pos: geomCenter(f), w: f.properties.ndvi }));
+        if (pts.length > 0) {
+            layers.push(new deck.HeatmapLayer({
+                id: 'ndvi-heat',
+                data: pts,
+                getPosition: d => d.pos,
+                getWeight:   d => d.w,
+                radiusPixels: 40,
+                colorRange: [[229,62,62,255],[234,179,8,255],[34,197,94,255]]
+            }));
+        }
+    }
 
-  // Nota estacional: ndvi_prev es baseline de verano — la caída Jun–Ago es fisiológica
-  const legendEl = document.getElementById('comp-legend');
-  if (legendEl) {
-    const mesNow = new Date().getMonth();
-    const seasonNote = (mesNow >= 4 && mesNow <= 7)
-      ? ' &nbsp;·&nbsp; <span style="color:var(--yell)">⚠ ndvi_prev = baseline verano — NDVI bajo en Jun–Ago es dormancia fisiológica, no daño</span>'
-      : '';
-    legendEl.innerHTML = `↑ Mejoró &nbsp;&nbsp; → Estable &nbsp;&nbsp; ↓ Empeoró${seasonNote}`;
-  }
+    // SAR — GeoJsonLayer polígonos con entropía real
+    if (activeL.sar) {
+        const polys = features.filter(f =>
+            f.geometry?.type === 'Polygon' && f.properties?.entropia_h != null
+        );
+        if (polys.length > 0) {
+            layers.push(new deck.GeoJsonLayer({
+                id: 'sar-poly',
+                data: { type:'FeatureCollection', features: polys },
+                filled: true,
+                getFillColor: f => {
+                    const h = f.properties.entropia_h;
+                    if (h < 0.3) return [229,62,62,160];
+                    if (h < 0.5) return [234,179,8,140];
+                    return [34,197,94,120];
+                },
+                getLineColor: [201,168,76,80],
+                getLineWidth: 1,
+                lineWidthMinPixels: 1
+            }));
+        }
+    }
+
+    // HUMEDAD SUELO (Richards) — ColumnLayer 3D por profundidad
+    if (activeL.temperatura) {
+        const depthKey = ['theta_5cm','theta_10cm','theta_20cm'][richDepth] ?? 'theta_10cm';
+        const cols     = features.filter(f => f.properties?.[depthKey] != null);
+        if (cols.length > 0) {
+            layers.push(new deck.ColumnLayer({
+                id: 'richards-col',
+                data: cols,
+                getPosition: f => geomCenter(f),
+                getElevation:  f => (f.properties[depthKey] ?? 0) * 200,
+                getFillColor:  [14,165,233,180],
+                radius:        3,
+                extruded:      true,
+                elevationScale: 1
+            }));
+        }
+    }
+
+    // InSAR — ScatterplotLayer punto único con valor real del canonical
+    if (activeL.insar) {
+        const detalle = canonical?.sectores?.estadio?.detalle
+                     ?? canonical?.sectores?.[currentVenue]?.detalle ?? '';
+        const m = typeof detalle === 'string' ? detalle.match(/InSAR\s*([\d.]+)\s*mm/i) : null;
+        if (m) {
+            layers.push(new deck.ScatterplotLayer({
+                id: 'insar-pts',
+                data: [{ pos:[VENUES[currentVenue].lng, VENUES[currentVenue].lat], v: m[1] }],
+                getPosition:  d => d.pos,
+                getRadius:    8,
+                radiusMinPixels: 8,
+                getFillColor: [229,62,62,220],
+                pickable: true,
+                onClick: info => {
+                    if (info.object) {
+                        document.getElementById('terminal').innerHTML =
+                            `<strong>InSAR:</strong> Deformación estructural ${info.object.v} mm detectada.`;
+                    }
+                }
+            }));
+        }
+    }
+
+    // Fungosis — ScatterplotLayer canchas en riesgo Dollar Spot
+    if (activeL.fungosis) {
+        const crList = canonical?.weather_live?.riesgo_fungosis?.canchas_en_riesgo ?? [];
+        if (crList.length > 0) {
+            const riskPts = features
+                .filter(f => {
+                    const cid = f.properties?.cancha_id ?? f.properties?.id;
+                    return cid != null && crList.includes(cid);
+                })
+                .map(f => ({
+                    pos: f.geometry?.type === 'Point'
+                        ? f.geometry.coordinates
+                        : [f.properties.lng ?? VENUES[currentVenue].lng,
+                           f.properties.lat ?? VENUES[currentVenue].lat]
+                }));
+            if (riskPts.length > 0) {
+                layers.push(new deck.ScatterplotLayer({
+                    id: 'fungosis-pts',
+                    data: riskPts,
+                    getPosition:  d => d.pos,
+                    getRadius:    12,
+                    radiusMinPixels: 10,
+                    getFillColor: [234,179,8,200],
+                    stroked:      true,
+                    getLineColor: [229,62,62,200],
+                    getLineWidth: 1,
+                    lineWidthMinPixels: 1,
+                    pickable: true,
+                    onClick: () => {
+                        const sk = canonical?.weather_live?.smith_kerns_pct
+                                ?? canonical?.hermes?.climate?.smith_kerns_pct;
+                        document.getElementById('terminal').innerHTML =
+                            `<span class="alert">⚠ Dollar Spot activo${sk != null ? ` — Smith-Kerns ${sk}%` : ''}</span>`;
+                    }
+                }));
+            }
+        }
+    }
+
+    // Dale Play — TripsLayer animación recovery post-show
+    if (activeL.dale_play && canonical?.show_memory) {
+        const mem = canonical.show_memory;
+        if (Array.isArray(mem?.recovery_path) && mem.recovery_path.length > 0) {
+            layers.push(new deck.TripsLayer({
+                id: 'recovery-trips',
+                data: mem.recovery_path,
+                getPath:       d => d.path,
+                getTimestamps: d => d.timestamps,
+                getColor:      [229,62,62,220],
+                currentTime:   showDay,
+                trailLength:   3,
+                widthMinPixels: 2
+            }));
+        }
+    }
+
+    deckOverlay.setProps({ layers });
 }
-
-function renderTareas(data) {
-  const tareas = data.usuarios?.roger?.tareas_semana ?? [];
-  const el = document.getElementById('tareas-grid');
-  if (!tareas.length) { el.innerHTML = '<div style="color:var(--wdim);font-size:11px">Sin datos de tareas</div>'; return; }
-
-  el.innerHTML = tareas.map(d => {
-    const fechaShort = d.fecha_iso ? d.fecha_iso.slice(5).replace('-','/') : '';
-    return `<div class="tarea-dia${d.es_partido ? ' partido' : ''}">
-      <div class="tarea-dia-nombre">${esc(d.dia_nombre)}</div>
-      <div class="tarea-dia-fecha">${fechaShort}</div>
-      ${(d.tareas ?? []).map(t => `<div class="tarea-item">${esc(t)}</div>`).join('')}
-    </div>`;
-  }).join('');
-}
-
-function renderFooter(data) {
-  const meta = data.meta ?? {};
-  document.getElementById('ftr-next').textContent = `Próximo escaneo automático: ${nextScanDate(meta)}`;
-  const hashInput = `FARO-VELEZ-CANCHERO-${data.updated_at ?? meta.fecha ?? Date.now()}`;
-  document.getElementById('ftr-hash').textContent = `SHA-256: ${hashStr(hashInput)}`;
-}
-
-// ── MAIN ──────────────────────────────────────────────────────────────────
-(async () => {
-  const data = await loadData();
-
-  document.getElementById('loading').style.display = 'none';
-  document.getElementById('report').style.display  = 'block';
-
-  if (!data) {
-    document.getElementById('report').innerHTML =
-      '<div style="padding:40px;text-align:center;color:var(--redl);font-family:monospace">Sin conexión con el servidor · reintentando…</div>';
-    setTimeout(() => location.reload(), 8000);
-    return;
-  }
-
-  renderHeader(data);
-  renderSemaforo(data);
-  renderMapSection(data, 'map1', false);
-  renderMapSection(data, 'map2', true);
-  renderFusion(data);
-  renderTabla(data);
-  renderComparativa(data);
-  renderTareas(data);
-  renderFooter(data);
-})();
 </script>
 </body>
 </html>
