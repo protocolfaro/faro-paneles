@@ -3,489 +3,447 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Faro OS · Vélez Sarsfield</title>
-<link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+<title>Faro OS · Vélez · Roger Bernal</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Epilogue:wght@300;400;600;800&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/deck.gl@^9.0.0/dist.min.js"></script>
-<script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
 <style>
 :root {
     --bg: #0a0a0a;
-    --card: rgba(18,20,23,0.88);
-    --border: rgba(38,43,53,0.5);
+    --card: rgba(18,20,23,0.92);
+    --border: rgba(38,43,53,0.6);
     --gold: #c9a84c;
     --red: #E53E3E;
+    --yellow: #EAB308;
+    --green: #22C55E;
     --muted: #9ca3af;
     --text: #f3f4f6;
 }
-body { margin:0; background:var(--bg); font-family:'Epilogue',sans-serif; color:var(--text); overflow:hidden; }
-#map { position:absolute; top:0; left:0; width:100%; height:100%; z-index:1; }
-#hud { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10; display:flex; flex-direction:column; justify-content:space-between; }
-header { background:linear-gradient(to bottom,rgba(10,10,10,.95) 60%,transparent); padding:20px; pointer-events:auto; }
-h1 { font-family:'Cormorant Garamond',serif; font-size:22px; margin:0; text-transform:uppercase; letter-spacing:1px; }
-.venue-bar { display:flex; gap:8px; overflow-x:auto; margin-top:12px; scrollbar-width:none; }
-.venue-bar::-webkit-scrollbar { display:none; }
-.vbtn { background:rgba(20,22,26,.8); border:1px solid var(--border); color:var(--muted); padding:8px 14px; font-size:11px; font-weight:600; text-transform:uppercase; border-radius:4px; cursor:pointer; white-space:nowrap; font-family:'Epilogue',sans-serif; transition:all .2s; pointer-events:auto; }
-.vbtn:hover { border-color:var(--gold); color:#fff; }
-.vbtn.active { background:rgba(201,168,76,.15); border-color:var(--gold); color:var(--gold); }
-.right-panel { position:absolute; top:130px; right:16px; display:flex; flex-direction:column; gap:10px; max-width:210px; pointer-events:auto; z-index:10; }
-.card { background:var(--card); border:1px solid var(--border); backdrop-filter:blur(12px); padding:14px; border-radius:6px; }
-.card h2 { font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); border-left:2px solid var(--gold); padding-left:6px; margin:0 0 10px; }
-.lchk { display:flex; align-items:center; gap:8px; font-size:12px; margin-bottom:8px; cursor:pointer; color:var(--muted); }
-.lchk input { display:none; }
-.lchk .box { width:11px; height:11px; border:1px solid var(--border); border-radius:2px; flex-shrink:0; }
-.lchk input:checked + .box { background:var(--gold); border-color:var(--gold); }
-.lchk input:checked ~ span { color:#fff; font-weight:600; }
-.fslider { width:100%; accent-color:var(--gold); margin-top:6px; }
-.slbl { display:flex; justify-content:space-between; font-size:9px; color:var(--muted); margin-top:3px; }
-footer { background:linear-gradient(to top,rgba(10,10,10,1) 70%,transparent); padding:20px; pointer-events:auto; }
-.footer-row { display:flex; gap:20px; align-items:flex-start; }
-.kpi { min-width:85px; }
-.kval { font-size:22px; font-weight:800; }
-.klbl { font-size:9px; text-transform:uppercase; color:var(--muted); letter-spacing:.5px; }
-.bar-bg { width:100%; height:3px; background:#222; border-radius:2px; margin-top:4px; }
-.bar-fill { height:100%; background:var(--gold); border-radius:2px; transition:width .4s; }
-.terminal { flex:1; font-size:12px; line-height:1.65; border-left:2px solid rgba(255,255,255,.08); padding-left:14px; max-height:90px; overflow:hidden; }
-.terminal strong { color:#fff; }
-.alert { color:var(--red); }
-#banner { position:absolute; top:115px; left:50%; transform:translateX(-50%); background:rgba(229,62,62,.12); border:1px solid var(--red); padding:5px 14px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; border-radius:20px; display:none; backdrop-filter:blur(8px); white-space:nowrap; z-index:20; }
-.map-toggle { position:absolute; top:115px; left:16px; display:flex; gap:6px; pointer-events:auto; z-index:20; }
-.mtbtn { background:rgba(18,20,23,.85); border:1px solid var(--border); color:var(--muted); padding:5px 12px; font-size:10px; font-weight:600; border-radius:4px; cursor:pointer; font-family:'Epilogue',sans-serif; transition:all .15s; }
-.mtbtn.active { border-color:var(--gold); color:var(--gold); }
-@media(min-width:768px) { .footer-row { align-items:center; } }
-@keyframes pulse { 50%{opacity:.6} }
-.pulse { animation:pulse 2s infinite; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Epilogue', sans-serif;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+header {
+    padding: 16px 20px 12px;
+    background: linear-gradient(to bottom, rgba(10,10,10,.98) 80%, transparent);
+    flex-shrink: 0;
+}
+.header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 12px;
+}
+h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.user-badge {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--gold);
+}
+.tabs {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+    background: rgba(20,22,26,.8);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: 'Epilogue', sans-serif;
+    transition: all .15s;
+    flex-shrink: 0;
+    border-left-width: 3px;
+}
+.tab:hover { border-color: var(--gold); color: #fff; }
+.tab.active { background: rgba(201,168,76,.15); border-color: var(--gold); color: var(--gold); border-left-color: var(--gold); }
+.tab.sem-rojo  { border-left-color: var(--red); }
+.tab.sem-amarillo { border-left-color: var(--yellow); }
+.tab.sem-verde { border-left-color: var(--green); }
+.panels {
+    display: flex;
+    gap: 10px;
+    padding: 10px 16px;
+    flex: 1;
+    min-height: 0;
+}
+.panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(12px);
+    flex: 1;
+    min-width: 0;
+}
+.panel-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    border-left: 2px solid var(--gold);
+    padding-left: 6px;
+    margin-bottom: 14px;
+    flex-shrink: 0;
+}
+.panel-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 0;
+    gap: 12px;
+}
+
+/* Panel 1 */
+.zona-wrap { display: flex; justify-content: center; align-items: center; }
+.zona-circle {
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0.88;
+    transition: all .4s;
+}
+.zona-circle.glow-red   { box-shadow: 0 0 28px rgba(229,62,62,.5); }
+.zona-circle.glow-yellow{ box-shadow: 0 0 28px rgba(234,179,8,.4); }
+.zona-circle.glow-green { box-shadow: 0 0 28px rgba(34,197,94,.4); }
+.zona-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: rgba(0,0,0,.7);
+    text-align: center;
+}
+.campo-metrics {
+    display: flex;
+    gap: 22px;
+    justify-content: center;
+}
+.metric { text-align: center; }
+.mval { display: block; font-size: 22px; font-weight: 800; }
+.mlbl { font-size: 9px; text-transform: uppercase; color: var(--muted); letter-spacing: .5px; }
+.campo-detalle {
+    font-size: 10px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.55;
+    max-width: 190px;
+}
+
+/* Panel 2 */
+.no-focos {
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+    font-style: italic;
+}
+.focos-list { width: 100%; }
+.foco {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+}
+.foco:last-child { border-bottom: none; }
+.foco-n {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    background: rgba(229,62,62,.15);
+    border: 1px solid var(--red);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 800;
+    color: var(--red);
+}
+.foco-txt { font-size: 11px; line-height: 1.55; }
+
+/* Footer */
+footer {
+    padding: 10px 16px 16px;
+    background: linear-gradient(to top, rgba(10,10,10,1) 70%, transparent);
+    flex-shrink: 0;
+}
+.footer-row { display: flex; gap: 16px; align-items: center; }
+.kpi-block { }
+.kpi-val { font-size: 20px; font-weight: 800; }
+.kpi-lbl { font-size: 9px; text-transform: uppercase; color: var(--muted); letter-spacing: .5px; }
+.kpi-bar-bg { width: 56px; height: 2px; background: #222; border-radius: 1px; margin-top: 3px; }
+.kpi-bar-fill { height: 100%; border-radius: 1px; transition: width .4s; background: var(--gold); }
+.footer-accion {
+    flex: 1;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.55;
+    border-left: 2px solid rgba(255,255,255,.08);
+    padding-left: 12px;
+}
+.footer-accion strong { color: var(--text); }
+.footer-accion .alert { color: var(--red); }
+
+/* Responsive: stack panels on narrow screens */
+@media (max-width: 420px) {
+    .panels { flex-direction: column; }
+}
 </style>
 </head>
 <body>
 
-<div id="map"></div>
-
-<div id="hud">
-  <header>
-    <div style="display:flex;justify-content:space-between;align-items:baseline">
-      <h1>Faro <span style="font-family:Epilogue;font-weight:300;font-size:13px;color:var(--gold)">OS</span></h1>
-      <span id="surface-badge" style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--muted)"></span>
+<header>
+    <div class="header-row">
+        <h1>Faro <span style="font-family:Epilogue;font-weight:300;font-size:13px;color:var(--gold)">OS</span></h1>
+        <span class="user-badge">Roger Bernal</span>
     </div>
-    <div class="venue-bar">
-      <button class="vbtn active" onclick="switchVenue('amalfitani',this)">Amalfitani</button>
-      <button class="vbtn" onclick="switchVenue('villa_olimpica',this)">Villa Olímpica</button>
-      <button class="vbtn" onclick="switchVenue('polideportivo',this)">Polideportivo</button>
-      <button class="vbtn" onclick="switchVenue('paneles_solares',this)">Paneles Solares</button>
-      <button class="vbtn" onclick="switchVenue('sede',this)">Sede</button>
-      <button class="vbtn" onclick="switchVenue('piletas',this)">Piletas</button>
-    </div>
-  </header>
+    <div class="tabs" id="tabs"></div>
+</header>
 
-  <div id="banner">⚠️ Datos ópticos congelados — Radar SAR activo</div>
-
-  <div class="map-toggle">
-    <button class="mtbtn active" id="btn-dark" onclick="setBasemap('dark')">Oscuro</button>
-    <button class="mtbtn" id="btn-sat" onclick="setBasemap('satellite')">Satélite</button>
-  </div>
-
-  <div class="right-panel">
-    <div class="card" id="layer-card">
-      <h2>Capas Activas</h2>
-      <div id="layer-list"></div>
+<div class="panels">
+    <div class="panel">
+        <div class="panel-label">Panel 1 · Zona</div>
+        <div class="panel-content" id="panel1-content">
+            <div style="color:var(--muted);font-size:11px">Cargando…</div>
+        </div>
     </div>
-    <div class="card" id="slider-card" style="display:none">
-      <h2 id="slider-title">Control</h2>
-      <div id="slider-body"></div>
+    <div class="panel">
+        <div class="panel-label">Panel 2 · Alertas</div>
+        <div class="panel-content" id="panel2-content">
+            <div style="color:var(--muted);font-size:11px">Cargando…</div>
+        </div>
     </div>
-  </div>
-
-  <footer>
-    <div class="footer-row">
-      <div class="kpi">
-        <div class="klbl">Score</div>
-        <div class="kval" id="score-val">--</div>
-        <div class="bar-bg"><div class="bar-fill" id="score-bar" style="width:0"></div></div>
-      </div>
-      <div class="kpi" id="kpi2" style="display:none">
-        <div class="klbl" id="kpi2-lbl"></div>
-        <div class="kval" id="kpi2-val"></div>
-      </div>
-      <div class="terminal" id="terminal">Conectando con Faro OS…</div>
-    </div>
-  </footer>
 </div>
 
+<footer>
+    <div class="footer-row" id="footer-row">
+        <div style="color:var(--muted);font-size:11px">…</div>
+    </div>
+</footer>
+
 <script>
-// ── COORDENADAS REALES VÉLEZ ──────────────────────────────────────────────
-const VENUES = {
-    amalfitani:     { lng:-58.5288, lat:-34.6379, zoom:17.5 },
-    villa_olimpica: { lng:-58.7193, lat:-34.6221, zoom:15.5 },
-    polideportivo:  { lng:-58.5135, lat:-34.6333, zoom:17.5 },
-    paneles_solares:{ lng:-58.522200, lat:-34.636800, zoom:19   },
-    sede:           { lng:-58.523912, lat:-34.634620, zoom:18.5 },
-    piletas:        { lng:-58.520900, lat:-34.637800, zoom:18.5 }
-};
-
-// ── CAPAS POR TIPO DE SUPERFICIE ─────────────────────────────────────────
-const SURFACE_LAYERS = {
-    natural:        ['ndvi','sar','temperatura','clima','fungosis'],
-    hibrido:        ['ndvi','sar','temperatura','clima','fungosis'],
-    sintetico:      ['sar','temperatura','insar'],
-    polvo_ladrillo: ['sar','temperatura','insar'],
-    indoor:         ['insar','temperatura'],
-    fotovoltaico:   ['temperatura','clima'],
-    acuatico:       ['temperatura','clima']
-};
-
-const LAYER_LABELS = {
-    ndvi:        'NDVI Vegetativo',
-    sar:         'SAR Compactación',
-    temperatura: 'Temperatura Landsat',
-    insar:       'InSAR Estructural',
-    clima:       'Clima Open-Meteo',
-    fungosis:    'Riesgo Dollar Spot',
-    dale_play:   'Dale Play Recovery'
-};
-
-let map, deckOverlay, canonical, geojson;
-let currentVenue = 'amalfitani';
-let activeL = { ndvi:true, sar:true, temperatura:false, insar:false, clima:false, fungosis:false, dale_play:false };
-let richDepth = 1;  // 0=5cm  1=10cm  2=20cm
-let showDay   = 0;  // días desde el show (0=hoy)
 const RAILWAY = 'https://faroprotocol-production-45fd.up.railway.app';
+let DATA = null;
+let ACTIVE = null;
 
-// ── INIT ─────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', async () => {
-    map = new maplibregl.Map({
-        container: 'map',
-        style: 'https://tiles.openfreemap.org/styles/dark',
-        center: [VENUES.amalfitani.lng, VENUES.amalfitani.lat],
-        zoom:  VENUES.amalfitani.zoom,
-        pitch: 45, bearing: -15,
-        attributionControl: false
-    });
+async function init() {
+    try {
+        const ctrl = new AbortController();
+        const tid  = setTimeout(() => ctrl.abort(), 4000);
+        const r = await fetch(`${RAILWAY}/velez/panel-roger-canonical`, { signal: ctrl.signal });
+        clearTimeout(tid);
+        if (r.ok) DATA = await r.json();
+    } catch(_) {}
 
-    // Un solo canvas WebGL — deck.gl como overlay sobre MapLibre
-    deckOverlay = new deck.MapboxOverlay({ interleaved: true, layers: [] });
-    map.addControl(deckOverlay);
-    map.on('load', async () => {
-        // Satélite ArcGIS World Imagery — sin API key
-        map.addSource('arcgis-sat', {
-            type: 'raster',
-            tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
-            tileSize: 256, maxzoom: 19
-        });
-        map.addLayer({ id:'sat-layer', type:'raster', source:'arcgis-sat', layout:{ visibility:'none' } });
-
-        // Cargar datos del assembler — triple fallback
+    if (!DATA) {
         try {
-            const [c, g] = await Promise.all([
-                fetch(`${RAILWAY}/velez/panel-roger-canonical`).then(r => r.ok ? r.json() : Promise.reject(r.status)),
-                fetch(`${RAILWAY}/velez/amalfitani-geojson`).then(r => r.ok ? r.json() : Promise.reject(r.status))
-            ]);
-            canonical = c;
-            geojson   = g;
-        } catch(_) {
-            canonical = null;
-            geojson   = { type:'FeatureCollection', features:[] };
-        }
-
-        renderUI();
-        renderLayers();
-    });
-});
-
-// ── BASEMAP TOGGLE ───────────────────────────────────────────────────────
-function setBasemap(mode) {
-    document.getElementById('btn-dark').classList.toggle('active', mode === 'dark');
-    document.getElementById('btn-sat').classList.toggle('active',  mode === 'satellite');
-    if (!map || !map.getLayer('sat-layer')) return;
-    map.setLayoutProperty('sat-layer', 'visibility', mode === 'satellite' ? 'visible' : 'none');
-}
-
-// ── VENUE SWITCH ─────────────────────────────────────────────────────────
-function switchVenue(v, btn) {
-    currentVenue = v;
-    // Reset sliders al cambiar venue
-    richDepth = 1;
-    showDay   = 0;
-    // Reset active layers a default sensato
-    activeL = { ndvi:true, sar:true, temperatura:false, insar:false, clima:false, fungosis:false, dale_play:false };
-
-    document.querySelectorAll('.vbtn').forEach(b => b.classList.remove('active'));
-    if (btn) btn.classList.add('active');
-
-    const c = VENUES[v];
-    if (c && map) {
-        map.flyTo({ center:[c.lng, c.lat], zoom:c.zoom, pitch:45, bearing:-15, duration:1800 });
+            const r = await fetch('./velez_data.json');
+            if (r.ok) DATA = await r.json();
+        } catch(_) {}
     }
-    renderUI();
-    renderLayers();
-}
 
-// ── RENDER UI (HUD + layer selector) ─────────────────────────────────────
-function renderUI() {
-    if (!canonical) {
-        document.getElementById('terminal').innerHTML = 'Sin conexión con el assembler. Reintentando…';
+    if (!DATA) {
+        document.getElementById('panel1-content').innerHTML =
+            '<div style="color:var(--muted);font-size:12px;text-align:center">Sin conexión con el servidor</div>';
         return;
     }
 
-    // Score — buscar en múltiples rutas del canonical
-    const estadioS = canonical?.sectores?.estadio ?? {};
-    const cancheroS = canonical?.sectores?.canchero ?? {};
-    const venueS   = canonical?.sectores?.[currentVenue] ?? {};
-    const score = venueS.score ?? estadioS.score ?? cancheroS.score ?? 0;
+    buildTabs();
+    const canchas = DATA.sectores?.canchero?.canchas ?? [];
+    if (canchas.length > 0) activateTab(canchas[0].id);
+}
 
-    // Tipo de superficie para este venue
-    const hm = canonical?.usuarios?.roger?.heatmaps ?? {};
-    const surface = hm[currentVenue]?.tipo_superficie
-                 ?? canonical?.canchas?.[currentVenue]?.tipo_superficie
-                 ?? 'natural';
+function buildTabs() {
+    const canchas = DATA.sectores?.canchero?.canchas ?? [];
+    const estadio = DATA.sectores?.estadio;
 
-    // Nubosidad — datos ópticos congelados si última imagen > 7 días
-    const ageRaw = canonical?.satellite?.age_days;
-    const nuboso  = ageRaw != null && Number(ageRaw) > 7;
-
-    document.getElementById('surface-badge').textContent = surface.toUpperCase().replace(/_/g,' ');
-    document.getElementById('score-val').textContent     = score || '--';
-    document.getElementById('score-bar').style.width     = `${score || 0}%`;
-    document.getElementById('banner').style.display      = nuboso ? 'block' : 'none';
-
-    // Terminal — Hermes prescripción real
-    const clim   = canonical?.hermes?.climate ?? {};
-    const alerts = Array.isArray(canonical?.hermes?.alertas_fisicas) ? canonical.hermes.alertas_fisicas : [];
-    const termLines = [];
-    if (clim.et0_mm_dia        != null) termLines.push(`<strong>ET₀:</strong> ${clim.et0_mm_dia} mm/día`);
-    if (clim.deficit_hidrico_mm != null) termLines.push(`<strong>Déficit:</strong> ${clim.deficit_hidrico_mm} mm`);
-    if (clim.smith_kerns_pct   != null) termLines.push(`<strong>Dollar Spot:</strong> ${clim.smith_kerns_pct}%`);
-    if (clim.ventana_corte)              termLines.push(`<strong>Corte:</strong> ${clim.ventana_corte}`);
-    if (clim.riego_min)                  termLines.push(`<strong>Riego:</strong> ${clim.riego_min} min`);
-    alerts.slice(0,2).forEach(a => {
-        const msg = typeof a === 'string' ? a : (a.mensaje ?? JSON.stringify(a));
-        termLines.push(`<span class="alert">⚠ ${msg}</span>`);
-    });
-    document.getElementById('terminal').innerHTML = termLines.length
-        ? termLines.join('<br>')
-        : 'Sistema operativo. Sin alertas activas.';
-
-    // KPI secundario — InSAR si está disponible
-    const kpi2    = document.getElementById('kpi2');
-    const detalle = typeof venueS.detalle === 'string' ? venueS.detalle
-                  : (typeof estadioS.detalle === 'string' ? estadioS.detalle : '');
-    const insarM  = detalle.match(/InSAR\s*([\d.]+)\s*mm/i);
-    if (insarM) {
-        kpi2.style.display = 'block';
-        document.getElementById('kpi2-lbl').textContent = 'InSAR';
-        document.getElementById('kpi2-val').textContent = `${insarM[1]}mm`;
-    } else {
-        kpi2.style.display = 'none';
-    }
-
-    // Layer selector — solo capas disponibles para esta superficie
-    const availLayers = SURFACE_LAYERS[surface] ?? SURFACE_LAYERS.natural;
-    const hasShow     = canonical?.show_activo === true;
-    const finalLayers = (hasShow && currentVenue === 'amalfitani')
-        ? [...availLayers, 'dale_play']
-        : availLayers;
-
-    document.getElementById('layer-list').innerHTML = finalLayers.map(lk => `
-        <label class="lchk">
-            <input type="checkbox" id="chk-${lk}" ${activeL[lk] ? 'checked' : ''}
-                   onchange="toggleLayer('${lk}')">
-            <span class="box"></span>
-            <span>${LAYER_LABELS[lk] ?? lk}</span>
-        </label>`
+    const html = canchas.map(c =>
+        `<button class="tab sem-${c.sem ?? 'rojo'}" id="tab-${c.id}" onclick="activateTab('${c.id}')">${c.nombre ?? c.id.toUpperCase()}</button>`
     ).join('');
 
-    // Slider card — Richards si humedad activa y hay datos; Dale Play si show activo
-    const sc = document.getElementById('slider-card');
-    const sb = document.getElementById('slider-body');
-    const hasTheta = geojson?.features?.some(f => f.properties?.theta_5cm != null) ?? false;
+    const amalfitaniTab = estadio
+        ? `<button class="tab sem-${estadio.sem ?? 'amarillo'}" id="tab-amalfitani" onclick="activateTab('amalfitani')">Amalfitani</button>`
+        : '';
 
-    if (activeL.temperatura && finalLayers.includes('temperatura') && hasTheta) {
-        sc.style.display = 'block';
-        document.getElementById('slider-title').textContent = 'Profundidad Hidráulica';
-        sb.innerHTML = `
-            <input type="range" class="fslider" min="0" max="2" step="1" value="${richDepth}"
-                   oninput="richDepth=+this.value; renderLayers()">
-            <div class="slbl"><span>5 cm</span><span>10 cm</span><span>20 cm</span></div>`;
-    } else if (activeL.dale_play && hasShow) {
-        sc.style.display = 'block';
-        document.getElementById('slider-title').textContent = 'Recovery Post-Show';
-        sb.innerHTML = `
-            <input type="range" class="fslider" min="0" max="35" step="1" value="${showDay}"
-                   oninput="showDay=+this.value; renderLayers()">
-            <div class="slbl"><span>Día 0</span><span>Día ${showDay}</span><span>Día 35</span></div>`;
-    } else {
-        sc.style.display = 'none';
+    document.getElementById('tabs').innerHTML = html + amalfitaniTab;
+}
+
+function resolveCancha(cid) {
+    if (cid === 'amalfitani') {
+        const e = DATA.sectores?.estadio ?? {};
+        return {
+            id: 'amalfitani',
+            nombre: 'Amalfitani',
+            score:      e.score      ?? 78,
+            score_prev: e.score_prev ?? null,
+            sem:        e.sem        ?? 'amarillo',
+            ndvi:       DATA.usuarios?.roger?.heatmaps?.amalfitani?.ndvi ?? 0.048,
+            detalle:    e.detalle    ?? ''
+        };
     }
+    const canchas = DATA.sectores?.canchero?.canchas ?? [];
+    return canchas.find(x => x.id === cid) ?? null;
 }
 
-function toggleLayer(lk) {
-    const el = document.getElementById('chk-' + lk);
-    if (el) activeL[lk] = el.checked;
-    renderLayers();
+function activateTab(cid) {
+    ACTIVE = cid;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    const tabEl = document.getElementById('tab-' + cid);
+    if (tabEl) tabEl.classList.add('active');
+
+    const c = resolveCancha(cid);
+    if (!c) return;
+
+    const acciones = DATA.usuarios?.roger?.acciones ?? [];
+    const cid_up  = cid.toUpperCase(); // '1FA', '2FA', etc.
+    const accion_c = acciones.filter(a => a.includes(cid_up) || a.includes(c.nombre ?? '____'));
+
+    renderCampo(c, accion_c);
+    renderFocos(c, buildFocos(c, accion_c));
+    renderFooter(c, accion_c);
 }
 
-// Centroid of a GeoJSON Feature (Point or Polygon ring avg)
-function geomCenter(f) {
-    if (f.geometry?.type === 'Point') return f.geometry.coordinates;
-    const ring = f.geometry?.coordinates?.[0];
-    if (!ring || ring.length < 3) return [VENUES[currentVenue].lng, VENUES[currentVenue].lat];
-    const pts = (ring[0][0] === ring[ring.length-1][0] && ring[0][1] === ring[ring.length-1][1])
-        ? ring.slice(0, -1) : ring;
-    const n = pts.length;
-    return [pts.reduce((s,c) => s+c[0], 0)/n, pts.reduce((s,c) => s+c[1], 0)/n];
+function renderCampo(c, accion_c) {
+    const month  = new Date().getMonth() + 1; // 1–12
+    const isWinter = month >= 5 && month <= 8;
+    const score  = c.score ?? 50;
+    const ndvi   = c.ndvi  ?? 0.05;
+    const sem    = c.sem   ?? 'rojo';
+
+    // Bigger circle = worse condition
+    const r = Math.max(14, Math.min(46, (100 - score) / 2 + 14));
+    const d = r * 2;
+
+    // Color: rojo→amarillo en meses de invierno
+    let color, glowClass;
+    if (sem === 'verde') {
+        color = '#22C55E'; glowClass = 'glow-green';
+    } else if (sem === 'amarillo') {
+        color = '#EAB308'; glowClass = 'glow-yellow';
+    } else if (isWinter) {
+        color = '#EAB308'; glowClass = 'glow-yellow'; // rojo ajustado a amarillo en invierno
+    } else {
+        color = '#E53E3E'; glowClass = 'glow-red';
+    }
+
+    // Label: uso hours from detalle when present
+    const usoMatch = c.detalle?.match(/(\d+\.?\d*)h(?:[\s·]|$)/);
+    const label = usoMatch ? usoMatch[1] + 'h' : '';
+
+    const ndviColor = ndvi >= 0.12 ? '#22C55E' : ndvi >= 0.08 ? '#EAB308' : '#E53E3E';
+
+    document.getElementById('panel1-content').innerHTML = `
+        <div class="zona-wrap">
+            <div class="zona-circle ${glowClass}" style="width:${d}px;height:${d}px;background:${color}">
+                ${label ? `<span class="zona-label">${label}</span>` : ''}
+            </div>
+        </div>
+        <div class="campo-metrics">
+            <div class="metric">
+                <span class="mval" style="color:${color}">${score}</span>
+                <span class="mlbl">Score</span>
+            </div>
+            <div class="metric">
+                <span class="mval" style="color:${ndviColor}">${ndvi.toFixed(3)}</span>
+                <span class="mlbl">NDVI</span>
+            </div>
+        </div>
+        <div class="campo-detalle">${c.detalle ?? ''}</div>
+    `;
 }
 
-// ── RENDER LAYERS (deck.gl) ──────────────────────────────────────────────
-function renderLayers() {
-    if (!deckOverlay) return;
-    const layers   = [];
-    const features = geojson?.features ?? [];
-
-    // Sin features → limpiar overlay, sin error
-    if (features.length === 0) {
-        deckOverlay.setProps({ layers: [] });
+function renderFocos(c, focos) {
+    const el = document.getElementById('panel2-content');
+    if (focos.length === 0) {
+        el.innerHTML = '<div class="no-focos">Sin alertas específicas</div>';
         return;
     }
-
-    // NDVI — HeatmapLayer con pesos reales
-    if (activeL.ndvi) {
-        const pts = features
-            .filter(f => f.properties?.ndvi != null)
-            .map(f => ({ pos: geomCenter(f), w: f.properties.ndvi }));
-        if (pts.length > 0) {
-            layers.push(new deck.HeatmapLayer({
-                id: 'ndvi-heat',
-                data: pts,
-                getPosition: d => d.pos,
-                getWeight:   d => d.w,
-                radiusPixels: 40,
-                colorRange: [[229,62,62,255],[234,179,8,255],[34,197,94,255]]
-            }));
-        }
-    }
-
-    // SAR — GeoJsonLayer polígonos con entropía real
-    if (activeL.sar) {
-        const polys = features.filter(f =>
-            f.geometry?.type === 'Polygon' && f.properties?.entropia_h != null
-        );
-        if (polys.length > 0) {
-            layers.push(new deck.GeoJsonLayer({
-                id: 'sar-poly',
-                data: { type:'FeatureCollection', features: polys },
-                filled: true,
-                getFillColor: f => {
-                    const h = f.properties.entropia_h;
-                    if (h < 0.3) return [229,62,62,160];
-                    if (h < 0.5) return [234,179,8,140];
-                    return [34,197,94,120];
-                },
-                getLineColor: [201,168,76,80],
-                getLineWidth: 1,
-                lineWidthMinPixels: 1
-            }));
-        }
-    }
-
-    // HUMEDAD SUELO (Richards) — ColumnLayer 3D por profundidad
-    if (activeL.temperatura) {
-        const depthKey = ['theta_5cm','theta_10cm','theta_20cm'][richDepth] ?? 'theta_10cm';
-        const cols     = features.filter(f => f.properties?.[depthKey] != null);
-        if (cols.length > 0) {
-            layers.push(new deck.ColumnLayer({
-                id: 'richards-col',
-                data: cols,
-                getPosition: f => geomCenter(f),
-                getElevation:  f => (f.properties[depthKey] ?? 0) * 200,
-                getFillColor:  [14,165,233,180],
-                radius:        3,
-                extruded:      true,
-                elevationScale: 1
-            }));
-        }
-    }
-
-    // InSAR — ScatterplotLayer punto único con valor real del canonical
-    if (activeL.insar) {
-        const detalle = canonical?.sectores?.estadio?.detalle
-                     ?? canonical?.sectores?.[currentVenue]?.detalle ?? '';
-        const m = typeof detalle === 'string' ? detalle.match(/InSAR\s*([\d.]+)\s*mm/i) : null;
-        if (m) {
-            layers.push(new deck.ScatterplotLayer({
-                id: 'insar-pts',
-                data: [{ pos:[VENUES[currentVenue].lng, VENUES[currentVenue].lat], v: m[1] }],
-                getPosition:  d => d.pos,
-                getRadius:    8,
-                radiusMinPixels: 8,
-                getFillColor: [229,62,62,220],
-                pickable: true,
-                onClick: info => {
-                    if (info.object) {
-                        document.getElementById('terminal').innerHTML =
-                            `<strong>InSAR:</strong> Deformación estructural ${info.object.v} mm detectada.`;
-                    }
-                }
-            }));
-        }
-    }
-
-    // Fungosis — ScatterplotLayer canchas en riesgo Dollar Spot
-    if (activeL.fungosis) {
-        const crList = canonical?.weather_live?.riesgo_fungosis?.canchas_en_riesgo ?? [];
-        if (crList.length > 0) {
-            const riskPts = features
-                .filter(f => {
-                    const cid = f.properties?.cancha_id ?? f.properties?.id;
-                    return cid != null && crList.includes(cid);
-                })
-                .map(f => ({
-                    pos: f.geometry?.type === 'Point'
-                        ? f.geometry.coordinates
-                        : [f.properties.lng ?? VENUES[currentVenue].lng,
-                           f.properties.lat ?? VENUES[currentVenue].lat]
-                }));
-            if (riskPts.length > 0) {
-                layers.push(new deck.ScatterplotLayer({
-                    id: 'fungosis-pts',
-                    data: riskPts,
-                    getPosition:  d => d.pos,
-                    getRadius:    12,
-                    radiusMinPixels: 10,
-                    getFillColor: [234,179,8,200],
-                    stroked:      true,
-                    getLineColor: [229,62,62,200],
-                    getLineWidth: 1,
-                    lineWidthMinPixels: 1,
-                    pickable: true,
-                    onClick: () => {
-                        const sk = canonical?.weather_live?.smith_kerns_pct
-                                ?? canonical?.hermes?.climate?.smith_kerns_pct;
-                        document.getElementById('terminal').innerHTML =
-                            `<span class="alert">⚠ Dollar Spot activo${sk != null ? ` — Smith-Kerns ${sk}%` : ''}</span>`;
-                    }
-                }));
-            }
-        }
-    }
-
-    // Dale Play — TripsLayer animación recovery post-show
-    if (activeL.dale_play && canonical?.show_memory) {
-        const mem = canonical.show_memory;
-        if (Array.isArray(mem?.recovery_path) && mem.recovery_path.length > 0) {
-            layers.push(new deck.TripsLayer({
-                id: 'recovery-trips',
-                data: mem.recovery_path,
-                getPath:       d => d.path,
-                getTimestamps: d => d.timestamps,
-                getColor:      [229,62,62,220],
-                currentTime:   showDay,
-                trailLength:   3,
-                widthMinPixels: 2
-            }));
-        }
-    }
-
-    deckOverlay.setProps({ layers });
+    el.innerHTML = `<div class="focos-list">${
+        focos.map((f, i) => `
+            <div class="foco">
+                <span class="foco-n">${i + 1}</span>
+                <span class="foco-txt">${f}</span>
+            </div>`
+        ).join('')
+    }</div>`;
 }
+
+function buildFocos(c, accion_c) {
+    // Sin acción específica de Roger → sin focos numerados
+    if (accion_c.length === 0) return [];
+
+    const focos = [...accion_c];
+
+    // Agregar riesgo fungosis si la cancha está en la lista de riesgo
+    const fungRisk = DATA.weather_live?.riesgo_fungosis?.canchas_en_riesgo ?? [];
+    if (fungRisk.includes(c.id)) {
+        const nivel = DATA.weather_live.riesgo_fungosis.nivel?.toUpperCase() ?? 'MEDIO';
+        const horas = DATA.weather_live.riesgo_fungosis.horas_favorables_48h ?? '';
+        const desc  = `Dollar Spot ${nivel} — ${horas}h favorables últimas 48h`;
+        // No duplicar si ya hay un foco de fungicida mencionado
+        if (!focos.some(f => f.toLowerCase().includes('dollar spot') || f.toLowerCase().includes('fungicida'))) {
+            focos.push(desc);
+        }
+    }
+
+    return focos;
+}
+
+function renderFooter(c, accion_c) {
+    const score     = c.score ?? 0;
+    const scorePrev = c.score_prev;
+    const delta     = scorePrev != null ? score - scorePrev : null;
+    const deltaStr  = delta != null
+        ? `<span style="font-size:10px;font-weight:400;color:${delta >= 0 ? 'var(--green)' : 'var(--red)'}"> ${delta >= 0 ? '+' : ''}${delta}</span>`
+        : '';
+
+    const sem = c.sem ?? 'amarillo';
+    const scoreColor = sem === 'verde' ? 'var(--green)' : sem === 'rojo' ? 'var(--red)' : 'var(--yellow)';
+
+    // Texto de acción: usa accion específica o la instrucción general de corte
+    const ventana = (DATA.usuarios?.roger?.acciones ?? []).find(a => a.includes('Ventana'));
+    const accionText = accion_c.length > 0
+        ? `<strong>${accion_c[0]}</strong>`
+        : (ventana ? `${ventana}` : 'Sistema operativo. Sin alertas activas.');
+
+    document.getElementById('footer-row').innerHTML = `
+        <div class="kpi-block">
+            <div class="kpi-lbl">Score</div>
+            <div class="kpi-val" style="color:${scoreColor}">${score}${deltaStr}</div>
+            <div class="kpi-bar-bg">
+                <div class="kpi-bar-fill" style="width:${score}%;background:${scoreColor}"></div>
+            </div>
+        </div>
+        <div class="footer-accion">${accionText}</div>
+    `;
+}
+
+init();
 </script>
 </body>
 </html>
