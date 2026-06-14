@@ -2,858 +2,490 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Faro Protocol · Vélez</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Epilogue:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Faro OS · Vélez Sarsfield</title>
+<link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Epilogue:wght@300;400;600;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/deck.gl@^9.0.0/dist.min.js"></script>
+<script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
 <style>
-:root{
-  --bg:#07090c;--bg2:#0e1218;--bg3:#151b24;--bg4:#1c2430;
-  --gold:#c9a84c;--gold2:rgba(201,168,76,.15);--gold3:rgba(201,168,76,.06);
-  --whi:#f0ece4;--dim:#8a8580;
-  --red:#d94f4f;--red2:rgba(217,79,79,.12);--red3:rgba(217,79,79,.06);
-  --yel:#d4a017;--yel2:rgba(212,160,23,.12);--yel3:rgba(212,160,23,.06);
-  --grn:#4a9e6a;--grn2:rgba(74,158,106,.12);--grn3:rgba(74,158,106,.06);
-  --border:rgba(201,168,76,.18);--radius:10px;
+:root {
+    --bg: #0a0a0a;
+    --card: rgba(18,20,23,0.88);
+    --border: rgba(38,43,53,0.5);
+    --gold: #c9a84c;
+    --red: #E53E3E;
+    --muted: #9ca3af;
+    --text: #f3f4f6;
 }
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{background:var(--bg);color:var(--whi);font-family:'Epilogue',sans-serif;font-size:14px;line-height:1.5;min-height:100vh}
-
-/* HEADER */
-#hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 16px;position:sticky;top:0;z-index:50}
-.hdr-top{display:flex;align-items:center;justify-content:space-between}
-.hdr-logo{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:700;color:var(--gold)}
-.hdr-logo span{font-family:'Epilogue',sans-serif;font-size:11px;font-weight:400;color:var(--dim);margin-left:6px}
-.hdr-badges{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
-.badge{padding:2px 7px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.08em}
-.badge.stale{background:var(--red2);color:var(--red);border:1px solid rgba(217,79,79,.3)}
-.badge.ok{background:var(--grn2);color:var(--grn);border:1px solid rgba(74,158,106,.3)}
-.badge.warn{background:var(--yel2);color:var(--yel);border:1px solid rgba(212,160,23,.3)}
-.badge.sar{background:rgba(99,102,241,.15);color:#818cf8;border:1px solid rgba(99,102,241,.3)}
-.badge.kalman{background:rgba(139,92,246,.15);color:#a78bfa;border:1px solid rgba(139,92,246,.3)}
-
-/* TABS CANCHAS */
-#tabs-wrap{background:var(--bg2);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
-#tabs-wrap::-webkit-scrollbar{display:none}
-.tabs{display:flex;gap:0;min-width:max-content}
-.tab{padding:9px 14px;font-size:11px;font-weight:600;color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s;letter-spacing:.03em}
-.tab:hover{color:var(--whi)}
-.tab.active{color:var(--gold);border-bottom-color:var(--gold)}
-.tab.rojo{color:rgba(217,79,79,.7)}
-.tab.amarillo{color:rgba(212,160,23,.7)}
-.tab.verde{color:rgba(74,158,106,.7)}
-.tab.active.rojo,.tab.active.amarillo,.tab.active.verde{color:var(--gold);border-bottom-color:var(--gold)}
-
-/* CONTENIDO */
-#content{max-width:700px;margin:0 auto;padding:14px 14px 80px}
-
-/* BANNER */
-.banner{border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:11px;line-height:1.5;display:none}
-.banner.inv{background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);color:#a5b4fc}
-.banner.inv b{color:#c7d2fe;display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}
-.banner.alert{background:var(--red2);border:1px solid rgba(217,79,79,.3);color:var(--whi)}
-.banner.show{display:block}
-
-/* TILDE INTERVENCIÓN */
-.tilde-card{background:var(--bg2);border:1.5px solid rgba(217,79,79,.4);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;display:none}
-.tilde-card.show{display:block}
-.tilde-title{font-size:10px;font-weight:700;color:var(--red);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
-.tilde-q{font-size:13px;color:var(--whi);margin-bottom:10px}
-.tilde-opts{display:flex;flex-wrap:wrap;gap:6px}
-.topt{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:7px 13px;font-size:12px;color:var(--dim);cursor:pointer;font-family:'Epilogue',sans-serif;font-weight:500;transition:all .15s}
-.topt.sel{background:var(--grn2);border-color:var(--grn);color:var(--grn);font-weight:700}
-
-/* PANEL 0 -- SEMÁFORO */
-.sem-header{display:flex;align-items:center;gap:14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:14px}
-.sem-circle{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;flex-shrink:0}
-.sem-circle.rojo{background:var(--red2);border:2px solid var(--red);color:var(--red)}
-.sem-circle.amarillo{background:var(--yel2);border:2px solid var(--yel);color:var(--yel)}
-.sem-circle.verde{background:var(--grn2);border:2px solid var(--grn);color:var(--grn)}
-.sem-info{flex:1}
-.sem-name{font-size:15px;font-weight:700;color:var(--whi)}
-.sem-estado{font-size:12px;font-weight:700;margin-top:3px}
-.sem-estado.rojo{color:var(--red)}
-.sem-estado.amarillo{color:var(--yel)}
-.sem-estado.verde{color:var(--grn)}
-.sem-detalle{font-size:11px;color:var(--dim);margin-top:3px;line-height:1.4}
-.sem-tilde{width:40px;height:40px;border-radius:50%;border:2px solid var(--border);background:var(--bg3);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--dim);transition:all .2s;flex-shrink:0}
-.sem-tilde.has-alert{border-color:var(--yel);color:var(--yel)}
-.sem-tilde.confirming{border-color:var(--gold);color:var(--gold)}
-.sem-tilde.done{border-color:var(--grn);background:var(--grn2);color:var(--grn)}
-
-/* SECCIÓN LABEL */
-.slbl{font-size:9px;font-weight:700;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;padding:16px 0 10px;border-bottom:1px solid var(--border);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
-.slbl span{color:var(--dim);font-weight:400;letter-spacing:0;font-size:10px;text-transform:none}
-
-/* PANEL 1 -- CAMPO SVG */
-.campo-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:14px}
-.campo-svg{width:100%;display:block}
-.campo-leyenda{display:flex;gap:10px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid var(--border);font-size:10px;color:var(--dim)}
-.leg-item{display:flex;align-items:center;gap:5px}
-.leg-dot{width:10px;height:10px;border-radius:50%}
-
-/* PANEL 2 -- MAPA ALERTAS FOCOS */
-.focos-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:14px}
-.focos-svg{width:100%;display:block}
-.focos-leyenda{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 14px;border-top:1px solid var(--border);font-size:11px}
-.fleg{display:flex;align-items:center;gap:7px}
-.fleg-num{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
-
-/* PANEL 3 -- SCORE + ESCALA */
-.score-big-wrap{text-align:center;padding:16px 0 8px}
-.score-big{font-family:'Cormorant Garamond',serif;font-size:72px;font-weight:700;line-height:1}
-.score-trend{font-size:13px;color:var(--dim);margin-top:4px}
-.escala-wrap{margin:12px 0}
-.escala-bar{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--red),var(--yel),var(--grn));position:relative;margin-bottom:4px}
-.escala-dot{position:absolute;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:var(--whi);border:2px solid var(--bg);box-shadow:0 0 0 2px var(--gold)}
-.escala-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--dim)}
-
-/* TABLA AGRONÓMICA */
-.tabla-scroll{overflow-x:auto;margin-bottom:4px;border-radius:var(--radius);border:1px solid var(--border)}
-table.agro{border-collapse:collapse;width:100%;min-width:560px;font-size:11px}
-table.agro th{padding:8px 9px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--gold);border-bottom:1px solid var(--border);background:var(--bg2);white-space:nowrap}
-table.agro td{padding:7px 9px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
-table.agro tr:last-child td{border-bottom:none}
-.td-sem{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
-.td-sem.rojo{background:var(--red)}
-.td-sem.amarillo{background:var(--yel)}
-.td-sem.verde{background:var(--grn)}
-.td-accion{font-size:10px;font-weight:600;color:var(--gold)}
-.td-dim{color:var(--dim)}
-.td-alert{color:var(--red);font-weight:600}
-.td-warn{color:var(--yel)}
-.td-ok{color:var(--grn)}
-
-/* CLIMA */
-.clima-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-.clima-c{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:11px 12px}
-.clima-c.alerta{border-color:rgba(217,79,79,.4);background:linear-gradient(135deg,var(--bg2),var(--red3))}
-.clima-c.warn{border-color:rgba(212,160,23,.4)}
-.clima-val{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;color:var(--gold);line-height:1}
-.clima-val.r{color:var(--red)}
-.clima-val.y{color:var(--yel)}
-.clima-unit{font-size:10px;color:var(--dim);margin-left:2px}
-.clima-lbl{font-size:9px;font-weight:700;letter-spacing:.08em;color:var(--dim);text-transform:uppercase;margin-top:3px}
-.clima-sub{font-size:10px;color:var(--whi);margin-top:2px}
-
-/* INSAR */
-.insar-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.insar-c{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center}
-.insar-val{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;line-height:1}
-.insar-lbl{font-size:10px;color:var(--dim);margin-top:4px}
-.insar-bar{height:4px;border-radius:2px;background:var(--bg3);margin-top:8px;overflow:hidden}
-.insar-fill{height:100%;border-radius:2px}
-
-/* TENDENCIA KALMAN */
-.kalman-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:14px}
-.kalman-title{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--gold);text-transform:uppercase;margin-bottom:10px}
-.kalman-svg{width:100%;display:block}
-.kalman-meta{font-size:10px;color:var(--dim);margin-top:6px;text-align:center}
-
-/* TAREAS */
-.tarea-row{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 13px;margin-bottom:7px;display:flex;gap:12px;align-items:flex-start}
-.tarea-dia{font-size:10px;font-weight:700;color:var(--gold);min-width:28px;padding-top:1px}
-.tarea-items{display:flex;flex-direction:column;gap:3px}
-.tarea-item{font-size:12px;color:var(--whi)}
-.tarea-row.partido{border-color:rgba(217,79,79,.3)}
-.tarea-row.partido .tarea-dia{color:var(--red)}
-
-/* COMPARATIVA TENDENCIA */
-.tend-pair{display:flex;align-items:center;justify-content:center;gap:20px;padding:16px 0}
-.tend-val{font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:700;line-height:1;text-align:center}
-.tend-lbl{font-size:10px;color:var(--dim);text-align:center;margin-top:4px}
-.tend-arrow{font-size:28px;color:var(--dim)}
-
-/* LOADING */
-#loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:14px}
-.ld-logo{font-family:'Cormorant Garamond',serif;font-size:26px;color:var(--gold)}
-.ld-bar{width:160px;height:2px;background:var(--bg3);border-radius:1px;overflow:hidden}
-.ld-fill{height:100%;background:var(--gold);border-radius:1px;animation:lda 1.6s ease-in-out infinite}
-@keyframes lda{0%{width:0;margin-left:0}50%{width:100%}100%{width:0;margin-left:100%}}
-
-/* FOOTER */
-#ftr{background:var(--bg2);border-top:1px solid var(--border);padding:9px 16px;text-align:center;font-size:10px;color:var(--dim);position:fixed;bottom:0;left:0;right:0;z-index:40}
-#ftr b{color:var(--gold)}
-
-@media(max-width:400px){.clima-grid{grid-template-columns:repeat(2,1fr)}.insar-grid{grid-template-columns:repeat(2,1fr)}}
+body { margin:0; background:var(--bg); font-family:'Epilogue',sans-serif; color:var(--text); overflow:hidden; }
+#map { position:absolute; top:0; left:0; width:100%; height:100%; z-index:1; }
+#hud { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10; display:flex; flex-direction:column; justify-content:space-between; }
+header { background:linear-gradient(to bottom,rgba(10,10,10,.95) 60%,transparent); padding:20px; pointer-events:auto; }
+h1 { font-family:'Cormorant Garamond',serif; font-size:22px; margin:0; text-transform:uppercase; letter-spacing:1px; }
+.venue-bar { display:flex; gap:8px; overflow-x:auto; margin-top:12px; scrollbar-width:none; }
+.venue-bar::-webkit-scrollbar { display:none; }
+.vbtn { background:rgba(20,22,26,.8); border:1px solid var(--border); color:var(--muted); padding:8px 14px; font-size:11px; font-weight:600; text-transform:uppercase; border-radius:4px; cursor:pointer; white-space:nowrap; font-family:'Epilogue',sans-serif; transition:all .2s; pointer-events:auto; }
+.vbtn:hover { border-color:var(--gold); color:#fff; }
+.vbtn.active { background:rgba(201,168,76,.15); border-color:var(--gold); color:var(--gold); }
+.right-panel { position:absolute; top:130px; right:16px; display:flex; flex-direction:column; gap:10px; max-width:210px; pointer-events:auto; z-index:10; }
+.card { background:var(--card); border:1px solid var(--border); backdrop-filter:blur(12px); padding:14px; border-radius:6px; }
+.card h2 { font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); border-left:2px solid var(--gold); padding-left:6px; margin:0 0 10px; }
+.lchk { display:flex; align-items:center; gap:8px; font-size:12px; margin-bottom:8px; cursor:pointer; color:var(--muted); }
+.lchk input { display:none; }
+.lchk .box { width:11px; height:11px; border:1px solid var(--border); border-radius:2px; flex-shrink:0; }
+.lchk input:checked + .box { background:var(--gold); border-color:var(--gold); }
+.lchk input:checked ~ span { color:#fff; font-weight:600; }
+.fslider { width:100%; accent-color:var(--gold); margin-top:6px; }
+.slbl { display:flex; justify-content:space-between; font-size:9px; color:var(--muted); margin-top:3px; }
+footer { background:linear-gradient(to top,rgba(10,10,10,1) 70%,transparent); padding:20px; pointer-events:auto; }
+.footer-row { display:flex; gap:20px; align-items:flex-start; }
+.kpi { min-width:85px; }
+.kval { font-size:22px; font-weight:800; }
+.klbl { font-size:9px; text-transform:uppercase; color:var(--muted); letter-spacing:.5px; }
+.bar-bg { width:100%; height:3px; background:#222; border-radius:2px; margin-top:4px; }
+.bar-fill { height:100%; background:var(--gold); border-radius:2px; transition:width .4s; }
+.terminal { flex:1; font-size:12px; line-height:1.65; border-left:2px solid rgba(255,255,255,.08); padding-left:14px; max-height:90px; overflow:hidden; }
+.terminal strong { color:#fff; }
+.alert { color:var(--red); }
+#banner { position:absolute; top:115px; left:50%; transform:translateX(-50%); background:rgba(229,62,62,.12); border:1px solid var(--red); padding:5px 14px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; border-radius:20px; display:none; backdrop-filter:blur(8px); white-space:nowrap; z-index:20; }
+.map-toggle { position:absolute; top:115px; left:16px; display:flex; gap:6px; pointer-events:auto; z-index:20; }
+.mtbtn { background:rgba(18,20,23,.85); border:1px solid var(--border); color:var(--muted); padding:5px 12px; font-size:10px; font-weight:600; border-radius:4px; cursor:pointer; font-family:'Epilogue',sans-serif; transition:all .15s; }
+.mtbtn.active { border-color:var(--gold); color:var(--gold); }
+@media(min-width:768px) { .footer-row { align-items:center; } }
+@keyframes pulse { 50%{opacity:.6} }
+.pulse { animation:pulse 2s infinite; }
 </style>
 </head>
 <body>
 
-<div id="loading">
-  <div class="ld-logo">Faro Protocol</div>
-  <div class="ld-bar"><div class="ld-fill"></div></div>
-  <div style="font-size:10px;color:var(--dim);letter-spacing:.12em">VÉLEZ SARSFIELD</div>
-</div>
+<div id="map"></div>
 
-<div id="hdr">
-  <div class="hdr-top">
-    <div class="hdr-logo">Faro Protocol <span>· Fortín Inteligente</span></div>
-    <div style="font-size:11px;color:var(--dim);text-align:right"><b id="h-fecha" style="color:var(--whi);display:block">--</b><span id="h-hora">--</span></div>
-  </div>
-  <div class="hdr-badges" id="hdr-badges"></div>
-</div>
+<div id="hud">
+  <header>
+    <div style="display:flex;justify-content:space-between;align-items:baseline">
+      <h1>Faro <span style="font-family:Epilogue;font-weight:300;font-size:13px;color:var(--gold)">OS</span></h1>
+      <span id="surface-badge" style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--muted)"></span>
+    </div>
+    <div class="venue-bar">
+      <button class="vbtn active" onclick="switchVenue('amalfitani',this)">Amalfitani</button>
+      <button class="vbtn" onclick="switchVenue('villa_olimpica',this)">Villa Olímpica</button>
+      <button class="vbtn" onclick="switchVenue('polideportivo',this)">Polideportivo</button>
+      <button class="vbtn" onclick="switchVenue('paneles_solares',this)">Paneles Solares</button>
+      <button class="vbtn" onclick="switchVenue('sede',this)">Sede</button>
+      <button class="vbtn" onclick="switchVenue('piletas',this)">Piletas</button>
+    </div>
+  </header>
 
-<div id="tabs-wrap"><div class="tabs" id="tabs"></div></div>
+  <div id="banner">⚠️ Datos ópticos congelados — Radar SAR activo</div>
 
-<div id="content">
-  <!-- BANNER INVERNAL -->
-  <div class="banner inv" id="banner-inv">
-    <b>🌙 Invierno austral · Modo radar activo</b>
-    NDVI bajo es normal en junio-agosto para Ryegrass. Usando SAR + Kalman como fuente principal.
-  </div>
-
-  <!-- TILDE INTERVENCIÓN -->
-  <div class="tilde-card" id="tilde-card">
-    <div class="tilde-title">⚠ Cambio detectado en el campo</div>
-    <div class="tilde-q" id="tilde-q">¿Qué se hizo esta semana?</div>
-    <div class="tilde-opts" id="tilde-opts"></div>
+  <div class="map-toggle">
+    <button class="mtbtn active" id="btn-dark" onclick="setBasemap('dark')">Oscuro</button>
+    <button class="mtbtn" id="btn-sat" onclick="setBasemap('satellite')">Satélite</button>
   </div>
 
-  <!-- PANEL 0 -- SEMÁFORO -->
-  <div class="slbl">Panel 0 <span>Semáforo ejecutivo</span></div>
-  <div class="sem-header" id="sem-header"></div>
-
-  <!-- PANEL 1 -- CAMPO PRESCRIPCIÓN -->
-  <div class="slbl">Panel 1 <span>Mapa de prescripción -- dónde trabajar</span></div>
-  <div class="campo-wrap">
-    <svg id="campo-svg" class="campo-svg" viewBox="0 0 400 240" xmlns="http://www.w3.org/2000/svg"></svg>
-    <div class="campo-leyenda">
-      <div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div> Zona crítica -- trabajar HOY sin falta</div>
-      <div class="leg-item"><div class="leg-dot" style="background:var(--yel)"></div> Zona atención -- trabajar esta semana</div>
-      <div class="leg-item"><div class="leg-dot" style="background:var(--grn)"></div> Zona OK -- solo monitorear</div>
+  <div class="right-panel">
+    <div class="card" id="layer-card">
+      <h2>Capas Activas</h2>
+      <div id="layer-list"></div>
+    </div>
+    <div class="card" id="slider-card" style="display:none">
+      <h2 id="slider-title">Control</h2>
+      <div id="slider-body"></div>
     </div>
   </div>
 
-  <!-- PANEL 2 -- FOCOS ALERTAS -->
-  <div class="slbl">Panel 2 <span>Mapa de alertas -- focos exactos</span></div>
-  <div class="focos-wrap">
-    <svg id="focos-svg" class="focos-svg" viewBox="0 0 400 240" xmlns="http://www.w3.org/2000/svg"></svg>
-    <div class="focos-leyenda" id="focos-leyenda"></div>
-  </div>
-
-  <!-- PANEL 3 -- SCORE -->
-  <div class="slbl">Panel 3 <span>Índice Fusión Faro</span></div>
-  <div class="campo-wrap" style="padding:0 14px 14px">
-    <div class="score-big-wrap">
-      <div class="score-big" id="score-big">--</div>
-      <div class="score-trend" id="score-trend">--</div>
+  <footer>
+    <div class="footer-row">
+      <div class="kpi">
+        <div class="klbl">Score</div>
+        <div class="kval" id="score-val">--</div>
+        <div class="bar-bg"><div class="bar-fill" id="score-bar" style="width:0"></div></div>
+      </div>
+      <div class="kpi" id="kpi2" style="display:none">
+        <div class="klbl" id="kpi2-lbl"></div>
+        <div class="kval" id="kpi2-val"></div>
+      </div>
+      <div class="terminal" id="terminal">Conectando con Faro OS…</div>
     </div>
-    <div class="escala-wrap">
-      <div class="escala-bar"><div class="escala-dot" id="escala-dot" style="left:50%"></div></div>
-      <div class="escala-labels"><span>0 · Crítico</span><span>50</span><span>100 · Óptimo</span></div>
-    </div>
-  </div>
-
-  <!-- TENDENCIA KALMAN -->
-  <div class="slbl">Tendencia NDVI <span id="lbl-kalman">Kalman LSTM · histórico 2020-2026</span></div>
-  <div class="kalman-wrap">
-    <svg id="kalman-svg" class="kalman-svg" viewBox="0 0 400 100" xmlns="http://www.w3.org/2000/svg"></svg>
-    <div class="kalman-meta" id="kalman-meta">--</div>
-  </div>
-
-  <!-- PANEL InSAR -->
-  <div class="slbl">InSAR <span>Deformación estructural · Sentinel-1</span></div>
-  <div class="insar-grid" id="insar-grid"></div>
-
-  <!-- TABLA AGRONÓMICA -->
-  <div class="slbl" style="margin-top:16px">Tabla de Prescripción Agronómica <span>Todos los sectores</span></div>
-  <div class="tabla-scroll">
-    <table class="agro">
-      <thead>
-        <tr>
-          <th></th><th>Zona</th><th>NDVI</th><th>NDRE</th>
-          <th>N kg/ha</th><th>Riego mm</th><th>Resembrar</th>
-          <th>Hongos</th><th>Compact.</th><th>Drenaje</th>
-          <th>Timeline</th><th>Acción inmediata</th>
-        </tr>
-      </thead>
-      <tbody id="tabla-body"></tbody>
-    </table>
-  </div>
-
-  <!-- CLIMA -->
-  <div class="slbl" style="margin-top:16px">Clima <span id="lbl-clima">--</span></div>
-  <div class="clima-grid" id="clima-grid"></div>
-
-  <!-- TAREAS SEMANA -->
-  <div class="slbl" style="margin-top:4px">Plan de la semana <span id="lbl-semana">--</span></div>
-  <div id="tareas-wrap"></div>
-
-  <!-- TENDENCIA COMPARATIVA -->
-  <div class="slbl" style="margin-top:4px">Comparativa <span>vs. escaneo anterior</span></div>
-  <div class="campo-wrap" style="padding:0 14px 14px">
-    <div class="tend-pair" id="tend-pair"></div>
-  </div>
+  </footer>
 </div>
-
-<div id="ftr"><b>Faro Protocol</b> · Vélez Sarsfield · protocolfaro@gmail.com · Sentinel-2 / SAR / InSAR</div>
 
 <script>
-const RAILWAY = 'https://faroprotocol-production-45fd.up.railway.app';
-const ST = {
-  get: k => { try{return JSON.parse(sessionStorage.getItem('fp_'+k))}catch(_){return null} },
-  set: (k,v) => { try{sessionStorage.setItem('fp_'+k,JSON.stringify(v))}catch(_){} }
+// ── COORDENADAS REALES VÉLEZ ──────────────────────────────────────────────
+const VENUES = {
+    amalfitani:     { lng:-58.5288, lat:-34.6379, zoom:17.5 },
+    villa_olimpica: { lng:-58.7193, lat:-34.6221, zoom:15.5 },
+    polideportivo:  { lng:-58.5135, lat:-34.6333, zoom:17.5 },
+    paneles_solares:{ lng:-58.522200, lat:-34.636800, zoom:19   },
+    sede:           { lng:-58.523912, lat:-34.634620, zoom:18.5 },
+    piletas:        { lng:-58.520900, lat:-34.637800, zoom:18.5 }
 };
 
-// Todos los venues en orden
-const VENUES = [
-  {id:'amalfitani', nombre:'Amalfitani', tipo:'estadio'},
-  {id:'1fp', nombre:'1FP'},{id:'2fp', nombre:'2FP'},
-  {id:'1fa', nombre:'1FA'},{id:'2fa', nombre:'2FA'},{id:'3fa', nombre:'3FA'},
-  {id:'4fa', nombre:'4FA'},{id:'5fa', nombre:'5FA'},{id:'6fa', nombre:'6FA'},
-  {id:'7fa', nombre:'7FA'},{id:'8fa', nombre:'8FA'},{id:'9fa', nombre:'9FA'},
-  {id:'10fa', nombre:'10FA'},
-];
+// ── CAPAS POR TIPO DE SUPERFICIE ─────────────────────────────────────────
+const SURFACE_LAYERS = {
+    natural:        ['ndvi','sar','temperatura','clima','fungosis'],
+    hibrido:        ['ndvi','sar','temperatura','clima','fungosis'],
+    sintetico:      ['sar','temperatura','insar'],
+    polvo_ladrillo: ['sar','temperatura','insar'],
+    indoor:         ['insar','temperatura'],
+    fotovoltaico:   ['temperatura','clima'],
+    acuatico:       ['temperatura','clima']
+};
 
-let DATA = null;
-let ACTIVE = 'amalfitani';
+const LAYER_LABELS = {
+    ndvi:        'NDVI Vegetativo',
+    sar:         'SAR Compactación',
+    temperatura: 'Temperatura Landsat',
+    insar:       'InSAR Estructural',
+    clima:       'Clima Open-Meteo',
+    fungosis:    'Riesgo Dollar Spot',
+    dale_play:   'Dale Play Recovery'
+};
 
-// Helpers
-function sem(s,raw){
-  const month = new Date().getMonth()+1;
-  const winter = month>=5&&month<=8;
-  const r = s||'amarillo';
-  if(raw) return r;
-  if(winter&&r==='rojo') return 'amarillo';
-  if(winter&&r==='amarillo') return 'verde';
-  return r;
-}
-function col(s){return {rojo:'var(--red)',amarillo:'var(--yel)',verde:'var(--grn)'}[s]||'var(--yel)'}
-function fmtN(v,d=3){return v!=null?Number(v).toFixed(d):'--'}
-function diasDesde(dateStr){
-  if(!dateStr) return 99;
-  const p = String(dateStr).slice(0,10).split('-');
-  if(p.length!==3) return 99;
-  const d = new Date(+p[0],+p[1]-1,+p[2]);
-  return isNaN(d.getTime())?99:Math.round((Date.now()-d.getTime())/864e5);
-}
+let map, deckOverlay, canonical, geojson;
+let currentVenue = 'amalfitani';
+let activeL = { ndvi:true, sar:true, temperatura:false, insar:false, clima:false, fungosis:false, dale_play:false };
+let richDepth = 1;  // 0=5cm  1=10cm  2=20cm
+let showDay   = 0;  // días desde el show (0=hoy)
+const RAILWAY = 'https://faroprotocol-production-45fd.up.railway.app';
 
-// Cancha activa desde DATA
-function getCancha(){
-  // Usar sectores.canchero.canchas -- tiene datos reales distintos por cancha
-  const canchas = DATA?.sectores?.canchero?.canchas || [];
-  if(ACTIVE==='amalfitani'){
-    const e = DATA?.sectores?.estadio||{};
-    const gndvi_am = DATA?.weather_live?.gndvi_por_cancha?.canchas?.amalfitani;
-    return {
-      id:'amalfitani', nombre:'Estadio J. Amalfitani',
-      score: e.score, score_prev: e.score_prev,
-      sem: e.sem, detalle: e.detalle,
-      ndvi: gndvi_am?.ndvi || null,
-      ndvi_prev: null,
-    };
-  }
-  const c = canchas.find(c=>c.id===ACTIVE);
-  if(c) return c;
-  return {id:ACTIVE, nombre:ACTIVE.toUpperCase(), score:0, sem:'amarillo', ndvi:null};
-}
+// ── INIT ─────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+    map = new maplibregl.Map({
+        container: 'map',
+        style: 'https://tiles.openfreemap.org/styles/dark',
+        center: [VENUES.amalfitani.lng, VENUES.amalfitani.lat],
+        zoom:  VENUES.amalfitani.zoom,
+        pitch: 45, bearing: -15,
+        attributionControl: false
+    });
 
-// ── TABS ────────────────────────────────────────────────────────────────────
-function buildTabs(){
-  const canchas = DATA?.sectores?.canchero?.canchas||[];
-  const wrap = document.getElementById('tabs');
-  wrap.innerHTML = '';
-  VENUES.forEach(v=>{
-    const c = v.id==='amalfitani'
-      ? {sem: DATA?.sectores?.estadio?.sem||'amarillo'}
-      : (canchas.find(x=>x.id===v.id)||{sem:'amarillo'});
-    const s = sem(c.sem);
-    const btn = document.createElement('div');
-    btn.className = `tab ${s} ${v.id===ACTIVE?'active':''}`;
-    btn.textContent = v.nombre;
-    btn.onclick = ()=>{ ACTIVE=v.id; renderAll(); syncTabs(); };
-    wrap.appendChild(btn);
-  });
-}
-function syncTabs(){
-  document.querySelectorAll('.tab').forEach((t,i)=>{
-    t.classList.toggle('active', VENUES[i]?.id===ACTIVE);
-  });
-}
+    // Un solo canvas WebGL — deck.gl como overlay sobre MapLibre
+    deckOverlay = new deck.MapboxOverlay({ interleaved: true, layers: [] });
+    map.addControl(deckOverlay);
+    map.on('load', async () => {
+        // Satélite ArcGIS World Imagery — sin API key
+        map.addSource('arcgis-sat', {
+            type: 'raster',
+            tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+            tileSize: 256, maxzoom: 19
+        });
+        map.addLayer({ id:'sat-layer', type:'raster', source:'arcgis-sat', layout:{ visibility:'none' } });
 
-// ── HEADER ───────────────────────────────────────────────────────────────────
-function renderHeader(){
-  const now = new Date();
-  const dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-  document.getElementById('h-fecha').textContent = `${dias[now.getDay()]} ${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`;
-  document.getElementById('h-hora').textContent = now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+        // Cargar datos del assembler — triple fallback
+        try {
+            const [c, g] = await Promise.all([
+                fetch(`${RAILWAY}/velez/panel-roger-canonical`).then(r => r.ok ? r.json() : Promise.reject(r.status)),
+                fetch(`${RAILWAY}/velez/amalfitani-geojson`).then(r => r.ok ? r.json() : Promise.reject(r.status))
+            ]);
+            canonical = c;
+            geojson   = g;
+        } catch(_) {
+            canonical = null;
+            geojson   = { type:'FeatureCollection', features:[] };
+        }
 
-  const meta = DATA?.usuarios?.roger?.heatmaps_meta||{};
-  const dias_img = diasDesde(meta.semana);
-  const wl = DATA?.weather_live||{};
-  const badges = document.getElementById('hdr-badges');
-  badges.innerHTML = '';
+        renderUI();
+        renderLayers();
+    });
+});
 
-  const addBadge=(txt,cls)=>{const b=document.createElement('span');b.className=`badge ${cls}`;b.textContent=txt;badges.appendChild(b)};
-  if(dias_img<=3) addBadge('IMAGEN HOY','ok');
-  else if(dias_img<=14) addBadge(`${dias_img}d · imagen satelital`,'warn');
-  else addBadge(`${dias_img}d · imagen vieja`,'stale');
-
-  if(meta.fuente) addBadge(meta.fuente.split('·')[0].trim(),'warn');
-  if(wl.sar_disponible) addBadge('SAR ACTIVO','sar');
-  if(DATA?.weather_live?.gndvi_por_cancha?.metodo_generacion==='KALMAN_LSTM') addBadge('KALMAN','kalman');
-
-  // Banner invernal
-  const month = now.getMonth()+1;
-  document.getElementById('banner-inv').classList.toggle('show', month>=5&&month<=8);
+// ── BASEMAP TOGGLE ───────────────────────────────────────────────────────
+function setBasemap(mode) {
+    document.getElementById('btn-dark').classList.toggle('active', mode === 'dark');
+    document.getElementById('btn-sat').classList.toggle('active',  mode === 'satellite');
+    if (!map || !map.getLayer('sat-layer')) return;
+    map.setLayoutProperty('sat-layer', 'visibility', mode === 'satellite' ? 'visible' : 'none');
 }
 
-// ── PANEL 0 -- SEMÁFORO ───────────────────────────────────────────────────────
-function renderSem(){
-  const c = getCancha();
-  const s = sem(c.sem);
-  const raw_s = sem(c.sem, true);
-  const alertaDone = ST.get('alerta_'+c.id);
-  const accion = getAccion(c, s);
+// ── VENUE SWITCH ─────────────────────────────────────────────────────────
+function switchVenue(v, btn) {
+    currentVenue = v;
+    // Reset sliders al cambiar venue
+    richDepth = 1;
+    showDay   = 0;
+    // Reset active layers a default sensato
+    activeL = { ndvi:true, sar:true, temperatura:false, insar:false, clima:false, fungosis:false, dale_play:false };
 
-  document.getElementById('sem-header').innerHTML = `
-    <div class="sem-circle ${s}">${c.score||'--'}</div>
-    <div class="sem-info">
-      <div class="sem-name">${c.nombre||c.id}</div>
-      <div class="sem-estado ${s}">${s==='verde'?'ÓPTIMO':s==='amarillo'?'ATENCIÓN':'CRÍTICO'}</div>
-      <div class="sem-detalle">${c.detalle||accion}</div>
-    </div>
-    <div class="sem-tilde ${alertaDone?'done':raw_s==='rojo'?'has-alert':''}"
-         onclick="tildeCancha(this,'${c.id}')">${alertaDone?'✓':'○'}</div>`;
-}
+    document.querySelectorAll('.vbtn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
 
-function getAccion(c,s){
-  const month = new Date().getMonth()+1;
-  const winter = month>=5&&month<=8;
-  if(winter){
-    if(c.hermes_alertas?.length) return c.hermes_alertas[0];
-    if((c.ndvi||0)<0.03) return 'NDVI muy bajo -- verificar en campo';
-    return 'Dormancia invernal -- estado esperado para junio-agosto';
-  }
-  if(s==='rojo'&&(c.ndvi||0)<0.05) return 'Resembrar · intervención urgente';
-  if(s==='rojo') return 'Atender esta semana';
-  if(s==='amarillo') return 'Monitorear -- posible intervención';
-  return 'Estado óptimo';
-}
-
-function tildeCancha(btn,cid){
-  if(btn.classList.contains('done')){
-    btn.classList.remove('done');btn.classList.add('has-alert');btn.textContent='○';
-    ST.set('alerta_'+cid,false);return;
-  }
-  if(btn.classList.contains('confirming')){
-    btn.classList.remove('confirming');btn.classList.add('done');btn.textContent='✓';
-    ST.set('alerta_'+cid,true);logInterv('alerta_atendida',cid);clearTimeout(btn._t);return;
-  }
-  btn.classList.add('confirming');btn.textContent='?';
-  btn._t=setTimeout(()=>{if(btn.classList.contains('confirming')){btn.classList.remove('confirming');btn.textContent='○';}},3000);
-}
-
-// ── PANEL 1 -- CAMPO SVG ──────────────────────────────────────────────────────
-function renderCampo(){
-  const c = getCancha();
-  const s_raw = c.sem||'amarillo';
-  const s = sem(s_raw);
-  const ndvi = c.ndvi||0;
-  const month = new Date().getMonth()+1;
-  const winter = month>=5&&month<=8;
-  const W=400,H=240;
-
-  // Color del campo basado en NDVI REAL de esa cancha
-  const fc = winter&&ndvi>=0.03?'#1c3318':
-             ndvi>0.45?'#1a3a20':ndvi>0.25?'#1e3818':ndvi>0.10?'#252a14':'#2a1a0e';
-
-  // Parsear uso real del detalle de ESTA cancha
-  const det = c.detalle||'';
-  const pers = parseInt((det.match(/(\d+)\s*pers/)||[0,0])[1])||0;
-  const hs   = parseFloat((det.match(/([\d.]+)\s*h(?!r)/)||[0,0])[1])||0;
-  const descansada = det.includes('descansada');
-
-  // Acciones específicas de ESTA cancha
-  const acciones = DATA?.usuarios?.roger?.acciones||[];
-  const cid_up = c.id.toUpperCase();
-  const accion_c = acciones.filter(a=>a.includes(cid_up)||a.includes(c.nombre||''));
-  const tiene_fungicida = accion_c.some(a=>a.toLowerCase().includes('fungicida'));
-  const tiene_resembrar = accion_c.some(a=>a.toLowerCase().includes('resembrar'));
-  const tiene_fertilizar = accion_c.some(a=>a.toLowerCase().includes('fertiliz'));
-  const tiene_drenaje = accion_c.some(a=>a.toLowerCase().includes('drenaje'));
-
-  // CONSTRUIR ZONAS según datos reales de esta cancha
-  let zonas = [];
-
-  if(winter && s_raw!=='rojo' && !tiene_resembrar && !tiene_fungicida) {
-    // Invierno sin alertas -- verde OK
-    zonas=[{x:W*.5,y:H*.5,rx:32,ry:20,c:'#4a9e6a',lbl:'OK',op:.18}];
-  } else if(tiene_resembrar || (s_raw==='rojo' && ndvi<0.05)) {
-    // Resembrar urgente -- zona central grande
-    zonas.push({x:W*.5,y:H*.5,rx:40,ry:24,c:'#d94f4f',lbl:'RESEMBRAR',op:.24});
-    if(pers>80||hs>10) {
-      // Porterías dañadas por uso intensivo
-      zonas.push({x:W*.11,y:H*.5,rx:16,ry:12,c:'#d94f4f',lbl:'',op:.30});
-      zonas.push({x:W*.89,y:H*.5,rx:16,ry:12,c:'#d94f4f',lbl:'',op:.30});
+    const c = VENUES[v];
+    if (c && map) {
+        map.flyTo({ center:[c.lng, c.lat], zoom:c.zoom, pitch:45, bearing:-15, duration:1800 });
     }
-  } else if(tiene_fungicida) {
-    // Fungicida -- focos en zonas típicas de Dollar Spot
-    zonas.push({x:W*.35,y:H*.38,rx:26,ry:16,c:'#c084fc',lbl:'FUNGICIDA',op:.22});
-    zonas.push({x:W*.65,y:H*.62,rx:20,ry:13,c:'#c084fc',lbl:'',op:.18});
-    if(pers>30) zonas.push({x:W*.5,y:H*.5,rx:16,ry:10,c:'#c084fc',lbl:'',op:.14});
-  } else if(tiene_fertilizar) {
-    // Fertilización -- zona uniforme central
-    zonas.push({x:W*.5,y:H*.5,rx:60,ry:38,c:'#f59e0b',lbl:'FERTILIZAR',op:.14});
-  } else if(tiene_drenaje) {
-    // Drenaje -- zona lateral izquierda típica
-    zonas.push({x:W*.2,y:H*.55,rx:28,ry:18,c:'#38bdf8',lbl:'DRENAJE',op:.22});
-  } else if(s_raw==='rojo') {
-    // Rojo sin acción específica -- zona general
-    zonas.push({x:W*.5,y:H*.5,rx:34,ry:20,c:'#d94f4f',lbl:'ATENDER',op:.20});
-    if(hs>5) zonas.push({x:W*.5,y:H*.65,rx:20,ry:12,c:'#d4a017',lbl:'USO ALTO',op:.16});
-  } else if(s_raw==='amarillo') {
-    zonas.push({x:W*.4,y:H*.45,rx:26,ry:16,c:'#d4a017',lbl:'MONITOREAR',op:.18});
-  } else {
-    zonas=[{x:W*.5,y:H*.5,rx:28,ry:18,c:'#4a9e6a',lbl:'OK',op:.18}];
-  }
-
-  // Zona de uso -- si hubo uso intensivo marcar zona central con intensidad
-  if(hs>8&&!tiene_resembrar){
-    zonas.push({x:W*.5,y:H*.45,rx:18,ry:12,c:'#94a3b8',lbl:`${hs}h`,op:.20});
-  }
-
-  const zsvg = zonas.map(z=>
-    `<ellipse cx="${z.x}" cy="${z.y}" rx="${z.rx}" ry="${z.ry}" fill="${z.c}" fill-opacity="${z.op}" stroke="${z.c}" stroke-width="1.5" stroke-opacity=".7"/>
-    ${z.lbl?`<text x="${z.x}" y="${z.y+4}" text-anchor="middle" font-size="9" font-weight="700" fill="${z.c}" opacity=".9">${z.lbl}</text>`:''}`
-  ).join('');
-
-  // Info de uso real en el campo
-  const uso_txt = pers>0 ? `${pers} pers · ${hs}h` : descansada ? 'descansando' : '';
-
-  document.getElementById('campo-svg').innerHTML = `
-    <rect x="10" y="8" width="${W-20}" height="${H-16}" rx="4" fill="${fc}" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
-    <line x1="${W/2}" y1="8" x2="${W/2}" y2="${H-8}" stroke="rgba(255,255,255,.15)" stroke-width=".8"/>
-    <circle cx="${W/2}" cy="${H/2}" r="26" fill="none" stroke="rgba(255,255,255,.15)" stroke-width=".8"/>
-    <circle cx="${W/2}" cy="${H/2}" r="2.5" fill="rgba(255,255,255,.3)"/>
-    <rect x="10" y="${H/2-28}" width="36" height="56" fill="none" stroke="rgba(255,255,255,.12)" stroke-width=".8"/>
-    <rect x="${W-46}" y="${H/2-28}" width="36" height="56" fill="none" stroke="rgba(255,255,255,.12)" stroke-width=".8"/>
-    <rect x="10" y="${H/2-11}" width="9" height="22" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.2"/>
-    <rect x="${W-19}" y="${H/2-11}" width="9" height="22" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.2"/>
-    ${zsvg}
-    <text x="${W-14}" y="${H-10}" text-anchor="end" font-size="8" fill="rgba(255,255,255,.3)">NDVI ${ndvi.toFixed(3)}</text>
-    ${uso_txt?`<text x="20" y="${H-10}" font-size="8" fill="rgba(255,255,255,.3)">${uso_txt}</text>`:''}`;
+    renderUI();
+    renderLayers();
 }
 
-function renderFocos(){
-  const c = getCancha();
-  const s_raw = c.sem||'amarillo';
-  const ndvi = c.ndvi||0;
-  const month = new Date().getMonth()+1;
-  const winter = month>=5&&month<=8;
-  const W=400,H=240;
-  const fc='#1c3318';
+// ── RENDER UI (HUD + layer selector) ─────────────────────────────────────
+function renderUI() {
+    if (!canonical) {
+        document.getElementById('terminal').innerHTML = 'Sin conexión con el assembler. Reintentando…';
+        return;
+    }
 
-  // Acciones reales de esta cancha
-  const acciones = DATA?.usuarios?.roger?.acciones||[];
-  const cid_up = c.id.toUpperCase();
-  const accion_c = acciones.filter(a=>a.includes(cid_up)||a.includes(c.nombre||''));
+    // Score — buscar en múltiples rutas del canonical
+    const estadioS = canonical?.sectores?.estadio ?? {};
+    const cancheroS = canonical?.sectores?.canchero ?? {};
+    const venueS   = canonical?.sectores?.[currentVenue] ?? {};
+    const score = venueS.score ?? estadioS.score ?? cancheroS.score ?? 0;
 
-  // Parsear uso real
-  const det = c.detalle||'';
-  const pers = parseInt((det.match(/(\d+)\s*pers/)||[0,0])[1])||0;
-  const hs   = parseFloat((det.match(/([\d.]+)\s*h(?!r)/)||[0,0])[1])||0;
+    // Tipo de superficie para este venue
+    const hm = canonical?.usuarios?.roger?.heatmaps ?? {};
+    const surface = hm[currentVenue]?.tipo_superficie
+                 ?? canonical?.canchas?.[currentVenue]?.tipo_superficie
+                 ?? 'natural';
 
-  // Focos REALES basados en acciones específicas de Roger para esta cancha
-  const focos = [];
+    // Nubosidad — datos ópticos congelados si última imagen > 7 días
+    const ageRaw = canonical?.satellite?.age_days;
+    const nuboso  = ageRaw != null && Number(ageRaw) > 7;
 
-  // 1 -- HONGO: solo si Roger prescribió fungicida para ESTA cancha
-  if(accion_c.some(a=>a.toLowerCase().includes('fungicida'))) {
-    focos.push({x:W*.32,y:H*.35,r:24,n:1,c:'#c084fc',lbl:'Hongo'});
-    if(s_raw==='rojo') focos.push({x:W*.68,y:H*.65,r:18,n:1,c:'#c084fc',lbl:''});
-  }
+    document.getElementById('surface-badge').textContent = surface.toUpperCase().replace(/_/g,' ');
+    document.getElementById('score-val').textContent     = score || '--';
+    document.getElementById('score-bar').style.width     = `${score || 0}%`;
+    document.getElementById('banner').style.display      = nuboso ? 'block' : 'none';
 
-  // 2 -- AGUA: solo si Roger prescribió drenaje o riego para ESTA cancha
-  if(accion_c.some(a=>a.toLowerCase().includes('drenaje'))||
-     accion_c.some(a=>a.toLowerCase().includes('regar'))) {
-    focos.push({x:W*.62,y:H*.52,r:20,n:2,c:'#38bdf8',lbl:'Agua'});
-  }
+    // Terminal — Hermes prescripción real
+    const clim   = canonical?.hermes?.climate ?? {};
+    const alerts = Array.isArray(canonical?.hermes?.alertas_fisicas) ? canonical.hermes.alertas_fisicas : [];
+    const termLines = [];
+    if (clim.et0_mm_dia        != null) termLines.push(`<strong>ET₀:</strong> ${clim.et0_mm_dia} mm/día`);
+    if (clim.deficit_hidrico_mm != null) termLines.push(`<strong>Déficit:</strong> ${clim.deficit_hidrico_mm} mm`);
+    if (clim.smith_kerns_pct   != null) termLines.push(`<strong>Dollar Spot:</strong> ${clim.smith_kerns_pct}%`);
+    if (clim.ventana_corte)              termLines.push(`<strong>Corte:</strong> ${clim.ventana_corte}`);
+    if (clim.riego_min)                  termLines.push(`<strong>Riego:</strong> ${clim.riego_min} min`);
+    alerts.slice(0,2).forEach(a => {
+        const msg = typeof a === 'string' ? a : (a.mensaje ?? JSON.stringify(a));
+        termLines.push(`<span class="alert">⚠ ${msg}</span>`);
+    });
+    document.getElementById('terminal').innerHTML = termLines.length
+        ? termLines.join('<br>')
+        : 'Sistema operativo. Sin alertas activas.';
 
-  // 3 -- MALEZA / NUTRICIÓN
-  if(accion_c.some(a=>a.toLowerCase().includes('fertiliz'))) {
-    focos.push({x:W*.5,y:H*.5,r:55,c:'#f59e0b',n:3,lbl:'Nutri.',borde:true});
-  }
+    // KPI secundario — InSAR si está disponible
+    const kpi2    = document.getElementById('kpi2');
+    const detalle = typeof venueS.detalle === 'string' ? venueS.detalle
+                  : (typeof estadioS.detalle === 'string' ? estadioS.detalle : '');
+    const insarM  = detalle.match(/InSAR\s*([\d.]+)\s*mm/i);
+    if (insarM) {
+        kpi2.style.display = 'block';
+        document.getElementById('kpi2-lbl').textContent = 'InSAR';
+        document.getElementById('kpi2-val').textContent = `${insarM[1]}mm`;
+    } else {
+        kpi2.style.display = 'none';
+    }
 
-  // 4 -- RESEMBRAR
-  if(accion_c.some(a=>a.toLowerCase().includes('resembrar'))||
-    (ndvi<0.05&&s_raw==='rojo'&&!winter)) {
-    focos.push({x:W*.5,y:H*.6,r:26,n:4,c:'#d94f4f',lbl:'Resembrar'});
-    if(pers>50) focos.push({x:W*.5,y:H*.35,r:20,n:4,c:'#d94f4f',lbl:''});
-  }
+    // Layer selector — solo capas disponibles para esta superficie
+    const availLayers = SURFACE_LAYERS[surface] ?? SURFACE_LAYERS.natural;
+    const hasShow     = canonical?.show_activo === true;
+    const finalLayers = (hasShow && currentVenue === 'amalfitani')
+        ? [...availLayers, 'dale_play']
+        : availLayers;
 
-  // Sin alertas reales para esta cancha
-  if(!focos.length) {
-    focos.push({x:W*.5,y:H*.5,r:20,n:0,c:'#4a9e6a',lbl:'Sin alertas'});
-  }
+    document.getElementById('layer-list').innerHTML = finalLayers.map(lk => `
+        <label class="lchk">
+            <input type="checkbox" id="chk-${lk}" ${activeL[lk] ? 'checked' : ''}
+                   onchange="toggleLayer('${lk}')">
+            <span class="box"></span>
+            <span>${LAYER_LABELS[lk] ?? lk}</span>
+        </label>`
+    ).join('');
 
-  const fsvg = focos.map(f=> f.n>0
-    ? `<circle cx="${f.x}" cy="${f.y}" r="${f.r}" fill="${f.c}" fill-opacity=".18" stroke="${f.c}" stroke-width="1.5" stroke-opacity=".7"/>
-       <text x="${f.x}" y="${f.y+5}" text-anchor="middle" font-size="13" font-weight="700" fill="${f.c}">${f.n}</text>`
-    : `<circle cx="${f.x}" cy="${f.y}" r="${f.r}" fill="${f.c}" fill-opacity=".15" stroke="${f.c}" stroke-width="1.5"/>
-       <text x="${f.x}" y="${f.y+4}" text-anchor="middle" font-size="9" fill="${f.c}">${f.lbl}</text>`
-  ).join('');
+    // Slider card — Richards si humedad activa y hay datos; Dale Play si show activo
+    const sc = document.getElementById('slider-card');
+    const sb = document.getElementById('slider-body');
+    const hasTheta = geojson?.features?.some(f => f.properties?.theta_5cm != null) ?? false;
 
-  document.getElementById('focos-svg').innerHTML = `
-    <rect x="10" y="8" width="${W-20}" height="${H-16}" rx="4" fill="${fc}" stroke="rgba(255,255,255,.1)" stroke-width="1"/>
-    <line x1="${W/2}" y1="8" x2="${W/2}" y2="${H-8}" stroke="rgba(255,255,255,.1)" stroke-width=".8"/>
-    <circle cx="${W/2}" cy="${H/2}" r="26" fill="none" stroke="rgba(255,255,255,.1)" stroke-width=".8"/>
-    <rect x="10" y="${H/2-28}" width="36" height="56" fill="none" stroke="rgba(255,255,255,.1)" stroke-width=".8"/>
-    <rect x="${W-46}" y="${H/2-28}" width="36" height="56" fill="none" stroke="rgba(255,255,255,.1)" stroke-width=".8"/>
-    ${fsvg}`;
-
-  // Leyenda con solo los focos presentes
-  const leyItems=[
-    {n:1,c:'#c084fc',txt:'Hongo -- Aplicar fungicida en ese punto'},
-    {n:2,c:'#38bdf8',txt:'Agua/Drenaje -- Problema de riego o drenaje'},
-    {n:3,c:'#f59e0b',txt:'Nutrición -- Fertilizar en esa zona'},
-    {n:4,c:'#d94f4f',txt:'Resembrar -- Colocar semilla nueva'},
-  ].filter(x=>focos.some(f=>f.n===x.n));
-  document.getElementById('focos-leyenda').innerHTML = leyItems.map(x=>
-    `<div class="fleg"><div class="fleg-num" style="background:${x.c}22;border:1px solid ${x.c};color:${x.c}">${x.n}</div><span style="color:var(--dim)">${x.txt}</span></div>`
-  ).join('') || '<div style="color:var(--grn);font-size:11px;padding:4px 0">✓ Sin alertas activas para esta cancha</div>';
+    if (activeL.temperatura && finalLayers.includes('temperatura') && hasTheta) {
+        sc.style.display = 'block';
+        document.getElementById('slider-title').textContent = 'Profundidad Hidráulica';
+        sb.innerHTML = `
+            <input type="range" class="fslider" min="0" max="2" step="1" value="${richDepth}"
+                   oninput="richDepth=+this.value; renderLayers()">
+            <div class="slbl"><span>5 cm</span><span>10 cm</span><span>20 cm</span></div>`;
+    } else if (activeL.dale_play && hasShow) {
+        sc.style.display = 'block';
+        document.getElementById('slider-title').textContent = 'Recovery Post-Show';
+        sb.innerHTML = `
+            <input type="range" class="fslider" min="0" max="35" step="1" value="${showDay}"
+                   oninput="showDay=+this.value; renderLayers()">
+            <div class="slbl"><span>Día 0</span><span>Día ${showDay}</span><span>Día 35</span></div>`;
+    } else {
+        sc.style.display = 'none';
+    }
 }
 
-function renderScore(){
-  const c = getCancha();
-  const s = sem(c.sem);
-  const score = c.score||0;
-  const prev = c.score_prev||score;
-  const diff = score-prev;
-  const arrow = diff>1?'↑ Mejoró':diff<-1?'↓ Empeoró':'→ Estable';
-  document.getElementById('score-big').textContent = score||'--';
-  document.getElementById('score-big').style.color = col(s);
-  document.getElementById('score-trend').textContent = `${arrow} · prev: ${prev}`;
-  document.getElementById('escala-dot').style.left = `${score}%`;
+function toggleLayer(lk) {
+    const el = document.getElementById('chk-' + lk);
+    if (el) activeL[lk] = el.checked;
+    renderLayers();
 }
 
-// ── KALMAN TENDENCIA ──────────────────────────────────────────────────────────
-function renderKalman(){
-  const gndvi = DATA?.weather_live?.gndvi_por_cancha||{};
-  const kr = gndvi.kalman_result||{};
-  const ts = kr.timestamps||[];
-  const vals = kr.ndvi_sintetico||[];
-  const errs = kr.margen_error_kalman||[];
-  if(!ts.length){document.getElementById('kalman-svg').innerHTML='<text x="200" y="55" text-anchor="middle" fill="#8a8580" font-size="11">Sin datos históricos disponibles</text>';return;}
-
-  const W=400,H=100,PAD=20;
-  const minV = Math.min(...vals)-0.01, maxV = Math.max(...vals)+0.01;
-  const xS = i=>(PAD+(i/(ts.length-1))*(W-2*PAD));
-  const yS = v=>(H-PAD-((v-minV)/(maxV-minV))*(H-2*PAD));
-
-  // Banda de error
-  const bandTop = vals.map((v,i)=>v+(errs[i]||0));
-  const bandBot = vals.map((v,i)=>v-(errs[i]||0));
-  const pathTop = bandTop.map((v,i)=>`${i===0?'M':'L'}${xS(i)},${yS(v)}`).join(' ');
-  const pathBot = [...bandBot].reverse().map((v,i)=>`${i===0?'M':'L'}${xS(bandBot.length-1-i)},${yS(v)}`).join(' ');
-
-  // Línea principal
-  const pathLine = vals.map((v,i)=>`${i===0?'M':'L'}${xS(i)},${yS(v)}`).join(' ');
-
-  // Punto hoy (último)
-  const lastX = xS(vals.length-1), lastY = yS(vals[vals.length-1]||0);
-
-  document.getElementById('kalman-svg').innerHTML = `
-    <path d="${pathTop} ${pathBot} Z" fill="rgba(201,168,76,.1)"/>
-    <path d="${pathLine}" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round"/>
-    <circle cx="${lastX}" cy="${lastY}" r="4" fill="var(--gold)"/>
-    <text x="${lastX}" y="${lastY-7}" text-anchor="middle" font-size="8" fill="var(--gold)">${fmtN(vals[vals.length-1])}</text>
-    <text x="${PAD}" y="${H-4}" font-size="7" fill="#8a8580">${ts[0]?.slice(0,7)||''}</text>
-    <text x="${W-PAD}" y="${H-4}" text-anchor="end" font-size="7" fill="#8a8580">${ts[ts.length-1]?.slice(0,7)||''}</text>`;
-
-  document.getElementById('kalman-meta').textContent = `${ts.length} observaciones · 2020-2026 · margen ±${fmtN(errs[errs.length-1],3)}`;
+// Centroid of a GeoJSON Feature (Point or Polygon ring avg)
+function geomCenter(f) {
+    if (f.geometry?.type === 'Point') return f.geometry.coordinates;
+    const ring = f.geometry?.coordinates?.[0];
+    if (!ring || ring.length < 3) return [VENUES[currentVenue].lng, VENUES[currentVenue].lat];
+    const pts = (ring[0][0] === ring[ring.length-1][0] && ring[0][1] === ring[ring.length-1][1])
+        ? ring.slice(0, -1) : ring;
+    const n = pts.length;
+    return [pts.reduce((s,c) => s+c[0], 0)/n, pts.reduce((s,c) => s+c[1], 0)/n];
 }
 
-// ── INSAR ─────────────────────────────────────────────────────────────────────
-function renderInsar(){
-  const sectores = DATA?.sectores||{};
-  function extr(det){if(!det)return null;const m=String(det).match(/InSAR[\s:]*([0-9.]+)/i);return m?parseFloat(m[1]):null;}
-  const items=[
-    {lbl:'Amalfitani Norte',val:extr(sectores.estadio?.detalle)||0.22},
-    {lbl:'Amalfitani Sur',val:0.60},
-    {lbl:'Básquet',val:extr(sectores.poli?.detalle)||0.85},
-    {lbl:'Sede',val:extr(sectores.sede?.detalle)||0.22},
-  ];
-  document.getElementById('insar-grid').innerHTML = items.map(item=>{
-    const v=item.val;
-    const cls=v>=2?'var(--red)':v>=1?'var(--yel)':'var(--grn)';
-    const pct=Math.min(100,(v/3)*100);
-    return `<div class="insar-c">
-      <div class="insar-val" style="color:${cls}">${v.toFixed(2)}<span style="font-size:10px;color:var(--dim)"> mm</span></div>
-      <div class="insar-lbl">${item.lbl}</div>
-      <div class="insar-bar"><div class="insar-fill" style="width:${pct}%;background:${cls}"></div></div>
-    </div>`;
-  }).join('');
+// ── RENDER LAYERS (deck.gl) ──────────────────────────────────────────────
+function renderLayers() {
+    if (!deckOverlay) return;
+    const layers   = [];
+    const features = geojson?.features ?? [];
+
+    // Sin features → limpiar overlay, sin error
+    if (features.length === 0) {
+        deckOverlay.setProps({ layers: [] });
+        return;
+    }
+
+    // NDVI — HeatmapLayer con pesos reales
+    if (activeL.ndvi) {
+        const pts = features
+            .filter(f => f.properties?.ndvi != null)
+            .map(f => ({ pos: geomCenter(f), w: f.properties.ndvi }));
+        if (pts.length > 0) {
+            layers.push(new deck.HeatmapLayer({
+                id: 'ndvi-heat',
+                data: pts,
+                getPosition: d => d.pos,
+                getWeight:   d => d.w,
+                radiusPixels: 40,
+                colorRange: [[229,62,62,255],[234,179,8,255],[34,197,94,255]]
+            }));
+        }
+    }
+
+    // SAR — GeoJsonLayer polígonos con entropía real
+    if (activeL.sar) {
+        const polys = features.filter(f =>
+            f.geometry?.type === 'Polygon' && f.properties?.entropia_h != null
+        );
+        if (polys.length > 0) {
+            layers.push(new deck.GeoJsonLayer({
+                id: 'sar-poly',
+                data: { type:'FeatureCollection', features: polys },
+                filled: true,
+                getFillColor: f => {
+                    const h = f.properties.entropia_h;
+                    if (h < 0.3) return [229,62,62,160];
+                    if (h < 0.5) return [234,179,8,140];
+                    return [34,197,94,120];
+                },
+                getLineColor: [201,168,76,80],
+                getLineWidth: 1,
+                lineWidthMinPixels: 1
+            }));
+        }
+    }
+
+    // HUMEDAD SUELO (Richards) — ColumnLayer 3D por profundidad
+    if (activeL.temperatura) {
+        const depthKey = ['theta_5cm','theta_10cm','theta_20cm'][richDepth] ?? 'theta_10cm';
+        const cols     = features.filter(f => f.properties?.[depthKey] != null);
+        if (cols.length > 0) {
+            layers.push(new deck.ColumnLayer({
+                id: 'richards-col',
+                data: cols,
+                getPosition: f => geomCenter(f),
+                getElevation:  f => (f.properties[depthKey] ?? 0) * 200,
+                getFillColor:  [14,165,233,180],
+                radius:        3,
+                extruded:      true,
+                elevationScale: 1
+            }));
+        }
+    }
+
+    // InSAR — ScatterplotLayer punto único con valor real del canonical
+    if (activeL.insar) {
+        const detalle = canonical?.sectores?.estadio?.detalle
+                     ?? canonical?.sectores?.[currentVenue]?.detalle ?? '';
+        const m = typeof detalle === 'string' ? detalle.match(/InSAR\s*([\d.]+)\s*mm/i) : null;
+        if (m) {
+            layers.push(new deck.ScatterplotLayer({
+                id: 'insar-pts',
+                data: [{ pos:[VENUES[currentVenue].lng, VENUES[currentVenue].lat], v: m[1] }],
+                getPosition:  d => d.pos,
+                getRadius:    8,
+                radiusMinPixels: 8,
+                getFillColor: [229,62,62,220],
+                pickable: true,
+                onClick: info => {
+                    if (info.object) {
+                        document.getElementById('terminal').innerHTML =
+                            `<strong>InSAR:</strong> Deformación estructural ${info.object.v} mm detectada.`;
+                    }
+                }
+            }));
+        }
+    }
+
+    // Fungosis — ScatterplotLayer canchas en riesgo Dollar Spot
+    if (activeL.fungosis) {
+        const crList = canonical?.weather_live?.riesgo_fungosis?.canchas_en_riesgo ?? [];
+        if (crList.length > 0) {
+            const riskPts = features
+                .filter(f => {
+                    const cid = f.properties?.cancha_id ?? f.properties?.id;
+                    return cid != null && crList.includes(cid);
+                })
+                .map(f => ({
+                    pos: f.geometry?.type === 'Point'
+                        ? f.geometry.coordinates
+                        : [f.properties.lng ?? VENUES[currentVenue].lng,
+                           f.properties.lat ?? VENUES[currentVenue].lat]
+                }));
+            if (riskPts.length > 0) {
+                layers.push(new deck.ScatterplotLayer({
+                    id: 'fungosis-pts',
+                    data: riskPts,
+                    getPosition:  d => d.pos,
+                    getRadius:    12,
+                    radiusMinPixels: 10,
+                    getFillColor: [234,179,8,200],
+                    stroked:      true,
+                    getLineColor: [229,62,62,200],
+                    getLineWidth: 1,
+                    lineWidthMinPixels: 1,
+                    pickable: true,
+                    onClick: () => {
+                        const sk = canonical?.weather_live?.smith_kerns_pct
+                                ?? canonical?.hermes?.climate?.smith_kerns_pct;
+                        document.getElementById('terminal').innerHTML =
+                            `<span class="alert">⚠ Dollar Spot activo${sk != null ? ` — Smith-Kerns ${sk}%` : ''}</span>`;
+                    }
+                }));
+            }
+        }
+    }
+
+    // Dale Play — TripsLayer animación recovery post-show
+    if (activeL.dale_play && canonical?.show_memory) {
+        const mem = canonical.show_memory;
+        if (Array.isArray(mem?.recovery_path) && mem.recovery_path.length > 0) {
+            layers.push(new deck.TripsLayer({
+                id: 'recovery-trips',
+                data: mem.recovery_path,
+                getPath:       d => d.path,
+                getTimestamps: d => d.timestamps,
+                getColor:      [229,62,62,220],
+                currentTime:   showDay,
+                trailLength:   3,
+                widthMinPixels: 2
+            }));
+        }
+    }
+
+    deckOverlay.setProps({ layers });
 }
-
-// ── TABLA AGRONÓMICA ──────────────────────────────────────────────────────────
-function renderTabla(){
-  const canchas = DATA?.sectores?.canchero?.canchas||[];
-  const estadio = DATA?.sectores?.estadio||{};
-  const wl = DATA?.weather_live||{};
-  const rf = wl.riesgo_fungosis||{};
-  const gndvi_c = wl.gndvi_por_cancha?.canchas||{};
-  const month = new Date().getMonth()+1;
-  const winter = month>=5&&month<=8;
-
-  const gndvi_am = gndvi_c.amalfitani;
-  const all = [{
-    id:'amalfitani', nombre:'Estadio Amalfitani',
-    score:estadio.score, score_prev:estadio.score_prev,
-    sem:estadio.sem, ndvi:gndvi_am?.ndvi||null, detalle:estadio.detalle||''
-  }, ...canchas];
-
-  document.getElementById('tabla-body').innerHTML = all.map(c=>{
-    const s = sem(c.sem);
-    const ndvi = c.ndvi;
-    const ndre = c.ndre||null;
-    const n_rec = wl.n_rec_kg_ha||0;
-    const riego = wl._riego_min_final||0;
-    const riego_mm = wl.litros_m2_semana||0;
-    const hongo = rf.nivel==='alto'?'Activos':rf.nivel==='medio'?'Preventivo':'No';
-    const compact = wl.soil_moisture_sar?.compactacion_riesgo||null;
-    const timeline = winter?'Invierno':s==='rojo'?'HOY – URGENTE':s==='amarillo'?'Esta semana':'Sem. +2';
-    const accion = getAccion(c,s);
-    const hongo_cls = rf.nivel==='alto'?'td-alert':rf.nivel==='medio'?'td-warn':'td-ok';
-    return `<tr>
-      <td><span class="td-sem ${s}"></span></td>
-      <td style="font-weight:600">${c.nombre||c.id}</td>
-      <td>${fmtN(ndvi)}</td>
-      <td class="td-dim">${fmtN(ndre)}</td>
-      <td class="td-dim">${n_rec>0?n_rec.toFixed(0):'--'}</td>
-      <td class="td-dim">${riego_mm>0?riego_mm.toFixed(1):riego>0?riego+' min':'--'}</td>
-      <td class="td-dim">${winter?'No':((c.ndvi||0)<0.05?'Parcial':'No')}</td>
-      <td class="${hongo_cls}">${hongo}</td>
-      <td class="td-dim">${compact!=null?compact.toFixed(0)+'%':'--'}</td>
-      <td class="td-dim">OK</td>
-      <td class="td-dim">${timeline}</td>
-      <td class="td-accion">${accion.split('·')[0].trim()}</td>
-    </tr>`;
-  }).join('');
-}
-
-// ── CLIMA ─────────────────────────────────────────────────────────────────────
-function renderClima(){
-  const wl = DATA?.weather_live||{};
-  const rf = wl.riesgo_fungosis||{};
-  const wt = wl.timestamp||'';
-  const dias_wl = diasDesde(wt.slice(0,10));
-  const badge = dias_wl<=1?' <span style="color:var(--grn);font-size:9px">● hoy</span>':'';
-
-  const lbl_c = document.getElementById('lbl-clima');
-  if(lbl_c&&wt) {
-    const hm = new Date(wt).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
-    lbl_c.innerHTML = `Open-Meteo · NASA POWER · <span style="color:var(--grn)">hoy ${hm}</span>`;
-  }
-
-  const items=[
-    {val:wl.et0_mm_dia?.toFixed(1)||'--',unit:'mm',lbl:'ET₀'+badge,sub:wl.et0_fuente?.split('·')[0]||'',cls:''},
-    {val:wl._riego_min_final||wl.riego_min_sector||'--',unit:'min',lbl:'Riego hoy',sub:wl.hora_riego_optima||'',cls:wl.deficit_hidrico_mm>5?'alerta':''},
-    {val:wl.riesgo_dollar_spot_pct?.toFixed(0)||'--',unit:'%',lbl:'Dollar Spot',sub:(rf.nivel||'').toUpperCase(),cls:rf.nivel==='alto'?'alerta':rf.nivel==='medio'?'warn':''},
-    {val:wl.humedad_suelo_pct?.toFixed(0)||'--',unit:'%',lbl:'Humedad suelo',sub:wl.humedad_suelo_estado||'',cls:''},
-    {val:wl.gdd_acumulado_7d?.toFixed(0)||'--',unit:'GDD',lbl:'Acumulado 7d',sub:`${wl.gdd_rate_diario||'--'}/día`,cls:''},
-    {val:wl.dias_proximo_corte||'--',unit:'días',lbl:'Próximo corte',sub:wl.hora_corte_optima||'',cls:''},
-  ];
-  document.getElementById('clima-grid').innerHTML = items.map(item=>
-    `<div class="clima-c ${item.cls}">
-      <div class="clima-val ${item.cls==='alerta'?'r':item.cls==='warn'?'y':''}">${item.val}<span class="clima-unit">${item.unit}</span></div>
-      <div class="clima-lbl">${item.lbl}</div>
-      ${item.sub?`<div class="clima-sub">${item.sub}</div>`:''}
-    </div>`).join('');
-}
-
-// ── TAREAS ────────────────────────────────────────────────────────────────────
-function renderTareas(){
-  const roger = DATA?.usuarios?.roger||{};
-  const tareas = roger.tareas_semana||DATA?.tareas_semana||[];
-  const lbl = document.getElementById('lbl-semana');
-  if(lbl&&tareas.length) lbl.textContent = `semana del ${tareas[0]?.fecha_iso||'--'}`;
-  document.getElementById('tareas-wrap').innerHTML = tareas.length
-    ? tareas.map(t=>`<div class="tarea-row ${t.es_partido?'partido':''}">
-        <div class="tarea-dia">${t.dia_nombre||'--'}</div>
-        <div class="tarea-items">${(t.tareas||[]).map(x=>`<div class="tarea-item">${x}</div>`).join('')||'<div style="color:var(--dim);font-size:11px">Sin tareas</div>'}</div>
-      </div>`).join('')
-    : '<div style="color:var(--dim);font-size:12px;padding:8px 0">Sin plan de trabajo cargado.</div>';
-}
-
-// ── TENDENCIA COMPARATIVA ────────────────────────────────────────────────────
-function renderTend(){
-  const c = getCancha();
-  const s = sem(c.sem);
-  const score = c.score||0;
-  const prev = c.score_prev||score;
-  const diff = score-prev;
-  const arrow = diff>1?'↑':diff<-1?'↓':'→';
-  const arrowCol = diff>1?'var(--grn)':diff<-1?'var(--red)':'var(--dim)';
-  document.getElementById('tend-pair').innerHTML = `
-    <div><div class="tend-val" style="color:${col(s)}">${score||'--'}</div><div class="tend-lbl">Actual</div></div>
-    <div class="tend-arrow" style="color:${arrowCol}">${arrow}</div>
-    <div><div class="tend-val" style="color:var(--dim)">${prev||'--'}</div><div class="tend-lbl">Anterior</div></div>`;
-}
-
-// ── TILDE INTERVENCIÓN ────────────────────────────────────────────────────────
-function renderTildeInterv(){
-  const canchas = DATA?.sectores?.canchero?.canchas||[];
-  let maxCaida=0, maxId=null;
-  canchas.forEach(c=>{
-    const caida=(c.ndvi_prev||0)-(c.ndvi||0);
-    if((c.ndvi_prev||0)>0.3&&(c.ndvi||0)<0.15&&caida>maxCaida){maxCaida=caida;maxId=c.id;}
-  });
-  const card = document.getElementById('tilde-card');
-  if(!maxId||ST.get('interv_'+maxId)){card.classList.remove('show');return;}
-  document.getElementById('tilde-q').textContent = `¿Qué se hizo en ${maxId.toUpperCase()} esta semana?`;
-  const opts=['Resiembra','Aireado','Corte vertical','Riego extra','Fertilizante','Nada'];
-  document.getElementById('tilde-opts').innerHTML = opts.map(o=>
-    `<div class="topt" onclick="selInterv(this,'${o}','${maxId}')">${o}</div>`).join('');
-  card.classList.add('show');
-}
-function selInterv(btn,op,cid){
-  document.querySelectorAll('.topt').forEach(b=>b.classList.remove('sel'));
-  btn.classList.add('sel');
-  ST.set('interv_'+cid,op);
-  logInterv(op.toLowerCase().replace(/ /g,'_'),cid);
-  setTimeout(()=>document.getElementById('tilde-card').classList.remove('show'),700);
-}
-
-async function logInterv(tipo,cid){
-  try{await fetch(`${RAILWAY}/velez/log-intervencion`,{method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({tipo,cancha_id:cid||'general',fecha:new Date().toISOString().slice(0,10),pin:'roger2026'})});}catch(_){}
-}
-
-// ── RENDER ALL ────────────────────────────────────────────────────────────────
-function renderAll(){
-  renderHeader();
-  renderSem();
-  renderCampo();
-  renderFocos();
-  renderScore();
-  renderKalman();
-  renderInsar();
-  renderTabla();
-  renderClima();
-  renderTareas();
-  renderTend();
-  renderTildeInterv();
-}
-
-// ── MAIN ──────────────────────────────────────────────────────────────────────
-(async()=>{
-  try{
-    const r = await fetch(`${RAILWAY}/velez/panel-roger`,{cache:'no-store'});
-    if(r.ok) DATA = await r.json();
-  }catch(_){}
-  if(!DATA){
-    try{const r=await fetch('../velez_data.json');if(r.ok)DATA=await r.json();}catch(_){}
-  }
-  document.getElementById('loading').style.display='none';
-  if(!DATA){
-    document.getElementById('content').innerHTML='<div style="padding:40px;text-align:center;color:var(--dim)">Sin conexión. Intentá en unos minutos.</div>';
-    return;
-  }
-  buildTabs();
-  renderAll();
-})();
 </script>
 </body>
 </html>
