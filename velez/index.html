@@ -463,6 +463,7 @@ footer {
 <!-- ══ SEMÁFORO ═══════════════════════════════════════════════════ -->
 <div class="section">
   <div class="section-title">Panel 0 · Semáforo Ejecutivo — Lectura en 3 Segundos</div>
+  <div class="section-sub">ROJO = acción urgente o cancha sobreusada &nbsp;·&nbsp; VERDE = descansada esta semana &nbsp;·&nbsp; AMARILLO = atención preventiva</div>
   <div class="divider"></div>
   <div class="sem-grid" id="sem-grid"></div>
 </div>
@@ -542,7 +543,7 @@ footer {
   <div class="section-title">Comparativa · Tendencia vs. Escaneo Anterior</div>
   <div class="divider"></div>
   <div class="comp-grid" id="comp-grid"></div>
-  <div class="comp-legend">↑ Mejoró &nbsp;&nbsp; → Estable &nbsp;&nbsp; ↓ Empeoró</div>
+  <div class="comp-legend" id="comp-legend">↑ Mejoró &nbsp;&nbsp; → Estable &nbsp;&nbsp; ↓ Empeoró</div>
 </div>
 
 <!-- ══ TAREAS SEMANA ══════════════════════════════════════════════ -->
@@ -771,6 +772,24 @@ function accionForCancha(acciones, cid, nombre) {
   return acciones.filter(a => a.includes(up) || a.includes(nom));
 }
 
+function accionForAmalfitani(data) {
+  const tareas = data.usuarios?.roger?.tareas_semana ?? [];
+  return tareas.flatMap(d => d.tareas ?? []).filter(t =>
+    /amalfitani|campo principal|estadio/i.test(t)
+  );
+}
+
+// Semáforo operacional: prioriza IPOS (uso real) sobre score de fusión.
+// Cancha descansada (IPOS=verde) + sin acción urgente = verde aunque NDVI invernal sea bajo.
+function effectiveSem(c, accion_c, data) {
+  const ipos_sem = data.usuarios?.roger?.heatmaps?.[c.id]?.semaforo;
+  const isUrgent = accion_c.some(a => /hoy|urgente/i.test(a));
+  if (isUrgent) return 'rojo';
+  if (accion_c.length > 0) return ipos_sem === 'rojo' ? 'rojo' : 'amarillo';
+  if (ipos_sem === 'verde') return 'verde';
+  return ipos_sem || c.sem || 'amarillo';
+}
+
 function extractUso(detalle) {
   const m = (detalle || '').match(/(\d+\.?\d*)h(?:[\s·]|$)/);
   return m ? m[1] + 'h' : '—';
@@ -824,22 +843,26 @@ function renderSemaforo(data) {
 
   const el = document.getElementById('sem-grid');
   el.innerHTML = all.map(c => {
-    const sc = semColor(c.sem);
-    const estado = SEM_ESTADO[c.sem] || 'ATENCIÓN';
-    const accion_c = accionForCancha(acciones, c.id, c.nombre);
-    const ventana = acciones.find(a => a.includes('Ventana'));
+    const accion_c = c.id === 'amalfitani'
+      ? accionForAmalfitani(data)
+      : accionForCancha(acciones, c.id, c.nombre);
+    const sem    = effectiveSem(c, accion_c, data);
+    const sc     = semColor(sem);
+    const estado = SEM_ESTADO[sem] || 'ATENCIÓN';
+    const iposTxt = data.usuarios?.roger?.heatmaps?.[c.id]?.texto ?? '';
+    const isUrgent = accion_c.some(a => /hoy|urgente/i.test(a));
     const accionTxt = accion_c.length
       ? accion_c[0].replace(/^[^:]+:/, '').trim()
-      : (c.sem === 'verde' ? 'Monitorear' : (ventana ? ventana.replace(/^[^:]+:/, '').trim() : 'Verificar'));
-    const isUrgent = accion_c.some(a => a.toLowerCase().includes('hoy') || a.toLowerCase().includes('urgente'));
+      : (sem === 'verde' ? (iposTxt || 'Monitorear') : 'Verificar estado');
 
-    return `<div class="sem-card ${semClass(c.sem)}">
+    return `<div class="sem-card ${semClass(sem)}">
       <div class="sem-nombre">${esc(c.nombre ?? c.id.toUpperCase())}</div>
       <div style="position:relative;width:52px;height:52px;margin:0 auto 6px">
         <div style="position:absolute;inset:0;border-radius:50%;background:${sc};opacity:.12;"></div>
         <div style="position:absolute;inset:8px;border-radius:50%;background:${sc};"></div>
       </div>
       <div class="sem-estado" style="color:${sc}">${estado}</div>
+      ${sem === 'verde' && iposTxt ? `<div style="font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--wdim);margin-bottom:3px">${esc(iposTxt)}</div>` : ''}
       <div class="sem-accion${isUrgent ? ' urgent' : ''}">${esc(accionTxt)}</div>
     </div>`;
   }).join('');
@@ -868,16 +891,19 @@ function renderMapSection(data, panelId, isAlerta) {
   };
 
   function buildCard(c) {
-    const accion_c = accionForCancha(acciones, c.id, c.nombre);
+    const accion_c = c.id === 'amalfitani'
+      ? accionForAmalfitani(data)
+      : accionForCancha(acciones, c.id, c.nombre);
+    const sem  = effectiveSem(c, accion_c, data);
     const focos = isAlerta
-      ? deriveAlertasFocos(accion_c, c.sem, c.id, fungRisk)
-      : derivePrescripcionFocos(accion_c, c.sem);
+      ? deriveAlertasFocos(accion_c, sem, c.id, fungRisk)
+      : derivePrescripcionFocos(accion_c, sem);
     const accionLabel = accion_c[0] ?? '';
-    const sc = semColor(c.sem);
+    const sc = semColor(sem);
 
     const svgHtml = makefield({
       title: c.nombre ?? c.id.toUpperCase(),
-      sem: c.sem, isCrit: c.sem === 'rojo' && accion_c.some(a => a.toLowerCase().includes('hoy')),
+      sem, isCrit: sem === 'rojo' && accion_c.some(a => /hoy|urgente/i.test(a)),
       focos
     });
 
@@ -923,30 +949,38 @@ function renderTabla(data) {
   const acciones = data.usuarios?.roger?.acciones ?? [];
   const fungRisk = data.weather_live?.riesgo_fungosis?.canchas_en_riesgo ?? [];
 
+  // NDVI thresholds ajustados por estación: bermuda/kikuyo entra en dormancia Jun–Ago (invierno ARG)
+  const mes = new Date().getMonth();
+  const isWinter = mes >= 4 && mes <= 7;
+  const ndviRed  = isWinter ? 0.05 : 0.15;
+  const ndviYell = isWinter ? 0.09 : 0.20;
+
   const tbody = document.getElementById('prescripcion-tbody');
   tbody.innerHTML = canchas.map(c => {
-    const sc = semColor(c.sem);
     const accion_c = accionForCancha(acciones, c.id, c.nombre);
-    const hm = data.usuarios?.roger?.heatmaps?.[c.id] ?? {};
+    const sem = effectiveSem(c, accion_c, data);
+    const sc  = semColor(sem);
+    const hm  = data.usuarios?.roger?.heatmaps?.[c.id] ?? {};
     const uso = extractUso(c.detalle ?? '');
     const hasFung = fungRisk.includes(c.id);
     const drenajeMatch = (accion_c.join(' ') + (hm.texto || '')).toLowerCase().includes('drenaje');
-    const isUrgent = accion_c.some(a => a.toLowerCase().includes('hoy') || a.toLowerCase().includes('urgente'));
+    const isUrgent = accion_c.some(a => /hoy|urgente/i.test(a));
+    const ndviColor = (c.ndvi||0) < ndviRed ? 'var(--redl)' : (c.ndvi||0) < ndviYell ? 'var(--yell)' : 'var(--grnl)';
 
     const timeline = accion_c.length
       ? (isUrgent ? 'HOY — URGENTE' : 'Esta semana')
       : '—';
 
-    return `<tr class="${semClass(c.sem)}">
+    return `<tr class="${semClass(sem)}">
       <td class="td-nombre">${esc(c.nombre ?? c.id.toUpperCase())}</td>
-      <td style="color:${(c.ndvi||0) < 0.08 ? 'var(--redl)' : (c.ndvi||0) < 0.12 ? 'var(--yell)' : 'var(--grnl)'}">${(c.ndvi ?? 0).toFixed(3)}</td>
+      <td style="color:${ndviColor}">${(c.ndvi ?? 0).toFixed(3)}</td>
       <td style="color:${sc};font-weight:700">${c.score ?? '—'}</td>
       <td>${uso}</td>
       <td style="color:${hasFung ? 'var(--redl)' : 'var(--wdim)'}">${hasFung ? 'ACTIVOS' : 'No'}</td>
       <td style="color:${drenajeMatch ? 'var(--yell)' : 'var(--wdim)'}">${drenajeMatch ? 'Deficiente' : 'OK'}</td>
       <td class="td-prior" style="color:${sc}">●</td>
       <td style="color:${isUrgent ? 'var(--redl)' : 'var(--yell)'};font-weight:700">${timeline}</td>
-      <td class="td-accion" style="color:${sc}">${esc(accion_c[0] ?? (c.sem !== 'verde' ? 'Verificar estado' : 'Monitorear'))}</td>
+      <td class="td-accion" style="color:${sc}">${esc(accion_c[0] ?? (sem !== 'verde' ? 'Verificar estado' : 'Monitorear'))}</td>
     </tr>`;
   }).join('');
 }
@@ -976,6 +1010,16 @@ function renderComparativa(data) {
       <div class="comp-prev">prev: ${prev}</div>
     </div>`;
   }).join('');
+
+  // Nota estacional: ndvi_prev es baseline de verano — la caída Jun–Ago es fisiológica
+  const legendEl = document.getElementById('comp-legend');
+  if (legendEl) {
+    const mesNow = new Date().getMonth();
+    const seasonNote = (mesNow >= 4 && mesNow <= 7)
+      ? ' &nbsp;·&nbsp; <span style="color:var(--yell)">⚠ ndvi_prev = baseline verano — NDVI bajo en Jun–Ago es dormancia fisiológica, no daño</span>'
+      : '';
+    legendEl.innerHTML = `↑ Mejoró &nbsp;&nbsp; → Estable &nbsp;&nbsp; ↓ Empeoró${seasonNote}`;
+  }
 }
 
 function renderTareas(data) {
