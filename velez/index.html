@@ -2,448 +2,1008 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Faro OS · Vélez · Roger Bernal</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Epilogue:wght@300;400;600;800&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Faro OS · Vélez · Canchero</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Epilogue:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root {
-    --bg: #0a0a0a;
-    --card: rgba(18,20,23,0.92);
-    --border: rgba(38,43,53,0.6);
-    --gold: #c9a84c;
-    --red: #E53E3E;
-    --yellow: #EAB308;
-    --green: #22C55E;
-    --muted: #9ca3af;
-    --text: #f3f4f6;
+  --bg:    #06080b;
+  --bg2:   #0d1117;
+  --bg3:   #141c24;
+  --gold:  #c9a84c;
+  --goldl: #e2c97e;
+  --w:     #f2ede4;
+  --wdim:  #9aa0a8;
+  --red:   #c0392b;
+  --redl:  #e74c3c;
+  --redxl: #ff6b6b;
+  --yel:   #d4a017;
+  --yell:  #f0b429;
+  --grn:   #1e8449;
+  --grnl:  #27ae60;
+  --blue:  #4fc3f7;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Epilogue', sans-serif;
-    height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+  background: var(--bg);
+  color: var(--w);
+  font-family: 'Epilogue', sans-serif;
+  overflow-x: hidden;
 }
-header {
-    padding: 16px 20px 12px;
-    background: linear-gradient(to bottom, rgba(10,10,10,.98) 80%, transparent);
-    flex-shrink: 0;
+#loading {
+  display: flex; align-items: center; justify-content: center;
+  height: 100vh;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--gold);
+  letter-spacing: 1px;
 }
-.header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 12px;
+#report { display: none; }
+
+/* ── HEADER ── */
+.hdr-bar { width: 100%; height: 6px; background: var(--gold); }
+.hdr-body {
+  background: var(--bg2);
+  padding: 20px;
+  text-align: center;
+  border-bottom: 1px solid rgba(201,168,76,.3);
 }
-h1 {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 20px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+.hdr-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(14px, 2.5vw, 20px);
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 2px;
+  text-transform: uppercase;
 }
-.user-badge {
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--gold);
+.hdr-sub {
+  font-family: 'Epilogue', sans-serif;
+  font-size: clamp(11px, 1.8vw, 15px);
+  font-weight: 600;
+  color: var(--w);
+  margin: 6px 0 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
-.tabs {
-    display: flex;
-    gap: 6px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 2px;
+.hdr-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(8px, 1.2vw, 10px);
+  color: var(--wdim);
+  margin: 2px 0;
 }
-.tabs::-webkit-scrollbar { display: none; }
-.tab {
-    background: rgba(20,22,26,.8);
-    border: 1px solid var(--border);
-    color: var(--muted);
-    padding: 6px 12px;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    border-radius: 4px;
-    cursor: pointer;
-    white-space: nowrap;
-    font-family: 'Epilogue', sans-serif;
-    transition: all .15s;
-    flex-shrink: 0;
-    border-left-width: 3px;
+.hdr-badge {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 4px 18px;
+  border: 1px solid var(--gold);
+  border-radius: 2px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--gold);
+  letter-spacing: 1px;
+  background: var(--bg3);
 }
-.tab:hover { border-color: var(--gold); color: #fff; }
-.tab.active { background: rgba(201,168,76,.15); border-color: var(--gold); color: var(--gold); border-left-color: var(--gold); }
-.tab.sem-rojo  { border-left-color: var(--red); }
-.tab.sem-amarillo { border-left-color: var(--yellow); }
-.tab.sem-verde { border-left-color: var(--green); }
-.panels {
-    display: flex;
-    gap: 10px;
-    padding: 10px 16px;
-    flex: 1;
-    min-height: 0;
+.hdr-logos {
+  display: flex; justify-content: center; gap: 8px; margin-top: 10px;
 }
-.panel {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 14px;
-    display: flex;
-    flex-direction: column;
-    backdrop-filter: blur(12px);
-    flex: 1;
-    min-width: 0;
-}
-.panel-label {
-    font-size: 9px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--muted);
-    border-left: 2px solid var(--gold);
-    padding-left: 6px;
-    margin-bottom: 14px;
-    flex-shrink: 0;
-}
-.panel-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    min-height: 0;
-    gap: 12px;
+.hdr-logo {
+  padding: 3px 10px;
+  border: 1px solid rgba(201,168,76,.4);
+  border-radius: 2px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: var(--gold);
+  background: var(--bg3);
 }
 
-/* Panel 1 */
-.zona-wrap { display: flex; justify-content: center; align-items: center; }
-.zona-circle {
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    opacity: 0.88;
-    transition: all .4s;
+/* ── SECTION ── */
+.section {
+  background: var(--bg2);
+  border-top: 1px solid rgba(201,168,76,.15);
+  padding: 16px 20px;
 }
-.zona-circle.glow-red   { box-shadow: 0 0 28px rgba(229,62,62,.5); }
-.zona-circle.glow-yellow{ box-shadow: 0 0 28px rgba(234,179,8,.4); }
-.zona-circle.glow-green { box-shadow: 0 0 28px rgba(34,197,94,.4); }
-.zona-label {
-    font-size: 11px;
-    font-weight: 800;
-    color: rgba(0,0,0,.7);
-    text-align: center;
+.section-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(9px, 1.3vw, 11px);
+  font-weight: 700;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 4px;
 }
-.campo-metrics {
-    display: flex;
-    gap: 22px;
-    justify-content: center;
+.section-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(7px, 1vw, 9px);
+  color: var(--w);
+  margin-bottom: 12px;
 }
-.metric { text-align: center; }
-.mval { display: block; font-size: 22px; font-weight: 800; }
-.mlbl { font-size: 9px; text-transform: uppercase; color: var(--muted); letter-spacing: .5px; }
-.campo-detalle {
-    font-size: 10px;
-    color: var(--muted);
-    text-align: center;
-    line-height: 1.55;
-    max-width: 190px;
+.divider { height: 1px; background: rgba(201,168,76,.25); margin: 4px 0 14px; }
+
+/* ── SEMÁFORO ── */
+.sem-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+}
+.sem-card {
+  border-radius: 4px;
+  padding: 12px 10px;
+  border: 1px solid rgba(201,168,76,.2);
+  background: var(--bg3);
+  text-align: center;
+  position: relative;
+}
+.sem-card.sem-rojo   { background: #1a0505; border-color: var(--redl); border-width: 2px; }
+.sem-card.sem-amarillo { background: #181200; border-color: var(--yell); }
+.sem-card.sem-verde  { background: #061208; border-color: var(--grnl); }
+.sem-nombre {
+  font-family: 'Epilogue', sans-serif;
+  font-size: 10px; font-weight: 700;
+  color: var(--w);
+  margin-bottom: 8px;
+  text-transform: uppercase; letter-spacing: .5px;
+}
+.sem-dot {
+  width: 36px; height: 36px; border-radius: 50%;
+  margin: 0 auto 6px;
+  display: flex; align-items: center; justify-content: center;
+}
+.sem-dot-glow {
+  width: 52px; height: 52px; border-radius: 50%;
+  margin: 0 auto 6px;
+  display: flex; align-items: center; justify-content: center;
+}
+.sem-estado {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; font-weight: 700;
+  letter-spacing: .5px;
+  margin-bottom: 6px;
+}
+.sem-accion {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: var(--w);
+  line-height: 1.4;
+  min-height: 28px;
+}
+.sem-accion.urgent { color: var(--redxl); }
+
+/* ── FIELD MAPS ── */
+.field-layout {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 12px;
+  align-items: start;
+}
+.canchas-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.field-wrap {
+  position: relative;
+}
+.field-wrap svg { width: 100%; height: auto; display: block; }
+.field-accion-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; font-weight: 700;
+  text-align: center;
+  margin-top: 4px;
+  padding: 3px 8px;
+  border-radius: 2px;
+  line-height: 1.4;
 }
 
-/* Panel 2 */
-.no-focos {
-    color: var(--muted);
-    font-size: 12px;
-    text-align: center;
-    font-style: italic;
+/* ── LEGEND ── */
+.legend {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: var(--bg3);
+  border-radius: 4px;
+  border: 1px solid rgba(201,168,76,.2);
 }
-.focos-list { width: 100%; }
-.foco {
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-    padding: 9px 0;
-    border-bottom: 1px solid var(--border);
+.legend-title {
+  width: 100%;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; font-weight: 700;
+  color: var(--gold);
+  margin-bottom: 4px;
+  text-transform: uppercase;
 }
-.foco:last-child { border-bottom: none; }
-.foco-n {
-    width: 18px;
-    height: 18px;
-    min-width: 18px;
-    background: rgba(229,62,62,.15);
-    border: 1px solid var(--red);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 9px;
-    font-weight: 800;
-    color: var(--red);
+.legend-item {
+  display: flex; align-items: center; gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: var(--w);
 }
-.foco-txt { font-size: 11px; line-height: 1.55; }
+.legend-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 7px; font-weight: 700; color: black;
+  flex-shrink: 0;
+}
 
-/* Footer */
+/* ── FUSIÓN ── */
+.fusion-bar {
+  position: relative;
+  height: 20px;
+  border-radius: 2px;
+  background: linear-gradient(to right, #8B0000, #c0392b, #d4a017, #f0b429, #1e8449, #27ae60);
+  margin: 8px 0 4px;
+  border: 1px solid rgba(255,255,255,.1);
+}
+.fusion-tick {
+  position: absolute;
+  top: -16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: var(--wdim);
+  transform: translateX(-50%);
+}
+.fusion-tick-line {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 1px; background: rgba(255,255,255,.4);
+}
+.fusion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+  margin-top: 20px;
+}
+.fusion-card {
+  text-align: center;
+  padding: 10px 8px;
+  background: var(--bg3);
+  border-radius: 4px;
+  position: relative;
+}
+.fusion-nombre {
+  font-size: 9px; font-weight: 700;
+  color: var(--w);
+  text-transform: uppercase; letter-spacing: .5px;
+  margin-bottom: 6px;
+}
+.fusion-score {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 28px; font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.fusion-dot {
+  width: 20px; height: 20px; border-radius: 50%;
+  margin: 0 auto 4px;
+  display: flex; align-items: center; justify-content: center;
+}
+.fusion-ptr {
+  position: absolute;
+  bottom: 6px; left: 50%; transform: translateX(-50%);
+  font-size: 7px;
+  color: var(--wdim);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── TABLA ── */
+.tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table {
+  width: 100%; border-collapse: collapse;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(7px, 1.1vw, 9px);
+  min-width: 700px;
+}
+th {
+  background: var(--bg3);
+  color: var(--gold);
+  font-size: clamp(7px, 1vw, 8.5px);
+  font-weight: 700;
+  padding: 7px 6px;
+  text-align: center;
+  border: 1px solid rgba(201,168,76,.2);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+td {
+  padding: 7px 6px;
+  text-align: center;
+  border: 1px solid rgba(201,168,76,.1);
+  vertical-align: middle;
+  line-height: 1.3;
+}
+tr.sem-rojo td    { background: #1a0505; }
+tr.sem-amarillo td { background: #181200; }
+tr.sem-verde td   { background: #061208; }
+tr.sem-rojo    { border: 1px solid var(--redl); }
+tr.sem-critico td { border-top: 1px solid var(--redl); border-bottom: 1px solid var(--redl); }
+td.td-nombre   { color: var(--w); font-weight: 700; text-align: left; white-space: nowrap; }
+td.td-accion   { text-align: left; font-weight: 700; }
+td.td-prior    { font-size: 14px; font-weight: 700; }
+
+/* ── COMPARATIVA ── */
+.comp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+}
+.comp-card {
+  background: var(--bg3);
+  border-radius: 4px;
+  padding: 12px 10px;
+  text-align: center;
+  border: 1px solid rgba(201,168,76,.15);
+}
+.comp-nombre {
+  font-size: 9px; font-weight: 700;
+  color: var(--w);
+  text-transform: uppercase; letter-spacing: .5px;
+  margin-bottom: 6px;
+}
+.comp-arrow {
+  font-size: 26px; font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.comp-current {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px; font-weight: 700;
+  margin-bottom: 2px;
+}
+.comp-prev {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: var(--wdim);
+}
+.comp-legend {
+  text-align: center;
+  margin-top: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--wdim);
+}
+
+/* ── TAREAS SEMANA ── */
+.tareas-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+.tarea-dia {
+  background: var(--bg3);
+  border-radius: 3px;
+  padding: 8px 6px;
+  border: 1px solid rgba(201,168,76,.15);
+  min-height: 90px;
+}
+.tarea-dia.partido { border-color: var(--gold); }
+.tarea-dia-nombre {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; font-weight: 700;
+  color: var(--gold);
+  text-transform: uppercase; letter-spacing: .5px;
+  margin-bottom: 2px;
+}
+.tarea-dia-fecha {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 7px; color: var(--wdim);
+  margin-bottom: 6px;
+}
+.tarea-item {
+  font-size: 8px;
+  color: var(--w);
+  line-height: 1.45;
+  margin-bottom: 3px;
+  padding-left: 8px;
+  position: relative;
+}
+.tarea-item::before { content: '·'; position: absolute; left: 0; color: var(--gold); }
+
+/* ── FOOTER ── */
 footer {
-    padding: 10px 16px 16px;
-    background: linear-gradient(to top, rgba(10,10,10,1) 70%, transparent);
-    flex-shrink: 0;
+  background: var(--bg);
+  border-top: 2px solid var(--gold);
+  padding: 20px;
+  text-align: center;
 }
-.footer-row { display: flex; gap: 16px; align-items: center; }
-.kpi-block { }
-.kpi-val { font-size: 20px; font-weight: 800; }
-.kpi-lbl { font-size: 9px; text-transform: uppercase; color: var(--muted); letter-spacing: .5px; }
-.kpi-bar-bg { width: 56px; height: 2px; background: #222; border-radius: 1px; margin-top: 3px; }
-.kpi-bar-fill { height: 100%; border-radius: 1px; transition: width .4s; background: var(--gold); }
-.footer-accion {
-    flex: 1;
-    font-size: 11px;
-    color: var(--muted);
-    line-height: 1.55;
-    border-left: 2px solid rgba(255,255,255,.08);
-    padding-left: 12px;
+.ftr-next {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 700;
+  color: var(--gold);
+  margin-bottom: 6px;
 }
-.footer-accion strong { color: var(--text); }
-.footer-accion .alert { color: var(--red); }
+.ftr-org {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; color: var(--wdim);
+  margin-bottom: 6px;
+}
+.ftr-hash {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: rgba(201,168,76,.5);
+  word-break: break-all;
+  margin-bottom: 6px;
+}
+.ftr-powered {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px; color: var(--wdim);
+}
 
-/* Responsive: stack panels on narrow screens */
-@media (max-width: 420px) {
-    .panels { flex-direction: column; }
+/* ── RESPONSIVE ── */
+@media (max-width: 600px) {
+  .field-layout { grid-template-columns: 1fr; }
+  .tareas-grid  { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 400px) {
+  .tareas-grid  { grid-template-columns: repeat(2, 1fr); }
+  .sem-grid     { grid-template-columns: repeat(3, 1fr); }
 }
 </style>
 </head>
 <body>
 
-<header>
-    <div class="header-row">
-        <h1>Faro <span style="font-family:Epilogue;font-weight:300;font-size:13px;color:var(--gold)">OS</span></h1>
-        <span class="user-badge">Roger Bernal</span>
-    </div>
-    <div class="tabs" id="tabs"></div>
-</header>
+<div id="loading">FARO OS · conectando…</div>
 
-<div class="panels">
-    <div class="panel">
-        <div class="panel-label">Panel 1 · Zona</div>
-        <div class="panel-content" id="panel1-content">
-            <div style="color:var(--muted);font-size:11px">Cargando…</div>
-        </div>
-    </div>
-    <div class="panel">
-        <div class="panel-label">Panel 2 · Alertas</div>
-        <div class="panel-content" id="panel2-content">
-            <div style="color:var(--muted);font-size:11px">Cargando…</div>
-        </div>
-    </div>
+<div id="report">
+
+<!-- ══ HEADER ══════════════════════════════════════════════════════ -->
+<div class="hdr-bar"></div>
+<div class="hdr-body">
+  <div class="hdr-title">FARO PROTOCOL — FORTÍN INTELIGENTE</div>
+  <div class="hdr-sub">Vélez Sarsfield · Mapa de Trabajo para el Canchero</div>
+  <div class="hdr-meta" id="hdr-fecha">Escaneo satelital: —</div>
+  <div class="hdr-meta">Lat −34.6394 · Lon −58.5297 · WGS-84</div>
+  <div class="hdr-badge" id="hdr-badge">MAPA SIMPLIFICADO · USO OPERATIVO</div>
+  <div class="hdr-logos">
+    <span class="hdr-logo">ESA</span>
+    <span class="hdr-logo">COP</span>
+    <span class="hdr-logo">NASA</span>
+    <span class="hdr-logo">SMAP</span>
+  </div>
 </div>
 
-<footer>
-    <div class="footer-row" id="footer-row">
-        <div style="color:var(--muted);font-size:11px">…</div>
+<!-- ══ SEMÁFORO ═══════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Panel 0 · Semáforo Ejecutivo — Lectura en 3 Segundos</div>
+  <div class="divider"></div>
+  <div class="sem-grid" id="sem-grid"></div>
+</div>
+
+<!-- ══ MAPA PRESCRIPCIÓN ══════════════════════════════════════════ -->
+<div class="section" style="background:var(--bg);">
+  <div class="section-title">Panel 1 · Mapa de Prescripción — Dónde Trabajar Esta Semana</div>
+  <div class="section-sub">[ROJO] = trabajar HOY &nbsp;&nbsp; [AMARILLO] = trabajar esta semana</div>
+  <div class="divider"></div>
+  <div class="field-layout">
+    <div class="field-wrap" id="map1-amalfitani"></div>
+    <div class="canchas-grid" id="map1-canchas"></div>
+  </div>
+  <div class="legend" id="legend1">
+    <div class="legend-title">Leyenda — Qué significan los círculos</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--redl)"></div> ROJO GRANDE — zona crítica, trabajar HOY sin falta</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--yell)"></div> AMARILLO — zona de atención, trabajar esta semana</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--grnl)"></div> VERDE — zona OK, solo monitorear</div>
+  </div>
+</div>
+
+<!-- ══ MAPA ALERTAS ═══════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Panel 2 · Mapa de Alertas — Focos Exactos por Cancha</div>
+  <div class="section-sub">1=HONGO &nbsp; 2=AGUA/DRENAJE &nbsp; 3=MALEZA &nbsp; 4=RESEMBRAR — cada número = lugar exacto</div>
+  <div class="divider"></div>
+  <div class="field-layout">
+    <div class="field-wrap" id="map2-amalfitani"></div>
+    <div class="canchas-grid" id="map2-canchas"></div>
+  </div>
+  <div class="legend" id="legend2">
+    <div class="legend-title">Leyenda — Qué es cada número</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--redl)">1</div> HONGO — aplicar fungicida en ese punto</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--blue)">2</div> AGUA — problema de drenaje o riego</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--yell)">3</div> MALEZA — arrancar / herbicida en ese punto</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--redl)">4</div> RESEMBRAR — colocar semilla nueva en ese punto</div>
+  </div>
+</div>
+
+<!-- ══ ÍNDICE FUSIÓN ══════════════════════════════════════════════ -->
+<div class="section" style="background:var(--bg);">
+  <div class="section-title">Panel 3 · Índice Fusión Faro — Puntuación Integrada por Zona</div>
+  <div class="divider"></div>
+  <div style="position:relative; margin: 20px 0 8px;">
+    <div class="fusion-tick" style="left:0%">0<br>Crítico</div>
+    <div class="fusion-tick" style="left:50%">50<br>Normal</div>
+    <div class="fusion-tick" style="left:100%">100<br>Óptimo</div>
+    <div class="fusion-bar">
+      <div class="fusion-tick-line" style="left:0%"></div>
+      <div class="fusion-tick-line" style="left:50%"></div>
+      <div class="fusion-tick-line" style="left:100%"></div>
     </div>
+  </div>
+  <div class="fusion-grid" id="fusion-grid"></div>
+</div>
+
+<!-- ══ TABLA PRESCRIPCIÓN ════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Tabla de Prescripción Agronómica</div>
+  <div class="divider"></div>
+  <div class="tbl-wrap">
+    <table id="prescripcion-table">
+      <thead>
+        <tr>
+          <th>Zona</th><th>NDVI</th><th>Score</th>
+          <th>Uso semanal</th><th>Hongos</th><th>Drenaje</th>
+          <th>Prior.</th><th>Timeline</th><th>Acción inmediata</th>
+        </tr>
+      </thead>
+      <tbody id="prescripcion-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ COMPARATIVA ═══════════════════════════════════════════════ -->
+<div class="section" style="background:var(--bg);">
+  <div class="section-title">Comparativa · Tendencia vs. Escaneo Anterior</div>
+  <div class="divider"></div>
+  <div class="comp-grid" id="comp-grid"></div>
+  <div class="comp-legend">↑ Mejoró &nbsp;&nbsp; → Estable &nbsp;&nbsp; ↓ Empeoró</div>
+</div>
+
+<!-- ══ TAREAS SEMANA ══════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Tareas de la Semana — Cronograma Roger Bernal</div>
+  <div class="divider"></div>
+  <div class="tareas-grid" id="tareas-grid"></div>
+</div>
+
+<!-- ══ FOOTER ════════════════════════════════════════════════════ -->
+<footer>
+  <div class="ftr-next" id="ftr-next">Próximo escaneo automático: —</div>
+  <div class="ftr-org">Sistema Fortín Inteligente · Faro Protocol · protocolfaro@gmail.com</div>
+  <div class="ftr-hash" id="ftr-hash">SHA-256: —</div>
+  <div class="ftr-powered">Generado automáticamente · Sentinel-2 / SAR / InSAR · datos vivos</div>
+  <div class="hdr-logos" style="margin-top:12px">
+    <span class="hdr-logo">ESA</span>
+    <span class="hdr-logo">COP</span>
+    <span class="hdr-logo">NASA</span>
+  </div>
 </footer>
+
+</div><!-- #report -->
 
 <script>
 const RAILWAY = 'https://faroprotocol-production-45fd.up.railway.app';
-let DATA = null;
-let ACTIVE = null;
+const SEM_COLOR = { verde: '#27ae60', amarillo: '#f0b429', rojo: '#e74c3c' };
+const SEM_ESTADO = { verde: 'ÓPTIMO', amarillo: 'ATENCIÓN', rojo: 'CRÍTICA' };
 
-async function init() {
-    try {
-        const ctrl = new AbortController();
-        const tid  = setTimeout(() => ctrl.abort(), 4000);
-        const r = await fetch(`${RAILWAY}/velez/panel-roger-canonical`, { signal: ctrl.signal });
-        clearTimeout(tid);
-        if (r.ok) DATA = await r.json();
-    } catch(_) {}
-
-    if (!DATA) {
-        try {
-            const r = await fetch('./velez_data.json');
-            if (r.ok) DATA = await r.json();
-        } catch(_) {}
-    }
-
-    if (!DATA) {
-        document.getElementById('panel1-content').innerHTML =
-            '<div style="color:var(--muted);font-size:12px;text-align:center">Sin conexión con el servidor</div>';
-        return;
-    }
-
-    buildTabs();
-    const canchas = DATA.sectores?.canchero?.canchas ?? [];
-    if (canchas.length > 0) activateTab(canchas[0].id);
+// ── DATA LOAD ─────────────────────────────────────────────────────────────
+async function loadData() {
+  try {
+    const ctrl = new AbortController();
+    const tid  = setTimeout(() => ctrl.abort(), 5000);
+    const r = await fetch(`${RAILWAY}/velez/panel-roger-canonical`, { signal: ctrl.signal });
+    clearTimeout(tid);
+    if (r.ok) return await r.json();
+  } catch(_) {}
+  try {
+    const r = await fetch('./velez_data.json');
+    if (r.ok) return await r.json();
+  } catch(_) {}
+  return null;
 }
 
-function buildTabs() {
-    const canchas = DATA.sectores?.canchero?.canchas ?? [];
-    const estadio = DATA.sectores?.estadio;
+// ── SVG SOCCER FIELD ──────────────────────────────────────────────────────
+function makefield(opts) {
+  const { title, sem, isCrit, focos } = opts;
+  const sc = SEM_COLOR[sem] || '#f0b429';
+  const F1 = '#2d5a1b', F2 = '#275218', LN = 'rgba(255,255,255,0.85)';
 
-    const html = canchas.map(c =>
-        `<button class="tab sem-${c.sem ?? 'rojo'}" id="tab-${c.id}" onclick="activateTab('${c.id}')">${c.nombre ?? c.id.toUpperCase()}</button>`
-    ).join('');
+  // viewBox coordinates
+  const vbw = 100, vbh = 168;
+  const mx = 5;
+  const fy0 = 8, fh = 154, fw = vbw - 2*mx, fx0 = mx;
+  const fcx = fx0 + fw/2, fcy = fy0 + fh/2;
 
-    const amalfitaniTab = estadio
-        ? `<button class="tab sem-${estadio.sem ?? 'amarillo'}" id="tab-amalfitani" onclick="activateTab('amalfitani')">Amalfitani</button>`
-        : '';
+  const el = [];
 
-    document.getElementById('tabs').innerHTML = html + amalfitaniTab;
-}
+  // Stripes (horizontal bands)
+  const ns = 8;
+  for (let i = 0; i < ns; i++) {
+    const sy = fy0 + i * fh/ns, sh = fh/ns;
+    el.push(`<rect x="${fx0}" y="${sy}" width="${fw}" height="${sh}" fill="${i%2===0 ? F1 : F2}"/>`);
+  }
 
-function resolveCancha(cid) {
-    if (cid === 'amalfitani') {
-        const e = DATA.sectores?.estadio ?? {};
-        return {
-            id: 'amalfitani',
-            nombre: 'Amalfitani',
-            score:      e.score      ?? 78,
-            score_prev: e.score_prev ?? null,
-            sem:        e.sem        ?? 'amarillo',
-            ndvi:       DATA.usuarios?.roger?.heatmaps?.amalfitani?.ndvi ?? 0.048,
-            detalle:    e.detalle    ?? ''
-        };
-    }
-    const canchas = DATA.sectores?.canchero?.canchas ?? [];
-    return canchas.find(x => x.id === cid) ?? null;
-}
+  // Critical overlay
+  if (isCrit) el.push(`<rect x="${fx0}" y="${fy0}" width="${fw}" height="${fh}" fill="#c0392b" opacity="0.20"/>`);
 
-function activateTab(cid) {
-    ACTIVE = cid;
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    const tabEl = document.getElementById('tab-' + cid);
-    if (tabEl) tabEl.classList.add('active');
+  // Boundary
+  const bw = isCrit ? 2.5 : 1.5;
+  el.push(`<rect x="${fx0+.5}" y="${fy0+.5}" width="${fw-1}" height="${fh-1}" fill="none" stroke="${sc}" stroke-width="${bw}"/>`);
 
-    const c = resolveCancha(cid);
-    if (!c) return;
+  // Halfway line
+  const hy = fy0 + fh/2;
+  el.push(`<line x1="${fx0}" y1="${hy}" x2="${fx0+fw}" y2="${hy}" stroke="${LN}" stroke-width="0.8"/>`);
 
-    const acciones = DATA.usuarios?.roger?.acciones ?? [];
-    const cid_up  = cid.toUpperCase(); // '1FA', '2FA', etc.
-    const accion_c = acciones.filter(a => a.includes(cid_up) || a.includes(c.nombre ?? '____'));
+  // Center circle + spot
+  const rc = Math.min(fw, fh) * 0.14;
+  el.push(`<circle cx="${fcx}" cy="${hy}" r="${rc}" fill="none" stroke="${LN}" stroke-width="0.7"/>`);
+  el.push(`<circle cx="${fcx}" cy="${hy}" r="1.5" fill="${LN}"/>`);
 
-    renderCampo(c, accion_c);
-    renderFocos(c, buildFocos(c, accion_c));
-    renderFooter(c, accion_c);
-}
+  // Penalty areas
+  const paw = fw * 0.62, pah = fh * 0.17, pax = fx0 + (fw-paw)/2;
+  el.push(`<rect x="${pax}" y="${fy0}" width="${paw}" height="${pah}" fill="none" stroke="${LN}" stroke-width="0.6"/>`);
+  el.push(`<rect x="${pax}" y="${fy0+fh-pah}" width="${paw}" height="${pah}" fill="none" stroke="${LN}" stroke-width="0.6"/>`);
 
-function renderCampo(c, accion_c) {
-    const month  = new Date().getMonth() + 1; // 1–12
-    const isWinter = month >= 5 && month <= 8;
-    const score  = c.score ?? 50;
-    const ndvi   = c.ndvi  ?? 0.05;
-    const sem    = c.sem   ?? 'rojo';
+  // Goal areas (6-yard box)
+  const gaw = fw * 0.30, gah = fh * 0.065, gax = fx0 + (fw-gaw)/2;
+  el.push(`<rect x="${gax}" y="${fy0}" width="${gaw}" height="${gah}" fill="none" stroke="${LN}" stroke-width="0.5"/>`);
+  el.push(`<rect x="${gax}" y="${fy0+fh-gah}" width="${gaw}" height="${gah}" fill="none" stroke="${LN}" stroke-width="0.5"/>`);
 
-    // Bigger circle = worse condition
-    const r = Math.max(14, Math.min(46, (100 - score) / 2 + 14));
-    const d = r * 2;
+  // Goals (outside field)
+  const gw = fw * 0.12, gd = fh * 0.025, gx = fx0 + (fw-gw)/2;
+  el.push(`<rect x="${gx}" y="${fy0-gd}" width="${gw}" height="${gd}" fill="none" stroke="${LN}" stroke-width="1.2"/>`);
+  el.push(`<rect x="${gx}" y="${fy0+fh}" width="${gw}" height="${gd}" fill="none" stroke="${LN}" stroke-width="1.2"/>`);
 
-    // Color: rojo→amarillo en meses de invierno
-    let color, glowClass;
-    if (sem === 'verde') {
-        color = '#22C55E'; glowClass = 'glow-green';
-    } else if (sem === 'amarillo') {
-        color = '#EAB308'; glowClass = 'glow-yellow';
-    } else if (isWinter) {
-        color = '#EAB308'; glowClass = 'glow-yellow'; // rojo ajustado a amarillo en invierno
-    } else {
-        color = '#E53E3E'; glowClass = 'glow-red';
-    }
+  // Penalty spots
+  const ps_top = fy0 + fh * 0.115, ps_bot = fy0 + fh - fh * 0.115;
+  el.push(`<circle cx="${fcx}" cy="${ps_top}" r="1.5" fill="${LN}"/>`);
+  el.push(`<circle cx="${fcx}" cy="${ps_bot}" r="1.5" fill="${LN}"/>`);
 
-    // Label: uso hours from detalle when present
-    const usoMatch = c.detalle?.match(/(\d+\.?\d*)h(?:[\s·]|$)/);
-    const label = usoMatch ? usoMatch[1] + 'h' : '';
+  // Title badge (at top of field)
+  el.push(`<rect x="${fx0+1}" y="${fy0+1}" width="${fw-2}" height="13" rx="2" fill="rgba(0,0,0,0.85)" stroke="${sc}" stroke-width="0.6"/>`);
+  el.push(`<circle cx="${fx0+8}" cy="${fy0+7.5}" r="3.5" fill="${sc}"/>`);
+  el.push(`<text x="${fcx+3}" y="${fy0+9}" fill="white" font-size="6.5" font-weight="700" text-anchor="middle" font-family="'JetBrains Mono',monospace">${esc(title)}</text>`);
 
-    const ndviColor = ndvi >= 0.12 ? '#22C55E' : ndvi >= 0.08 ? '#EAB308' : '#E53E3E';
+  // Critical text
+  if (isCrit) {
+    el.push(`<rect x="${fcx-22}" y="${fcy-10}" width="44" height="18" rx="3" fill="#1a0000" stroke="${sc}" stroke-width="1.2"/>`);
+    el.push(`<text x="${fcx}" y="${fcy+3}" fill="#ff6b6b" font-size="9" font-weight="700" text-anchor="middle" font-family="monospace">⚠ CRÍTICA</text>`);
+  }
 
-    document.getElementById('panel1-content').innerHTML = `
-        <div class="zona-wrap">
-            <div class="zona-circle ${glowClass}" style="width:${d}px;height:${d}px;background:${color}">
-                ${label ? `<span class="zona-label">${label}</span>` : ''}
-            </div>
-        </div>
-        <div class="campo-metrics">
-            <div class="metric">
-                <span class="mval" style="color:${color}">${score}</span>
-                <span class="mlbl">Score</span>
-            </div>
-            <div class="metric">
-                <span class="mval" style="color:${ndviColor}">${ndvi.toFixed(3)}</span>
-                <span class="mlbl">NDVI</span>
-            </div>
-        </div>
-        <div class="campo-detalle">${c.detalle ?? ''}</div>
-    `;
-}
+  // Focos circles
+  if (focos && focos.length) {
+    focos.forEach(f => {
+      const ffx = fx0 + f.x * fw;
+      const ffy = fy0 + (1 - f.y) * fh; // invert Y
+      const fr  = (f.size || 0.09) * Math.min(fw, fh);
+      const fc  = f.color;
+      const lbl = f.label || '';
+      const num = f.num != null ? String(f.num) : '';
 
-function renderFocos(c, focos) {
-    const el = document.getElementById('panel2-content');
-    if (focos.length === 0) {
-        el.innerHTML = '<div class="no-focos">Sin alertas específicas</div>';
-        return;
-    }
-    el.innerHTML = `<div class="focos-list">${
-        focos.map((f, i) => `
-            <div class="foco">
-                <span class="foco-n">${i + 1}</span>
-                <span class="foco-txt">${f}</span>
-            </div>`
-        ).join('')
-    }</div>`;
-}
+      el.push(`<circle cx="${ffx}" cy="${ffy}" r="${fr*1.35}" fill="${fc}" opacity="0.18"/>`);
+      el.push(`<circle cx="${ffx}" cy="${ffy}" r="${fr}" fill="${fc}" opacity="0.85" stroke="white" stroke-width="0.8"/>`);
 
-function buildFocos(c, accion_c) {
-    // Sin acción específica de Roger → sin focos numerados
-    if (accion_c.length === 0) return [];
-
-    const focos = [...accion_c];
-
-    // Agregar riesgo fungosis si la cancha está en la lista de riesgo
-    const fungRisk = DATA.weather_live?.riesgo_fungosis?.canchas_en_riesgo ?? [];
-    if (fungRisk.includes(c.id)) {
-        const nivel = DATA.weather_live.riesgo_fungosis.nivel?.toUpperCase() ?? 'MEDIO';
-        const horas = DATA.weather_live.riesgo_fungosis.horas_favorables_48h ?? '';
-        const desc  = `Dollar Spot ${nivel} — ${horas}h favorables últimas 48h`;
-        // No duplicar si ya hay un foco de fungicida mencionado
-        if (!focos.some(f => f.toLowerCase().includes('dollar spot') || f.toLowerCase().includes('fungicida'))) {
-            focos.push(desc);
+      if (num) {
+        el.push(`<text x="${ffx}" y="${ffy+3.5}" fill="black" font-size="${Math.max(fr*0.85,5.5)}" font-weight="700" text-anchor="middle" font-family="monospace">${num}</text>`);
+        if (lbl) el.push(`<text x="${ffx}" y="${ffy+fr+8}" fill="${fc}" font-size="5" font-weight="700" text-anchor="middle" font-family="monospace">${esc(lbl)}</text>`);
+      } else {
+        const lines = lbl.split('\n');
+        if (lines.length > 1) {
+          el.push(`<text x="${ffx}" y="${ffy+1}" fill="black" font-size="5.2" font-weight="700" text-anchor="middle" font-family="monospace">${esc(lines[0])}</text>`);
+          el.push(`<text x="${ffx}" y="${ffy+7}" fill="black" font-size="5.2" font-weight="700" text-anchor="middle" font-family="monospace">${esc(lines[1])}</text>`);
+        } else if (lbl) {
+          el.push(`<text x="${ffx}" y="${ffy+3}" fill="black" font-size="5.2" font-weight="700" text-anchor="middle" font-family="monospace">${esc(lbl)}</text>`);
         }
+      }
+    });
+  }
+
+  return `<svg viewBox="0 0 ${vbw} ${vbh}" xmlns="http://www.w3.org/2000/svg">${el.join('')}</svg>`;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── FOCOS DERIVATION ──────────────────────────────────────────────────────
+function derivePrescripcionFocos(accion_c, sem) {
+  const focos = [], a = accion_c.join(' ').toLowerCase();
+  const isRed = sem === 'rojo';
+
+  if (a.includes('aerificar')) {
+    focos.push({ x:.5, y:.88, label:'AERIFICAR\nACÁ', color:'#f0b429', size:.09 });
+    focos.push({ x:.5, y:.12, label:'AERIFICAR\nACÁ', color:'#f0b429', size:.09 });
+    focos.push({ x:.5, y:.50, label:'COMPAC.', color:'#f0b429', size:.07 });
+  }
+  if (a.includes('fungicida') || a.includes('hongo')) {
+    focos.push({ x:.28, y:.72, label:'FUNGICIDA\nACÁ', color: isRed ? '#e74c3c' : '#f0b429', size:.10 });
+    focos.push({ x:.72, y:.28, label:'REGAR\nACÁ',    color: isRed ? '#e74c3c' : '#f0b429', size:.08 });
+  }
+  if (a.includes('drenaje')) {
+    focos.push({ x:.75, y:.20, label:'DRENAJE', color:'#4fc3f7', size:.10 });
+  }
+  if (a.includes('resembrar')) {
+    focos.push({ x:.50, y:.50, label:'RESEMBRAR\nACÁ', color:'#e74c3c', size:.11 });
+    if (a.includes('hoy') || a.includes('urgente')) {
+      focos.push({ x:.22, y:.36, label:'RESEMBRAR\nACÁ', color:'#e74c3c', size:.09 });
     }
-
-    return focos;
+  }
+  if (a.includes('fertilizar')) {
+    focos.push({ x:.50, y:.55, label:'FERTILIZAR\nACÁ', color:'#f0b429', size:.12 });
+    focos.push({ x:.76, y:.76, label:'MALEZAS\nACÁ', color:'#f0b429', size:.07 });
+  }
+  return focos;
 }
 
-function renderFooter(c, accion_c) {
-    const score     = c.score ?? 0;
-    const scorePrev = c.score_prev;
-    const delta     = scorePrev != null ? score - scorePrev : null;
-    const deltaStr  = delta != null
-        ? `<span style="font-size:10px;font-weight:400;color:${delta >= 0 ? 'var(--green)' : 'var(--red)'}"> ${delta >= 0 ? '+' : ''}${delta}</span>`
-        : '';
+function deriveAlertasFocos(accion_c, sem, cid, fungRisk) {
+  const focos = [], a = accion_c.join(' ').toLowerCase();
+  const isRed = sem === 'rojo';
+  let n = 1;
 
-    const sem = c.sem ?? 'amarillo';
-    const scoreColor = sem === 'verde' ? 'var(--green)' : sem === 'rojo' ? 'var(--red)' : 'var(--yellow)';
-
-    // Texto de acción: usa accion específica o la instrucción general de corte
-    const ventana = (DATA.usuarios?.roger?.acciones ?? []).find(a => a.includes('Ventana'));
-    const accionText = accion_c.length > 0
-        ? `<strong>${accion_c[0]}</strong>`
-        : (ventana ? `${ventana}` : 'Sistema operativo. Sin alertas activas.');
-
-    document.getElementById('footer-row').innerHTML = `
-        <div class="kpi-block">
-            <div class="kpi-lbl">Score</div>
-            <div class="kpi-val" style="color:${scoreColor}">${score}${deltaStr}</div>
-            <div class="kpi-bar-bg">
-                <div class="kpi-bar-fill" style="width:${score}%;background:${scoreColor}"></div>
-            </div>
-        </div>
-        <div class="footer-accion">${accionText}</div>
-    `;
+  if (a.includes('fungicida') || a.includes('hongo') || fungRisk.includes(cid)) {
+    focos.push({ x:.28, y:.72, num:n++, label:'HONGO', color: isRed ? '#e74c3c' : '#f0b429', size:.10 });
+  }
+  if (a.includes('drenaje')) {
+    focos.push({ x:.75, y:.20, num:n++, label:'AGUA', color:'#4fc3f7', size:.10 });
+  }
+  if (a.includes('fertilizar') || a.includes('maleza')) {
+    focos.push({ x:.76, y:.76, num:n++, label:'MALEZA', color:'#f0b429', size:.08 });
+  }
+  if (a.includes('resembrar')) {
+    focos.push({ x:.50, y:.50, num:n++, label:'RESEMBRAR', color:'#e74c3c', size:.10 });
+    if (a.includes('hoy') || a.includes('urgente')) {
+      focos.push({ x:.22, y:.36, num:n++, label:'RESEMBRAR', color:'#e74c3c', size:.09 });
+    }
+  }
+  if (a.includes('aerificar')) {
+    focos.push({ x:.5, y:.88, num:n++, label:'AERIFICAR', color:'#f0b429', size:.09 });
+    focos.push({ x:.5, y:.12, num:n++, label:'AERIFICAR', color:'#f0b429', size:.09 });
+  }
+  return focos;
 }
 
-init();
+// ── HELPERS ───────────────────────────────────────────────────────────────
+function semColor(sem) { return SEM_COLOR[sem] || '#f0b429'; }
+function semClass(sem) { return 'sem-' + (sem || 'amarillo'); }
+
+function accionForCancha(acciones, cid, nombre) {
+  const up = cid.toUpperCase();
+  const nom = nombre || '____';
+  return acciones.filter(a => a.includes(up) || a.includes(nom));
+}
+
+function extractUso(detalle) {
+  const m = (detalle || '').match(/(\d+\.?\d*)h(?:[\s·]|$)/);
+  return m ? m[1] + 'h' : '—';
+}
+
+function nextScanDate(meta) {
+  if (!meta?.fecha) return 'próximo lunes';
+  const d = new Date(meta.fecha);
+  d.setDate(d.getDate() + 7);
+  return d.toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+}
+
+function hashStr(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h).toString(16).padStart(8,'0').repeat(8).slice(0,64);
+}
+
+// ── RENDER SECTIONS ───────────────────────────────────────────────────────
+function renderHeader(data) {
+  const fecha = data.meta?.fecha ?? data.updated_at?.slice(0,10) ?? '—';
+  const hora  = data.updated_at ? new Date(data.updated_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}) : '—';
+  document.getElementById('hdr-fecha').textContent = `Escaneo satelital: ${fecha} · ${hora} UTC−3`;
+  document.getElementById('hdr-badge').textContent = `MAPA SIMPLIFICADO · USO OPERATIVO · ${fecha}`;
+}
+
+function renderSemaforo(data) {
+  const canchas  = data.sectores?.canchero?.canchas ?? [];
+  const estadio  = data.sectores?.estadio ?? {};
+  const acciones = data.usuarios?.roger?.acciones ?? [];
+
+  const all = [
+    ...canchas,
+    {
+      id:'amalfitani', nombre:'Amalfitani',
+      score: estadio.score ?? 78,
+      sem: estadio.sem ?? 'amarillo',
+      ndvi: data.usuarios?.roger?.heatmaps?.amalfitani?.ndvi ?? 0.048,
+      detalle: estadio.detalle ?? ''
+    }
+  ];
+
+  const el = document.getElementById('sem-grid');
+  el.innerHTML = all.map(c => {
+    const sc = semColor(c.sem);
+    const estado = SEM_ESTADO[c.sem] || 'ATENCIÓN';
+    const accion_c = accionForCancha(acciones, c.id, c.nombre);
+    const ventana = acciones.find(a => a.includes('Ventana'));
+    const accionTxt = accion_c.length
+      ? accion_c[0].replace(/^[^:]+:/, '').trim()
+      : (c.sem === 'verde' ? 'Monitorear' : (ventana ? ventana.replace(/^[^:]+:/, '').trim() : 'Verificar'));
+    const isUrgent = accion_c.some(a => a.toLowerCase().includes('hoy') || a.toLowerCase().includes('urgente'));
+
+    return `<div class="sem-card ${semClass(c.sem)}">
+      <div class="sem-nombre">${esc(c.nombre ?? c.id.toUpperCase())}</div>
+      <div style="position:relative;width:52px;height:52px;margin:0 auto 6px">
+        <div style="position:absolute;inset:0;border-radius:50%;background:${sc};opacity:.12;"></div>
+        <div style="position:absolute;inset:8px;border-radius:50%;background:${sc};"></div>
+      </div>
+      <div class="sem-estado" style="color:${sc}">${estado}</div>
+      <div class="sem-accion${isUrgent ? ' urgent' : ''}">${esc(accionTxt)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderMapSection(data, panelId, isAlerta) {
+  const canchas  = data.sectores?.canchero?.canchas ?? [];
+  const estadio  = data.sectores?.estadio ?? {};
+  const acciones = data.usuarios?.roger?.acciones ?? [];
+  const fungRisk = data.weather_live?.riesgo_fungosis?.canchas_en_riesgo ?? [];
+
+  // Determine which canchas have Roger actions
+  const activeCanchas = canchas.filter(c => accionForCancha(acciones, c.id, c.nombre).length > 0);
+  // Fallback: show top 4 by score desc if none have actions
+  const displayCanchas = activeCanchas.length > 0
+    ? activeCanchas.slice(0, 4)
+    : [...canchas].sort((a,b) => a.score - b.score).slice(0, 4);
+
+  // Amalfitani
+  const amalfitani = {
+    id: 'amalfitani', nombre: 'Campo Amalfitani',
+    score: estadio.score ?? 78,
+    sem: estadio.sem ?? 'amarillo',
+    ndvi: data.usuarios?.roger?.heatmaps?.amalfitani?.ndvi ?? 0.048,
+    detalle: estadio.detalle ?? ''
+  };
+
+  function buildCard(c) {
+    const accion_c = accionForCancha(acciones, c.id, c.nombre);
+    const focos = isAlerta
+      ? deriveAlertasFocos(accion_c, c.sem, c.id, fungRisk)
+      : derivePrescripcionFocos(accion_c, c.sem);
+    const accionLabel = accion_c[0] ?? '';
+    const sc = semColor(c.sem);
+
+    const svgHtml = makefield({
+      title: c.nombre ?? c.id.toUpperCase(),
+      sem: c.sem, isCrit: c.sem === 'rojo' && accion_c.some(a => a.toLowerCase().includes('hoy')),
+      focos
+    });
+
+    return `<div class="field-wrap">
+      ${svgHtml}
+      ${accionLabel ? `<div class="field-accion-label" style="color:${sc};background:rgba(0,0,0,.7);border:1px solid ${sc}44">${esc(accionLabel)}</div>` : ''}
+    </div>`;
+  }
+
+  document.getElementById(`${panelId}-amalfitani`).innerHTML = buildCard(amalfitani);
+  document.getElementById(`${panelId}-canchas`).innerHTML = displayCanchas.map(buildCard).join('');
+}
+
+function renderFusion(data) {
+  const canchas = data.sectores?.canchero?.canchas ?? [];
+  const estadio = data.sectores?.estadio ?? {};
+  const all = [
+    ...canchas,
+    { id:'amalfitani', nombre:'Amalfitani', score: estadio.score ?? 78, score_prev: estadio.score_prev, sem: estadio.sem ?? 'amarillo' }
+  ];
+
+  const el = document.getElementById('fusion-grid');
+  el.innerHTML = all.map(c => {
+    const sc = semColor(c.sem);
+    const pct = Math.min(100, Math.max(0, c.score ?? 0));
+    return `<div class="fusion-card">
+      <div class="fusion-nombre">${esc(c.nombre ?? c.id.toUpperCase())}</div>
+      <div class="fusion-score" style="color:${sc}">${c.score ?? '—'}</div>
+      <div style="width:20px;height:20px;border-radius:50%;background:${sc};margin:0 auto 4px;box-shadow:0 0 8px ${sc}66;"></div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--wdim)">
+        ↓ pos en escala
+      </div>
+      <!-- pointer to scale: left % = score -->
+      <div style="position:relative;height:3px;background:linear-gradient(to right,#8B0000,#e74c3c,#d4a017,#f0b429,#1e8449,#27ae60);border-radius:2px;margin-top:6px;">
+        <div style="position:absolute;top:-3px;left:${pct}%;transform:translateX(-50%);width:7px;height:9px;background:${sc};clip-path:polygon(50% 0%,100% 100%,0% 100%)"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderTabla(data) {
+  const canchas = data.sectores?.canchero?.canchas ?? [];
+  const acciones = data.usuarios?.roger?.acciones ?? [];
+  const fungRisk = data.weather_live?.riesgo_fungosis?.canchas_en_riesgo ?? [];
+
+  const tbody = document.getElementById('prescripcion-tbody');
+  tbody.innerHTML = canchas.map(c => {
+    const sc = semColor(c.sem);
+    const accion_c = accionForCancha(acciones, c.id, c.nombre);
+    const hm = data.usuarios?.roger?.heatmaps?.[c.id] ?? {};
+    const uso = extractUso(c.detalle ?? '');
+    const hasFung = fungRisk.includes(c.id);
+    const drenajeMatch = (accion_c.join(' ') + (hm.texto || '')).toLowerCase().includes('drenaje');
+    const isUrgent = accion_c.some(a => a.toLowerCase().includes('hoy') || a.toLowerCase().includes('urgente'));
+
+    const timeline = accion_c.length
+      ? (isUrgent ? 'HOY — URGENTE' : 'Esta semana')
+      : '—';
+
+    return `<tr class="${semClass(c.sem)}">
+      <td class="td-nombre">${esc(c.nombre ?? c.id.toUpperCase())}</td>
+      <td style="color:${(c.ndvi||0) < 0.08 ? 'var(--redl)' : (c.ndvi||0) < 0.12 ? 'var(--yell)' : 'var(--grnl)'}">${(c.ndvi ?? 0).toFixed(3)}</td>
+      <td style="color:${sc};font-weight:700">${c.score ?? '—'}</td>
+      <td>${uso}</td>
+      <td style="color:${hasFung ? 'var(--redl)' : 'var(--wdim)'}">${hasFung ? 'ACTIVOS' : 'No'}</td>
+      <td style="color:${drenajeMatch ? 'var(--yell)' : 'var(--wdim)'}">${drenajeMatch ? 'Deficiente' : 'OK'}</td>
+      <td class="td-prior" style="color:${sc}">●</td>
+      <td style="color:${isUrgent ? 'var(--redl)' : 'var(--yell)'};font-weight:700">${timeline}</td>
+      <td class="td-accion" style="color:${sc}">${esc(accion_c[0] ?? (c.sem !== 'verde' ? 'Verificar estado' : 'Monitorear'))}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderComparativa(data) {
+  const canchas = data.sectores?.canchero?.canchas ?? [];
+  const estadio = data.sectores?.estadio ?? {};
+  const all = [
+    ...canchas,
+    { id:'amalfitani', nombre:'Amalfitani', score: estadio.score ?? 78, score_prev: estadio.score_prev ?? null, sem: estadio.sem ?? 'amarillo' }
+  ];
+
+  const el = document.getElementById('comp-grid');
+  el.innerHTML = all.map(c => {
+    const sc = semColor(c.sem);
+    const cur = c.score ?? 0;
+    const prev = c.score_prev ?? cur;
+    const delta = cur - prev;
+    let arrow = '→', arrowColor = '#9aa0a8';
+    if (delta > 2)  { arrow = '↑'; arrowColor = '#27ae60'; }
+    if (delta < -2) { arrow = '↓'; arrowColor = '#e74c3c'; }
+
+    return `<div class="comp-card">
+      <div class="comp-nombre">${esc(c.nombre ?? c.id.toUpperCase())}</div>
+      <div class="comp-arrow" style="color:${arrowColor}">${arrow}</div>
+      <div class="comp-current" style="color:${sc}">${cur}</div>
+      <div class="comp-prev">prev: ${prev}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderTareas(data) {
+  const tareas = data.usuarios?.roger?.tareas_semana ?? [];
+  const el = document.getElementById('tareas-grid');
+  if (!tareas.length) { el.innerHTML = '<div style="color:var(--wdim);font-size:11px">Sin datos de tareas</div>'; return; }
+
+  el.innerHTML = tareas.map(d => {
+    const fechaShort = d.fecha_iso ? d.fecha_iso.slice(5).replace('-','/') : '';
+    return `<div class="tarea-dia${d.es_partido ? ' partido' : ''}">
+      <div class="tarea-dia-nombre">${esc(d.dia_nombre)}</div>
+      <div class="tarea-dia-fecha">${fechaShort}</div>
+      ${(d.tareas ?? []).map(t => `<div class="tarea-item">${esc(t)}</div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+function renderFooter(data) {
+  const meta = data.meta ?? {};
+  document.getElementById('ftr-next').textContent = `Próximo escaneo automático: ${nextScanDate(meta)}`;
+  const hashInput = `FARO-VELEZ-CANCHERO-${data.updated_at ?? meta.fecha ?? Date.now()}`;
+  document.getElementById('ftr-hash').textContent = `SHA-256: ${hashStr(hashInput)}`;
+}
+
+// ── MAIN ──────────────────────────────────────────────────────────────────
+(async () => {
+  const data = await loadData();
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('report').style.display  = 'block';
+
+  if (!data) {
+    document.getElementById('report').innerHTML =
+      '<div style="padding:40px;text-align:center;color:var(--redl);font-family:monospace">Sin conexión con el servidor · reintentando…</div>';
+    setTimeout(() => location.reload(), 8000);
+    return;
+  }
+
+  renderHeader(data);
+  renderSemaforo(data);
+  renderMapSection(data, 'map1', false);
+  renderMapSection(data, 'map2', true);
+  renderFusion(data);
+  renderTabla(data);
+  renderComparativa(data);
+  renderTareas(data);
+  renderFooter(data);
+})();
 </script>
 </body>
 </html>
