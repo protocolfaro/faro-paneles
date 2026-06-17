@@ -41,7 +41,7 @@
     ],
     "semana": "2026-06-15"
   },
-  "updated_at": "2026-06-16T21:10:32Z",
+  "updated_at": "2026-06-17T00:09:08Z",
   "weather_live": {
     "timestamp": "2026-06-16T09:00:07",
     "fuentes": [
@@ -3502,8 +3502,8 @@
       },
       "heatmaps_meta": {
         "fuente": "kalman_lstm · amalfitani",
-        "semana": "2026-06-16",
-        "updated_at": "2026-06-16T21:10:32Z"
+        "semana": "2026-06-17",
+        "updated_at": "2026-06-17T00:09:08Z"
       }
     },
     "juan": {
