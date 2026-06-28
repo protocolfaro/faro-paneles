@@ -323,6 +323,32 @@
             background: #44aa44;
         }
 
+        /* ── SAT DATE BADGE ───────────────────────────────────────────────── */
+        .sat-date-badge {
+            position: absolute;
+            bottom: 8px;
+            left: 8px;
+            z-index: 10;
+            font-size: 8px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            color: #fff;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            line-height: 1;
+        }
+        .sat-date-badge .sat-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: currentColor;
+            flex-shrink: 0;
+        }
+
         /* ── OPERATIONAL CARD ────────────────────────────────────────────── */
         .op-card {
             flex: 1;
@@ -455,15 +481,16 @@
         </svg>
         <div class="nodes-overlay" id="nodesOverlay"></div>
         <div class="hm-status-badge" id="hmStatusBadge">—</div>
+        <div class="sat-date-badge" id="satDateBadge"></div>
     </div>
 </div>
 
 <div class="panel-control">
     <div class="panel-header">
         <div class="panel-title">FARO PROTOCOL v2.0 · CANCHA VÉLEZ</div>
-        <div class="panel-sync">
-            9:00 UTC<br>
-            <span style="font-size:7px;opacity:0.7">SYNC: SAT / RADAR / CLIMA</span>
+        <div class="panel-sync" id="panelSync">
+            —<br>
+            <span style="font-size:7px;opacity:0.7">cargando...</span>
         </div>
     </div>
 
@@ -475,6 +502,68 @@ const ENDPOINT = 'https://faroprotocol-production-45fd.up.railway.app/velez/pane
 let dataGlobal = [], wlGlobal = {}, hermesMapGlobal = {};
 const POLL_INTERVAL_MS = 5 * 60 * 1000; // 5 minutos
 let lastUpdatedAt = null;
+
+/* ── FECHA SATÉLITE ───────────────────────────────────────────────────────── */
+function _satDateInfo(wl) {
+    const gpc    = wl.gndvi_por_cancha || {};
+    const fecha  = gpc.fecha_imagen || null;          // "2026-06-26"
+    const fuente = (gpc.fuente || '').toLowerCase();  // "sentinel-2-l2a · ... · 2026-06-26 · nub 5%"
+    const esKalman = !fecha || fuente.includes('kalman') || fuente.includes('sar');
+
+    if (!fecha && !fuente) return { label: '—', dias: null, antigua: false, estimado: true };
+
+    const dias = fecha
+        ? Math.round((Date.now() - new Date(fecha).getTime()) / 86400000)
+        : null;
+
+    const antigua = dias !== null && dias > 7;
+
+    const d = new Date(fecha + 'T12:00:00Z');
+    const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const label = fecha ? `${d.getUTCDate()} ${meses[d.getUTCMonth()]}` : null;
+
+    return { label, dias, antigua, estimado: esKalman };
+}
+
+function updateSatBadge(wl) {
+    const badge = document.getElementById('satDateBadge');
+    if (!badge) return;
+    const { label, dias, antigua, estimado } = _satDateInfo(wl);
+    if (!label && !estimado) { badge.innerHTML = ''; return; }
+
+    let bgColor, text, dotColor;
+    if (estimado && !label) {
+        bgColor  = 'rgba(80,60,0,0.85)';
+        dotColor = '#d4a017';
+        text     = 'NDVI ESTIMADO · sin imagen reciente';
+    } else if (antigua) {
+        bgColor  = 'rgba(100,30,10,0.85)';
+        dotColor = '#ff6b35';
+        text     = `SAT ${label} · hace ${dias}d · nubes`;
+    } else {
+        bgColor  = 'rgba(0,40,20,0.85)';
+        dotColor = '#4caf50';
+        text     = `SAT ${label}${dias !== null ? ` · hace ${dias}d` : ''}`;
+    }
+
+    badge.style.background = bgColor;
+    badge.innerHTML = `<span class="sat-dot" style="background:${dotColor}"></span>${text}`;
+}
+
+function updateHeaderSync(wl) {
+    const el = document.getElementById('panelSync');
+    if (!el) return;
+    const { label, dias, antigua, estimado } = _satDateInfo(wl);
+    const horaLocal = new Date().toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
+
+    const satLine = estimado && !label
+        ? `<span style="color:#d4a017">NDVI estimado</span>`
+        : antigua
+            ? `<span style="color:#ff6b35">SAT ${label} (${dias}d · nubes)</span>`
+            : `<span style="color:#4caf50">SAT ${label}</span>`;
+
+    el.innerHTML = `CLIMA HOY · ${horaLocal}<br>${satLine}`;
+}
 
 /* ── HEATMAP ENGINE v2.0 — PNG real por cancha desde GitHub ──────────────── */
 let _canchaActual = null;
@@ -543,9 +632,11 @@ function syncPanelData(cancha, wl, hermesMap = {}) {
     const hm           = hermesMap[cancha.id] || {};
     const hermesStatus = hm.hermes_status || null;
 
-    // --- HEATMAP ---
+    // --- HEATMAP + fecha satélite ---
     _canchaActual = cancha;
     renderHeatmap(cancha);
+    updateSatBadge(wl);
+    updateHeaderSync(wl);
 
     const nodesEl = document.getElementById('nodesOverlay');
     nodesEl.innerHTML = '';
@@ -627,9 +718,19 @@ function syncPanelData(cancha, wl, hermesMap = {}) {
     }
 
     if (ndvi !== null) {
+        const { label: satLabel, dias: satDias, estimado: satEst } = _satDateInfo(wl);
+        // Contexto estacional: Bermuda en invierno austral (may-ago) baja a 0.25-0.40 — normal
+        const mesActual = new Date().getMonth() + 1; // 1-12
+        const esInviernoAustral = mesActual >= 5 && mesActual <= 8;
+        let ndviCtx = estado.replace(/_/g, ' ');
+        if (ndvi < 0.50 && esInviernoAustral && !isCritico) {
+            ndviCtx = 'normal · dormancia invernal Bermuda';
+        }
+        const satRef = satEst ? ' · ESTIMADO'
+                     : satLabel ? ` · img ${satLabel}${satDias > 5 ? ' ⚠' : ''}` : '';
         rows.push({
             label: 'NDVI',
-            value: `${ndvi.toFixed(3)} · ${estado.replace(/_/g, ' ')}`,
+            value: `${ndvi.toFixed(3)} · ${ndviCtx}${satRef}`,
             cls: isCritico ? 'urgente' : isAlerta ? 'alerta' : 'ok'
         });
     }
@@ -756,15 +857,8 @@ async function pollLoop() {
 }
 
 function updateSyncBadge(ts, isNew) {
-    const el = document.querySelector('.panel-sync');
-    if (!el) return;
-    const fecha = ts ? new Date(ts) : new Date();
-    const hace  = Math.round((Date.now() - fecha.getTime()) / 60000);
-    el.innerHTML = `
-        ${fecha.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'})} UTC<br>
-        <span style="font-size:7px;opacity:0.7">
-            ${isNew ? '🟢 ACTUALIZADO' : `hace ${hace} min`} · SAT/RADAR/CLIMA
-        </span>`;
+    // La cabecera la maneja updateHeaderSync con contexto SAT + CLIMA
+    updateHeaderSync(wlGlobal);
 }
 
 window.onload = pollLoop;
