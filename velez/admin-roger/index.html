@@ -476,123 +476,35 @@ let dataGlobal = [], wlGlobal = {}, hermesMapGlobal = {};
 const POLL_INTERVAL_MS = 5 * 60 * 1000; // 5 minutos
 let lastUpdatedAt = null;
 
-/* ── HEATMAP ENGINE v1.0 — Canvas 2D Gaussian kernel ─────────────────────── */
-function buildPalette() {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256; canvas.height = 1;
-    const ctx = canvas.getContext('2d');
-    const grad = ctx.createLinearGradient(0, 0, 256, 0);
-    grad.addColorStop(0.00, 'rgba(0,0,0,0)');
-    grad.addColorStop(0.15, 'rgba(0,120,60,0.40)');
-    grad.addColorStop(0.35, 'rgba(30,160,80,0.65)');
-    grad.addColorStop(0.55, 'rgba(220,180,0,0.82)');
-    grad.addColorStop(0.75, 'rgba(210,80,20,0.93)');
-    grad.addColorStop(1.00, 'rgba(180,0,40,1.0)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 256, 1);
-    return ctx.getImageData(0, 0, 256, 1).data;
-}
+/* ── HEATMAP ENGINE v2.0 — PNG real por cancha desde GitHub ──────────────── */
+let _canchaActual = null;
 
-const _PALETTE = buildPalette();
-
-function paletteColor(t) {
-    const i = Math.min(255, Math.floor(t * 255)) * 4;
-    return [_PALETTE[i], _PALETTE[i+1], _PALETTE[i+2], _PALETTE[i+3]];
-}
-
-function renderHeatmap(nodos) {
+async function renderHeatmap(cancha) {
     const canvas = document.getElementById('heatmapOverlay');
     if (!canvas || !canvas.getContext) return;
-
-    const dpr = window.devicePixelRatio || 1;
-    const W = (canvas.offsetWidth  || canvas.parentElement.offsetWidth)  * dpr;
-    const H = (canvas.offsetHeight || canvas.parentElement.offsetHeight) * dpr;
-    if (W === 0 || H === 0) return;
-
-    canvas.width  = W;
-    canvas.height = H;
-    canvas.style.width  = (W / dpr) + 'px';
-    canvas.style.height = (H / dpr) + 'px';
-
+    const dpr  = window.devicePixelRatio || 1;
+    const cssW = canvas.offsetWidth  || canvas.parentElement.offsetWidth  || 500;
+    const cssH = canvas.offsetHeight || canvas.parentElement.offsetHeight || 700;
+    canvas.width  = cssW * dpr;
+    canvas.height = cssH * dpr;
+    canvas.style.width  = cssW + 'px';
+    canvas.style.height = cssH + 'px';
     const ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, W / dpr, H / dpr);
-
-    if (!nodos || nodos.length === 0) return;
-
-    const buf = new Float32Array(W * H);
-    const SIGMA_X  = W * 0.09;
-    const SIGMA_Y  = H * 0.09;
-    const SIGMA2_X = 2 * SIGMA_X * SIGMA_X;
-    const SIGMA2_Y = 2 * SIGMA_Y * SIGMA_Y;
-
-    for (const n of nodos) {
-        const cx  = n.x * W;
-        const cy  = n.y * H;
-        const amp = n.stress;
-        const x0  = Math.max(0, Math.floor(cx - 3 * SIGMA_X));
-        const x1  = Math.min(W - 1, Math.ceil(cx + 3 * SIGMA_X));
-        const y0  = Math.max(0, Math.floor(cy - 3 * SIGMA_Y));
-        const y1  = Math.min(H - 1, Math.ceil(cy + 3 * SIGMA_Y));
-
-        for (let y = y0; y <= y1; y++) {
-            for (let x = x0; x <= x1; x++) {
-                const dx = x - cx, dy = y - cy;
-                buf[y * W + x] += amp * Math.exp(-(dx*dx/SIGMA2_X + dy*dy/SIGMA2_Y));
-            }
-        }
-    }
-
-    const imgData = ctx.createImageData(W, H);
-    const px = imgData.data;
-    let hasValues = false;
-    for (let i = 0; i < buf.length; i++) if (buf[i] > 0) { hasValues = true; break; }
-    if (!hasValues) return;
-
-    for (let i = 0; i < buf.length; i++) {
-        const t = Math.min(1.0, buf[i] / 0.95);
-        const [r, g, b, a] = paletteColor(t);
-        const idx = i * 4;
-        px[idx] = r; px[idx+1] = g; px[idx+2] = b; px[idx+3] = a;
-    }
-    ctx.putImageData(imgData, 0, 0);
-}
-
-let _animFrame = null;
-let _nodosActuales = null;
-
-function renderHeatmapAnimado(nodosNuevos, duracionMs = 600) {
-    if (_animFrame) cancelAnimationFrame(_animFrame);
-
-    const canvas = document.getElementById('heatmapOverlay');
-    if (!canvas) { renderHeatmap(nodosNuevos); return; }
-
-    const nodosViejos = _nodosActuales
-        ? JSON.parse(JSON.stringify(_nodosActuales))
-        : nodosNuevos.map(n => ({ ...n, stress: 0 }));
-
-    const t0 = performance.now();
-
-    function frame(now) {
-        const progress = Math.min(1, (now - t0) / duracionMs);
-        const ease = 1 - Math.pow(1 - progress, 3);
-        const nodosInterp = nodosNuevos.map((n, i) => {
-            const old = nodosViejos[i] || { ...n, stress: 0 };
-            return { ...n, stress: old.stress + (n.stress - old.stress) * ease };
-        });
-        renderHeatmap(nodosInterp);
-        if (progress < 1) {
-            _animFrame = requestAnimationFrame(frame);
-        } else {
-            _nodosActuales = nodosNuevos;
-            _animFrame = null;
-        }
-    }
-    _animFrame = requestAnimationFrame(frame);
+    ctx.clearRect(0, 0, cssW, cssH);
+    if (!cancha || !cancha.heatmap_archivo) return;
+    const url = `https://raw.githubusercontent.com/protocolfaro/faroprotocol/main/velez/heatmaps/${cancha.heatmap_archivo}`;
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => { ctx.drawImage(img, 0, 0, cssW, cssH); resolve(); };
+        img.onerror = () => { console.error('heatmap error:', url); resolve(); };
+        img.src = url;
+    });
 }
 
 window.addEventListener('resize', () => {
-    if (_nodosActuales) renderHeatmap(_nodosActuales);
+    if (_canchaActual) renderHeatmap(_canchaActual);
 });
 
 /* ── NODOS POR CANCHA ─────────────────────────────────────────────────────── */
@@ -622,17 +534,12 @@ function syncPanelData(cancha, wl, hermesMap = {}) {
     const hermesStatus = hm.hermes_status || null;
 
     // --- HEATMAP ---
-    const nodos = nodosDesdeCancha(cancha);
-    let nodosFinales = nodos;
-    if (hermesStatus === 'ALERTA_ANOMALIA') {
-        nodosFinales = nodos.map(n => ({ ...n, stress: Math.min(1, n.stress * 1.35) }));
-    } else if (hermesStatus === 'INDETERMINADO') {
-        nodosFinales = [...nodos, { x: 0.5, y: 0.5, stress: 0.28 }];
-    }
-    renderHeatmapAnimado(nodosFinales, 500);
+    _canchaActual = cancha;
+    renderHeatmap(cancha);
 
     const nodesEl = document.getElementById('nodesOverlay');
     nodesEl.innerHTML = '';
+    const nodos = nodosDesdeCancha(cancha);
     nodos.forEach(n => {
         const dot = document.createElement('div');
         dot.className = 'node-dot';
