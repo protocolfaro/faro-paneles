@@ -41,7 +41,7 @@
     ],
     "semana": "2026-06-22"
   },
-  "updated_at": "2026-06-28T18:41:41Z",
+  "updated_at": "2026-06-29T09:02:26Z",
   "weather_live": {
     "timestamp": "2026-06-28T09:00:14",
     "fuentes": [
@@ -6023,8 +6023,8 @@
       },
       "heatmaps_meta": {
         "fuente": "kalman_gapfill",
-        "semana": "2026-06-28",
-        "updated_at": "2026-06-28T18:41:41Z"
+        "semana": "2026-06-29",
+        "updated_at": "2026-06-29T09:02:26Z"
       }
     },
     "juan": {
