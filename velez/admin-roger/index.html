@@ -306,22 +306,34 @@ async function logAction(canchaId,tipo,btn){
 }
 let _sarChart=null;
 async function loadSarChart(){
+    const wrap=document.getElementById('sarChartWrap');
+    if(!wrap)return;
     try{
         const r=await fetch('https://faroprotocol-production-45fd.up.railway.app/velez/panel-data?timeseries=true',{cache:'no-cache'});
         if(!r.ok)return;
         const d=await r.json();
-        if(!d.sar_dates||d.sar_dates.length<2)return;
-        const wrap=document.getElementById('sarChartWrap');
-        if(wrap)wrap.style.display='block';
+        const vvSeries=(d.sar_vv_series||[]).filter(v=>v!=null);
+        const hasValidData=vvSeries.length>=2&&new Set(vvSeries).size>1;
+        if(!hasValidData){
+            wrap.innerHTML=`<div style="padding:10px 16px;background:rgba(245,158,11,0.07);border-left:2px solid #f59e0b;"><div style="font-size:8px;font-weight:700;letter-spacing:0.8px;color:#f59e0b;text-transform:uppercase;margin-bottom:3px;">SAR SENTINEL-1 — SIN DATOS REALES AUN</div><div style="font-size:8px;color:var(--dim);line-height:1.5;">Esperando pipeline automatico · NASA_EARTHDATA pendiente en Railway.<br>El gráfico aparecerá automáticamente cuando haya datos reales.</div></div>`;
+            wrap.style.display='block';
+            return;
+        }
+        wrap.innerHTML=`<div class="sar-chart-title">SAR VV — COMPACTACIÓN HISTÓRICA (30 días)</div><canvas id="sarTrendChart"></canvas>`;
+        wrap.style.display='block';
         const ctx=document.getElementById('sarTrendChart')?.getContext('2d');
         if(!ctx)return;
         if(_sarChart){_sarChart.destroy();_sarChart=null;}
         _sarChart=new Chart(ctx,{
             type:'line',
             data:{labels:d.sar_dates,datasets:[{label:'SAR VV (dB)',data:d.sar_vv_series,borderColor:'#c9a84c',backgroundColor:'rgba(201,168,76,0.08)',borderWidth:1.5,tension:0.3,fill:true,pointRadius:2,pointBackgroundColor:'#c9a84c'}]},
-            options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{color:'#7a7670',font:{size:8}},grid:{color:'rgba(201,168,76,0.08)'}},x:{ticks:{color:'#7a7670',font:{size:8},maxTicksLimit:7},grid:{display:false}}}}
+            options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},title:{display:true,text:'Tendencia SAR VV — últimas 2 semanas',color:'#c9a84c',font:{family:'Cormorant Garamond',size:11}}},scales:{y:{ticks:{color:'#7a7670',font:{size:8}},grid:{color:'rgba(201,168,76,0.08)'}},x:{ticks:{color:'#7a7670',font:{size:8},maxTicksLimit:7},grid:{display:false}}}}
         });
-    }catch(e){console.warn('SAR chart:',e);}
+    }catch(e){
+        wrap.innerHTML=`<div style="padding:10px 16px;background:rgba(239,68,68,0.06);border-left:2px solid var(--red);"><div style="font-size:8px;font-weight:700;color:var(--red);">Error cargando SAR histórico</div></div>`;
+        wrap.style.display='block';
+        console.warn('SAR chart:',e);
+    }
 }
 async function loadSarGrid(){
     try{
