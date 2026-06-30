@@ -316,11 +316,11 @@ async function loadSarChart(){
         const hasValidData=vvSeries.length>=2&&new Set(vvSeries).size>1;
         if(!hasValidData){
             wrap.innerHTML=`<div style="padding:10px 16px;background:rgba(245,158,11,0.07);border-left:2px solid #f59e0b;"><div style="font-size:8px;font-weight:700;letter-spacing:0.8px;color:#f59e0b;text-transform:uppercase;margin-bottom:3px;">SAR SENTINEL-1 — SIN DATOS REALES AUN</div><div style="font-size:8px;color:var(--dim);line-height:1.5;">Esperando pipeline automatico · NASA_EARTHDATA pendiente en Railway.<br>El gráfico aparecerá automáticamente cuando haya datos reales.</div></div>`;
-            wrap.style.display='block';
+            wrap.dataset.loaded='1';wrap.style.display=_activeCanchaId==='amalfitani'?'block':'none';
             return;
         }
         wrap.innerHTML=`<div class="sar-chart-title">SAR VV — COMPACTACIÓN HISTÓRICA (30 días)</div><canvas id="sarTrendChart"></canvas>`;
-        wrap.style.display='block';
+        wrap.dataset.loaded='1';wrap.style.display=_activeCanchaId==='amalfitani'?'block':'none';
         const ctx=document.getElementById('sarTrendChart')?.getContext('2d');
         if(!ctx)return;
         if(_sarChart){_sarChart.destroy();_sarChart=null;}
@@ -358,6 +358,11 @@ function activateCancha(cid){
     renderPanel(cid);renderZones(cancha);updateSatBadge(cancha);
     if(cancha?.heatmap_archivo)renderHeatmap(cancha.heatmap_archivo);
     renderZoneDetail(cancha,_activeZoneId);
+    // SAR chart + Grid 3×3 solo visibles para Amalfitani
+    const isAmal=cid==='amalfitani';
+    const cw=document.getElementById('sarChartWrap'),g3=document.getElementById('grid3x3Section');
+    if(cw&&cw.dataset.loaded)cw.style.display=isAmal?'block':'none';
+    if(g3)g3.style.display=isAmal?'block':'none';
 }
 function buildTabs(){
     const tabsEl=document.getElementById('tabsCanchas');if(!tabsEl||!_data?.canchas)return;
