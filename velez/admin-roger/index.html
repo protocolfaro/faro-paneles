@@ -154,6 +154,22 @@ body{background:var(--bg);color:var(--whi);font-family:'Epilogue',sans-serif;wid
 .alert-chip-tipo{font-size:7px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;}
 .alert-chip-sub{font-size:6.5px;color:rgba(255,255,255,0.5);margin-top:1px;}
 .alert-chip-conf{font-size:6px;color:rgba(255,255,255,0.35);margin-top:2px;}
+.dx-section{flex-shrink:0;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.04);}
+.dx-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.dx-title{font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);}
+.dx-summary{font-size:7.5px;font-weight:700;margin-top:2px;}
+.dx-sar-badge{font-size:7px;font-weight:700;padding:2px 6px;border-radius:3px;background:rgba(201,168,76,0.12);color:var(--gold);letter-spacing:0.3px;white-space:nowrap;flex-shrink:0;}
+.dx-list{display:flex;flex-direction:column;gap:5px;}
+.dx-item{display:flex;gap:7px;align-items:flex-start;padding:7px 8px;border-radius:4px;border-left:2px solid;}
+.dx-num{width:15px;height:15px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7.5px;font-weight:700;flex-shrink:0;margin-top:0;}
+.dx-body{flex:1;min-width:0;}
+.dx-row{display:flex;justify-content:space-between;align-items:flex-start;gap:4px;}
+.dx-tipo{font-size:8px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;}
+.dx-zona{font-size:7px;color:rgba(255,255,255,0.45);margin-top:1px;}
+.dx-ev{font-size:7px;color:var(--dim);margin-top:3px;line-height:1.4;}
+.dx-conf{font-size:6.5px;color:var(--dim2);margin-top:1px;}
+.dx-accion{font-size:7.5px;font-weight:700;margin-top:4px;}
+.dx-urg{font-size:7px;font-weight:700;padding:2px 5px;border-radius:2px;letter-spacing:0.4px;color:#fff;flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -265,6 +281,66 @@ function toggleHeatmap(){
     if(btn){btn.textContent=_hmVisible?'NDVI ON':'NDVI OFF';btn.className='hm-toggle'+(_hmVisible?' on':'');}
 }
 window.addEventListener('resize',()=>{if(_hmFile&&_hmVisible)renderHeatmap(_hmFile);});
+// ── Diagnóstico unificado: construye lista de hallazgos con dato/acción/solución ──
+function _buildHallazgos(cancha,wl){
+    const FX=3,FY=3,FW=62;
+    const h=[];
+    // 1. Alertas satelitales — posición pixel exacta
+    const acMap={NDVI_BAJO:'REGAR · Monitorear cobertura verde',STRESS_COMBO:'REGAR + AEREAR — estrés multiespectral',COMPACTACION:'AEREAR · Subsolado preventivo',STRESS_HIDRICO:'REGAR · Déficit hídrico detectado'};
+    (cancha?.spatial_alerts||[]).forEach(a=>{
+        h.push({
+            tipo:a.tipo||'ALERTA SAT.',zona_label:'Posición satelital real',
+            cx:FX+(a.x_frac||0.5)*FW, cy:FY+(1-(a.y_frac||0.5))*99,
+            r:Math.max(2.2,(a.radius_frac||0.05)*FW),
+            color:a.color||'#ef4444',urgencia:a.urgencia||'ESTA_SEMANA',
+            dato:`${a.label||''}${a.sub_label?' · '+a.sub_label:''}`,
+            accion:acMap[a.tipo]||a.tipo,
+            razon:a.confianza_pct!=null?`Confianza ${a.confianza_pct}% · Fuentes: ${(a.fuentes||[]).join(' + ')||'?'}${a.dias_activo?` · Activo ${a.dias_activo}d`:''}`:null,
+            source:'satellite',
+        });
+    });
+    // 2. Prescripciones por zona — acción + dato + solución
+    Object.entries(cancha?.zones||{}).forEach(([zid,zone])=>{
+        if((zone.urgency||'OK')==='OK')return;
+        const zc=ZONE_COORDS[zid];if(!zc)return;
+        const acts=(zone.actions||[]).filter(a=>a.type&&a.type!=='OK'&&ACTION_COL[a.type]);
+        if(!acts.length)return;
+        const step=acts.length>1?Math.min(8,(FW*0.7)/(acts.length-1)):0;
+        const xStart=34-step*(acts.length-1)/2;
+        const cy=zc.y+zc.h/2;
+        acts.forEach((act,i)=>{
+            h.push({
+                tipo:act.type,zona_label:ZONE_FULL[zid]||ZONE_SHORT[zid]||zid,
+                cx:xStart+i*step,cy,r:2.4,
+                color:ACTION_COL[act.type]||'#6b7280',
+                urgencia:act.urgency||zone.urgency||'ESTA_SEMANA',
+                dato:act.metric||'',
+                accion:act.detail||act.type,
+                razon:act.razon||null,
+                source:'prescription',
+            });
+        });
+    });
+    // 3. Riesgo fungal (clima global) — solo si no hay ya FUNGICIDA en zonas
+    const hasFungicida=h.some(x=>x.tipo==='FUNGICIDA');
+    const fNivel=wl?.fungal_nivel||'bajo';
+    if(!hasFungicida&&(fNivel==='alto'||fNivel==='medio')){
+        h.push({
+            tipo:'RIESGO FUNGAL',zona_label:'Campo global — modelo Smith-Kerns',
+            cx:34,cy:52.5,r:2.8,
+            color:fNivel==='alto'?'#ef4444':'#a855f7',
+            urgencia:fNivel==='alto'?'HOY':'ESTA_SEMANA',
+            dato:wl?.fungal_desc||`Nivel: ${fNivel.toUpperCase()}`,
+            accion:'Aplicar FUNGICIDA preventivo',
+            razon:wl?.fungal_accion||null,
+            source:'climate',
+        });
+    }
+    // Ordenar por urgencia
+    const urgOrd=['HOY','ESTA_SEMANA','PROXIMA_SEMANA','MONITOREAR','OK'];
+    h.sort((a,b)=>(urgOrd.indexOf(a.urgencia)<0?99:urgOrd.indexOf(a.urgencia))-(urgOrd.indexOf(b.urgencia)<0?99:urgOrd.indexOf(b.urgencia)));
+    return h;
+}
 function renderZones(cancha){
     const svg=document.getElementById('prescSvg');if(!svg||!cancha?.zones)return;
     svg.innerHTML='';const NS='http://www.w3.org/2000/svg';
@@ -293,104 +369,45 @@ function renderSpatialAlerts(cancha){
     if(!svg)return;
     svg.querySelectorAll('.faro-spatial').forEach(el=>el.remove());
     const NS='http://www.w3.org/2000/svg';
-    const FX=3,FY=3,FW=62,FH=99;
-    const ACT_COL={AEREAR:'#f59e0b',REGAR:'#22d3ee',FUNGICIDA:'#a855f7',FERTILIZAR:'#22c55e',DRENAR:'#3b82f6'};
-    const ACT_SHORT={AEREAR:'AER',REGAR:'REG',FUNGICIDA:'FUN',FERTILIZAR:'FER',DRENAR:'DRE'};
-
-    // ── 1. Círculos satelitales — posición exacta de píxel (NDVI/SAR) ────────
-    (cancha?.spatial_alerts||[]).forEach(a=>{
-        const cx=FX+(a.x_frac||0.5)*FW;
-        const cy=FY+(1-(a.y_frac||0.5))*FH;
-        const r=Math.max(2,(a.radius_frac||0.05)*FW);
-        const col=a.color||'#ef4444';
+    const wl=_data?.weather_summary||{};
+    const hallazgos=_buildHallazgos(cancha,wl);
+    hallazgos.forEach((h,idx)=>{
+        const n=idx+1,{cx,cy,r,color,urgencia,source}=h;
         const g=document.createElementNS(NS,'g');
         g.classList.add('faro-spatial');
-        if(a.urgencia==='HOY'){
+        // Anillo de pulso para HOY
+        if(urgencia==='HOY'){
             const ring=document.createElementNS(NS,'circle');
-            ring.setAttribute('cx',cx);ring.setAttribute('cy',cy);ring.setAttribute('r',r*1.6);
-            ring.setAttribute('fill','none');ring.setAttribute('stroke',col);
-            ring.setAttribute('stroke-width','0.25');ring.setAttribute('stroke-opacity','0.35');
+            ring.setAttribute('cx',cx);ring.setAttribute('cy',cy);ring.setAttribute('r',r*1.8);
+            ring.setAttribute('fill','none');ring.setAttribute('stroke',color);
+            ring.setAttribute('stroke-width','0.25');ring.setAttribute('stroke-opacity','0.38');
             const anim=document.createElementNS(NS,'animate');
-            anim.setAttribute('attributeName','r');anim.setAttribute('values',`${r};${r*2.2};${r}`);
-            anim.setAttribute('dur','2.2s');anim.setAttribute('repeatCount','indefinite');
+            anim.setAttribute('attributeName','r');anim.setAttribute('values',`${r*0.9};${r*2.5};${r*0.9}`);
+            anim.setAttribute('dur','2s');anim.setAttribute('repeatCount','indefinite');
             ring.appendChild(anim);g.appendChild(ring);
         }
-        if((a.confianza_pct||0)>=76){
-            const dring=document.createElementNS(NS,'circle');
-            dring.setAttribute('cx',cx);dring.setAttribute('cy',cy);dring.setAttribute('r',r+0.6);
-            dring.setAttribute('fill','none');dring.setAttribute('stroke',col);
-            dring.setAttribute('stroke-width','0.2');dring.setAttribute('stroke-opacity','0.5');
-            g.appendChild(dring);
-        }
+        // Círculo principal: satélite=sólido, prescripción=tenue
         const circ=document.createElementNS(NS,'circle');
         circ.setAttribute('cx',cx);circ.setAttribute('cy',cy);circ.setAttribute('r',r);
-        circ.setAttribute('fill',col);circ.setAttribute('fill-opacity','0.72');
-        circ.setAttribute('stroke','#fff');circ.setAttribute('stroke-width','0.18');
-        g.appendChild(circ);
-        const lbl=document.createElementNS(NS,'text');
-        lbl.setAttribute('x',cx);lbl.setAttribute('y',cy-r-0.8);
-        lbl.setAttribute('text-anchor','middle');lbl.setAttribute('font-family','Epilogue,sans-serif');
-        lbl.setAttribute('font-size','2.1');lbl.setAttribute('font-weight','700');
-        lbl.setAttribute('fill','#fff');lbl.setAttribute('fill-opacity','0.92');
-        lbl.textContent=(a.label||'').split(' ')[0];
-        g.appendChild(lbl);
-        if(a.sub_label){
-            const sub=document.createElementNS(NS,'text');
-            sub.setAttribute('x',cx);sub.setAttribute('y',cy+r+2.6);
-            sub.setAttribute('text-anchor','middle');sub.setAttribute('font-family','Epilogue,sans-serif');
-            sub.setAttribute('font-size','1.8');sub.setAttribute('font-weight','700');
-            sub.setAttribute('fill',col);sub.setAttribute('fill-opacity','0.8');
-            sub.textContent=a.sub_label;
-            g.appendChild(sub);
+        if(source==='satellite'){
+            circ.setAttribute('fill',color);circ.setAttribute('fill-opacity','0.72');
+            circ.setAttribute('stroke','#fff');circ.setAttribute('stroke-width','0.2');
+        } else {
+            circ.setAttribute('fill',color);circ.setAttribute('fill-opacity','0.15');
+            circ.setAttribute('stroke',color);circ.setAttribute('stroke-width','0.55');
         }
+        g.appendChild(circ);
+        // Número del hallazgo en el centro
+        const txt=document.createElementNS(NS,'text');
+        txt.setAttribute('x',cx);txt.setAttribute('y',cy+0.8);
+        txt.setAttribute('text-anchor','middle');
+        txt.setAttribute('font-family','Epilogue,sans-serif');
+        txt.setAttribute('font-size','2.6');txt.setAttribute('font-weight','700');
+        txt.setAttribute('fill',source==='satellite'?'#fff':color);
+        txt.setAttribute('fill-opacity','0.95');
+        txt.textContent=String(n);
+        g.appendChild(txt);
         svg.appendChild(g);
-    });
-
-    // ── 2. Círculos de prescripción — por zona (AEREAR/REGAR/FUNGICIDA/etc.) ─
-    // Relleno tenue + borde sólido = prescripción (vs relleno sólido = satélite)
-    Object.entries(cancha?.zones||{}).forEach(([zid,zone])=>{
-        if((zone.urgency||'OK')==='OK')return;
-        const acts=(zone.actions||[]).filter(a=>a.type&&ACT_COL[a.type]);
-        if(!acts.length)return;
-        const zc=ZONE_COORDS[zid];
-        if(!zc)return;
-        const cy=zc.y+zc.h/2;  // centro vertical de la zona en viewBox
-        const r2=2.3;
-        // Distribuir acciones horizontalmente dentro del ancho de zona
-        const step=acts.length>1?Math.min(8,(FW*0.7)/(acts.length-1)):0;
-        const xStart=34-(step*(acts.length-1)/2);  // centrado en 34 (cx campo)
-        acts.forEach((act,i)=>{
-            const col2=ACT_COL[act.type];
-            const cx2=xStart+i*step;
-            const g2=document.createElementNS(NS,'g');
-            g2.classList.add('faro-spatial');
-            // Pulse para HOY
-            if(act.urgency==='HOY'){
-                const pr=document.createElementNS(NS,'circle');
-                pr.setAttribute('cx',cx2);pr.setAttribute('cy',cy);pr.setAttribute('r',r2*1.8);
-                pr.setAttribute('fill','none');pr.setAttribute('stroke',col2);
-                pr.setAttribute('stroke-width','0.22');pr.setAttribute('stroke-opacity','0.4');
-                const pa=document.createElementNS(NS,'animate');
-                pa.setAttribute('attributeName','r');pa.setAttribute('values',`${r2};${r2*2.6};${r2}`);
-                pa.setAttribute('dur','1.8s');pa.setAttribute('repeatCount','indefinite');
-                pr.appendChild(pa);g2.appendChild(pr);
-            }
-            // Círculo con relleno tenue (prescripción, no satélite)
-            const c2=document.createElementNS(NS,'circle');
-            c2.setAttribute('cx',cx2);c2.setAttribute('cy',cy);c2.setAttribute('r',r2);
-            c2.setAttribute('fill',col2);c2.setAttribute('fill-opacity','0.18');
-            c2.setAttribute('stroke',col2);c2.setAttribute('stroke-width','0.5');
-            g2.appendChild(c2);
-            // Abreviatura dentro
-            const t2=document.createElementNS(NS,'text');
-            t2.setAttribute('x',cx2);t2.setAttribute('y',cy+0.7);
-            t2.setAttribute('text-anchor','middle');t2.setAttribute('font-family','Epilogue,sans-serif');
-            t2.setAttribute('font-size','1.7');t2.setAttribute('font-weight','700');
-            t2.setAttribute('fill',col2);t2.setAttribute('fill-opacity','0.95');
-            t2.textContent=ACT_SHORT[act.type]||act.type.slice(0,3);
-            g2.appendChild(t2);
-            svg.appendChild(g2);
-        });
     });
 }
 function selectZone(zid){
@@ -430,8 +447,8 @@ function renderPanel(cid){
     const era5Html=`<div class="era5-section"><div class="era5-title">ERA5-LAND — HUMEDAD POR CAPA <span style="font-weight:400;opacity:0.6">(ECMWF · 12 km · ref. regional)</span></div><div class="era5-grid"><div class="era5-cell"><div class="era5-label">0–7 cm</div><div class="era5-value">${era5_0_7!=null?Math.round(era5_0_7*100):'—'}<span class="era5-unit"> %</span></div></div><div class="era5-cell"><div class="era5-label">7–28 cm</div><div class="era5-value">${era5_7_28!=null?Math.round(era5_7_28*100):'—'}<span class="era5-unit"> %</span></div></div><div class="era5-cell"><div class="era5-label">28–100 cm</div><div class="era5-value">${era5_28_100!=null?Math.round(era5_28_100*100):'—'}<span class="era5-unit"> %</span></div></div><div class="era5-cell"><div class="era5-label">100–289 cm</div><div class="era5-value">${era5_100_289!=null?Math.round(era5_100_289*100):'—'}<span class="era5-unit"> %</span></div></div></div></div>`;
     const sarMsg=wl.sar_mensaje||'';const sarReal=wl.sar_disponible===true;
     const sarHtml=(sarVV!=null||sarInsar!=null)?`<div class="sar-section"><div class="sar-title">RADAR SAR — SENTINEL-1 C-BAND <span class="sar-date">${sarFecha?'img '+sarFecha:''}</span>${sarMsg?`<span class="sar-src-badge" style="background:${sarReal?'rgba(34,197,94,0.12)':'rgba(245,158,11,0.12)'};color:${sarReal?'#22c55e':'#f59e0b'};font-size:7px;padding:1px 5px;border-radius:3px;margin-left:6px;letter-spacing:0.5px">${sarMsg}</span>`:''}</div><div class="sar-grid"><div class="sar-cell ${vvCls}"><div class="sar-cell-label">COMPACT. VV</div><div class="sar-cell-val">${sarVV!=null?sarVV.toFixed(1):'—'}<span class="sar-cell-unit"> dB</span></div><div class="sar-cell-status" style="color:${_sarCellColor(vvCls)}">${vvLbl}</div></div><div class="sar-cell ${chgCls}"><div class="sar-cell-label">CAMBIO 6d</div><div class="sar-cell-val">${sarChange!=null?(sarChange>=0?'+':'')+sarChange.toFixed(1):'—'}<span class="sar-cell-unit"> dB</span></div><div class="sar-cell-status" style="color:${_sarCellColor(chgCls)}">${chgLbl}</div></div><div class="sar-cell ${insarCls}"><div class="sar-cell-label">INSAR DESPL.</div><div class="sar-cell-val">${sarInsar!=null?(sarInsar>=0?'+':'')+sarInsar.toFixed(1):'—'}<span class="sar-cell-unit"> mm</span></div><div class="sar-cell-status" style="color:${_sarCellColor(insarCls)}">${insarLbl}</div></div></div></div>`:'';
-    // ── Spatial alerts section ───────────────────────────────────────────────
-    const spatAlerts=cancha?.spatial_alerts||[];
+    // ── Diagnóstico radiográfico — hallazgos numerados con dato/acción/solución ─
+    const hallazgos=_buildHallazgos(cancha,wl);
     const nextSarFecha=wl.sar_next_fecha;
     const nextSarDias=wl.sar_dias_hasta_siguiente;
     let nextSarLabel='';
@@ -442,23 +459,12 @@ function renderPanel(cid){
         const mm=String(nd.getMonth()+1).padStart(2,'0');
         nextSarLabel=nextSarDias!=null?(nextSarDias<=0?'HOY/AYER':`${dow} ${dd}/${mm} (${nextSarDias}d)`):`${dow} ${dd}/${mm}`;
     }
-    // Satellite alert chips
-    const satChipsHtml=spatAlerts.map(a=>`<div class="alert-chip" style="background:rgba(${hexRgb(a.color||'#ef4444')},0.10);border-color:rgba(${hexRgb(a.color||'#ef4444')},0.3)"><span class="alert-chip-tipo" style="color:${a.color||'#ef4444'}">${a.tipo||''}</span><span class="alert-chip-sub">${a.label||''}${a.sub_label?' · '+a.sub_label:''}</span><span class="alert-chip-conf">${a.confianza_pct||0}% conf · ${(a.fuentes||[]).join('+')||'?'}</span></div>`).join('');
-    // Zone prescription chips — ALL detected actions across ALL zones
-    const prescChips=[];
-    Object.entries(cancha?.zones||{}).forEach(([zid,zone])=>{
-        if((zone.urgency||'OK')==='OK')return;
-        (zone.actions||[]).forEach(act=>{
-            if(!act.type||act.type==='OK')return;
-            const col=ACTION_COL[act.type]||'#6b7280';
-            const urgLabel=act.urgency||zone.urgency||'OK';
-            const shortDetail=(act.detail||'').slice(0,38);
-            prescChips.push(`<div class="alert-chip" style="background:rgba(${hexRgb(col)},0.10);border-color:rgba(${hexRgb(col)},0.3)"><span class="alert-chip-tipo" style="color:${col}">${act.type}</span><span class="alert-chip-sub">${ZONE_SHORT[zid]||zid}${shortDetail?' · '+shortDetail:''}</span><span class="alert-chip-conf" style="color:${hex(urgLabel)}">${UL[urgLabel]||urgLabel}${act.metric?' · '+act.metric:''}</span></div>`);
-        });
-    });
-    const prescRowHtml=prescChips.length?`<div style="margin-top:6px"><div class="sat-alert-title" style="margin-bottom:4px">PRESCRIPCIONES POR ZONA <span style="font-weight:400;font-size:6px;color:var(--dim)">${prescChips.length} accion${prescChips.length!==1?'es':''}</span></div><div class="alert-chip-row">${prescChips.join('')}</div></div>`:'';
-    const hasAny=spatAlerts.length||prescChips.length;
-    const spatHtml=hasAny?`<div class="spatial-alert-section"><div class="sat-alert-title">DIAGNÓSTICO SATELITAL${nextSarLabel?` <span class="sat-next-badge">Próx. SAR: ${nextSarLabel}</span>`:''}</div>${satChipsHtml?`<div class="alert-chip-row">${satChipsHtml}</div>`:''}${prescRowHtml}</div>`:(nextSarLabel?`<div class="spatial-alert-section"><div class="sat-alert-title">ESTADO CAMPO <span class="sat-next-badge">Próx. SAR: ${nextSarLabel}</span></div><div style="font-size:8px;color:var(--dim)">Sin alertas activas · campo en parámetros normales.</div></div>`:'');
+    const maxUrg=hallazgos.length?hallazgos[0].urgencia:'OK';
+    const dxItemsHtml=hallazgos.map((h,i)=>{
+        const n=i+1,bg=URG_BG[h.urgencia]||'rgba(255,255,255,0.03)';
+        return `<div class="dx-item" style="background:${bg};border-left-color:${h.color}"><div class="dx-num" style="background:${h.color};color:${h.source==='satellite'?'#fff':'#000'}">${n}</div><div class="dx-body"><div class="dx-row"><div><div class="dx-tipo" style="color:${h.color}">${h.tipo}</div><div class="dx-zona">${h.zona_label}</div></div><div class="dx-urg" style="background:${hex(h.urgencia)}">${UL[h.urgencia]||h.urgencia}</div></div>${h.dato?`<div class="dx-ev">Dato: ${h.dato}</div>`:''}${h.accion?`<div class="dx-accion" style="color:${h.color}">→ ${h.accion}</div>`:''}${h.razon?`<div class="dx-conf">Por qué: ${h.razon}</div>`:''}</div></div>`;
+    }).join('');
+    const spatHtml=hallazgos.length?`<div class="dx-section"><div class="dx-header"><div><div class="dx-title">DIAGNÓSTICO DE CAMPO</div><div class="dx-summary" style="color:${hex(maxUrg)}">${hallazgos.length} hallazgo${hallazgos.length!==1?'s':''} · urgencia máx: ${UL[maxUrg]||maxUrg}</div></div>${nextSarLabel?`<div class="dx-sar-badge">Próx. SAR: ${nextSarLabel}</div>`:''}</div><div class="dx-list">${dxItemsHtml}</div></div>`:(nextSarLabel?`<div class="dx-section"><div class="dx-header"><div class="dx-title">ESTADO CAMPO</div><div class="dx-sar-badge">Próx. SAR: ${nextSarLabel}</div></div><div style="font-size:8px;color:var(--dim)">Sin hallazgos activos · campo en parámetros normales.</div></div>`:'');
     // ── GDD dormancy note (winter May–Aug in Argentina) ──────────────────────
     const _mo=new Date().getMonth()+1;
     const gddNote=(_mo>=5&&_mo<=8)?`<div style="font-size:7.5px;color:#6b7280;margin-top:5px;padding:3px 6px;background:rgba(107,114,128,0.06);border-radius:3px">Dormancia invernal activa — GDD bajo esperado (May–Ago)</div>`:'';
