@@ -146,6 +146,14 @@ body{background:var(--bg);color:var(--whi);font-family:'Epilogue',sans-serif;wid
     .text-stadium{display:none;}
     .sar-chart-wrap{height:120px;}
 }
+.spatial-alert-section{flex-shrink:0;padding:8px 16px;border-bottom:1px solid rgba(255,255,255,0.04);}
+.sat-alert-title{font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;}
+.sat-next-badge{font-size:7px;font-weight:700;padding:2px 6px;border-radius:3px;background:rgba(201,168,76,0.12);color:var(--gold);letter-spacing:0.3px;}
+.alert-chip-row{display:flex;flex-wrap:wrap;gap:4px;}
+.alert-chip{display:inline-flex;flex-direction:column;align-items:flex-start;padding:4px 8px;border-radius:4px;border:1px solid rgba(255,255,255,0.08);min-width:80px;}
+.alert-chip-tipo{font-size:7px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;}
+.alert-chip-sub{font-size:6.5px;color:rgba(255,255,255,0.5);margin-top:1px;}
+.alert-chip-conf{font-size:6px;color:rgba(255,255,255,0.35);margin-top:2px;}
 </style>
 </head>
 <body>
@@ -278,6 +286,82 @@ function renderZones(cancha){
         }
         g.addEventListener('click',()=>selectZone(zid));svg.appendChild(g);
     });
+    renderSpatialAlerts(cancha);
+}
+function renderSpatialAlerts(cancha){
+    const svg=document.getElementById('prescSvg');
+    if(!svg)return;
+    svg.querySelectorAll('.faro-spatial').forEach(el=>el.remove());
+    const alerts=cancha?.spatial_alerts;
+    if(!alerts||!alerts.length)return;
+    const NS='http://www.w3.org/2000/svg';
+    const FX=3,FY=3,FW=62,FH=99;
+    alerts.forEach(a=>{
+        const cx=FX+(a.x_frac||0.5)*FW;
+        const cy=FY+(1-(a.y_frac||0.5))*FH;
+        const r=Math.max(2,(a.radius_frac||0.05)*FW);
+        const col=a.color||'#ef4444';
+        const g=document.createElementNS(NS,'g');
+        g.classList.add('faro-spatial');
+        g.style.cursor='default';
+        if(a.urgencia==='HOY'){
+            const ring=document.createElementNS(NS,'circle');
+            ring.setAttribute('cx',cx);ring.setAttribute('cy',cy);
+            ring.setAttribute('r',r*1.6);
+            ring.setAttribute('fill','none');
+            ring.setAttribute('stroke',col);
+            ring.setAttribute('stroke-width','0.25');
+            ring.setAttribute('stroke-opacity','0.35');
+            const anim=document.createElementNS(NS,'animate');
+            anim.setAttribute('attributeName','r');
+            anim.setAttribute('values',`${r*1.0};${r*2.2};${r*1.0}`);
+            anim.setAttribute('dur','2.2s');
+            anim.setAttribute('repeatCount','indefinite');
+            ring.appendChild(anim);
+            g.appendChild(ring);
+        }
+        if((a.confianza_pct||0)>=76){
+            const dring=document.createElementNS(NS,'circle');
+            dring.setAttribute('cx',cx);dring.setAttribute('cy',cy);
+            dring.setAttribute('r',r+0.6);
+            dring.setAttribute('fill','none');
+            dring.setAttribute('stroke',col);
+            dring.setAttribute('stroke-width','0.2');
+            dring.setAttribute('stroke-opacity','0.5');
+            g.appendChild(dring);
+        }
+        const circ=document.createElementNS(NS,'circle');
+        circ.setAttribute('cx',cx);circ.setAttribute('cy',cy);
+        circ.setAttribute('r',r);
+        circ.setAttribute('fill',col);
+        circ.setAttribute('fill-opacity','0.72');
+        circ.setAttribute('stroke','#fff');
+        circ.setAttribute('stroke-width','0.18');
+        g.appendChild(circ);
+        const lbl=document.createElementNS(NS,'text');
+        lbl.setAttribute('x',cx);lbl.setAttribute('y',cy-r-0.8);
+        lbl.setAttribute('text-anchor','middle');
+        lbl.setAttribute('font-family','Epilogue,sans-serif');
+        lbl.setAttribute('font-size','2.1');
+        lbl.setAttribute('font-weight','700');
+        lbl.setAttribute('fill','#fff');
+        lbl.setAttribute('fill-opacity','0.92');
+        lbl.textContent=(a.label||'').split(' ')[0];
+        g.appendChild(lbl);
+        if(a.sub_label){
+            const sub=document.createElementNS(NS,'text');
+            sub.setAttribute('x',cx);sub.setAttribute('y',cy+r+2.6);
+            sub.setAttribute('text-anchor','middle');
+            sub.setAttribute('font-family','Epilogue,sans-serif');
+            sub.setAttribute('font-size','1.8');
+            sub.setAttribute('font-weight','700');
+            sub.setAttribute('fill',col);
+            sub.setAttribute('fill-opacity','0.8');
+            sub.textContent=a.sub_label;
+            g.appendChild(sub);
+        }
+        svg.appendChild(g);
+    });
 }
 function selectZone(zid){
     _activeZoneId=zid;
@@ -316,11 +400,24 @@ function renderPanel(cid){
     const era5Html=`<div class="era5-section"><div class="era5-title">ERA5-LAND — HUMEDAD POR CAPA <span style="font-weight:400;opacity:0.6">(ECMWF · 12 km · ref. regional)</span></div><div class="era5-grid"><div class="era5-cell"><div class="era5-label">0–7 cm</div><div class="era5-value">${era5_0_7!=null?Math.round(era5_0_7*100):'—'}<span class="era5-unit"> %</span></div></div><div class="era5-cell"><div class="era5-label">7–28 cm</div><div class="era5-value">${era5_7_28!=null?Math.round(era5_7_28*100):'—'}<span class="era5-unit"> %</span></div></div><div class="era5-cell"><div class="era5-label">28–100 cm</div><div class="era5-value">${era5_28_100!=null?Math.round(era5_28_100*100):'—'}<span class="era5-unit"> %</span></div></div><div class="era5-cell"><div class="era5-label">100–289 cm</div><div class="era5-value">${era5_100_289!=null?Math.round(era5_100_289*100):'—'}<span class="era5-unit"> %</span></div></div></div></div>`;
     const sarMsg=wl.sar_mensaje||'';const sarReal=wl.sar_disponible===true;
     const sarHtml=(sarVV!=null||sarInsar!=null)?`<div class="sar-section"><div class="sar-title">RADAR SAR — SENTINEL-1 C-BAND <span class="sar-date">${sarFecha?'img '+sarFecha:''}</span>${sarMsg?`<span class="sar-src-badge" style="background:${sarReal?'rgba(34,197,94,0.12)':'rgba(245,158,11,0.12)'};color:${sarReal?'#22c55e':'#f59e0b'};font-size:7px;padding:1px 5px;border-radius:3px;margin-left:6px;letter-spacing:0.5px">${sarMsg}</span>`:''}</div><div class="sar-grid"><div class="sar-cell ${vvCls}"><div class="sar-cell-label">COMPACT. VV</div><div class="sar-cell-val">${sarVV!=null?sarVV.toFixed(1):'—'}<span class="sar-cell-unit"> dB</span></div><div class="sar-cell-status" style="color:${_sarCellColor(vvCls)}">${vvLbl}</div></div><div class="sar-cell ${chgCls}"><div class="sar-cell-label">CAMBIO 6d</div><div class="sar-cell-val">${sarChange!=null?(sarChange>=0?'+':'')+sarChange.toFixed(1):'—'}<span class="sar-cell-unit"> dB</span></div><div class="sar-cell-status" style="color:${_sarCellColor(chgCls)}">${chgLbl}</div></div><div class="sar-cell ${insarCls}"><div class="sar-cell-label">INSAR DESPL.</div><div class="sar-cell-val">${sarInsar!=null?(sarInsar>=0?'+':'')+sarInsar.toFixed(1):'—'}<span class="sar-cell-unit"> mm</span></div><div class="sar-cell-status" style="color:${_sarCellColor(insarCls)}">${insarLbl}</div></div></div></div>`:'';
+    // ── Spatial alerts section ───────────────────────────────────────────────
+    const spatAlerts=cancha?.spatial_alerts||[];
+    const nextSarFecha=wl.sar_next_fecha;
+    const nextSarDias=wl.sar_dias_hasta_siguiente;
+    let nextSarLabel='';
+    if(nextSarFecha){
+        const nd=new Date(nextSarFecha);
+        const dow=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][nd.getDay()];
+        const dd=String(nd.getDate()).padStart(2,'0');
+        const mm=String(nd.getMonth()+1).padStart(2,'0');
+        nextSarLabel=nextSarDias!=null?(nextSarDias<=0?'HOY/AYER':`${dow} ${dd}/${mm} (${nextSarDias}d)`):`${dow} ${dd}/${mm}`;
+    }
+    const spatHtml=spatAlerts.length?`<div class="spatial-alert-section"><div class="sat-alert-title">ALERTAS SATELITALES QUIRÚRGICAS${nextSarLabel?` <span class="sat-next-badge">Próx. SAR: ${nextSarLabel}</span>`:''}</div><div class="alert-chip-row">${spatAlerts.map(a=>`<div class="alert-chip" style="background:rgba(${hexRgb(a.color||'#ef4444')},0.10);border-color:rgba(${hexRgb(a.color||'#ef4444')},0.3)"><span class="alert-chip-tipo" style="color:${a.color||'#ef4444'}">${a.tipo||''}</span><span class="alert-chip-sub">${a.label||''}${a.sub_label?' · '+a.sub_label:''}</span><span class="alert-chip-conf">${a.confianza_pct||0}% conf · ${(a.fuentes||[]).join('+')||'?'}</span></div>`).join('')}</div></div>`:(nextSarLabel?`<div class="spatial-alert-section"><div class="sat-alert-title">ESTADO CAMPO <span class="sat-next-badge">Próx. SAR: ${nextSarLabel}</span></div><div style="font-size:8px;color:var(--dim)">Sin alertas activas · campo en parámetros normales.</div></div>`:'');
     // ── GDD dormancy note (winter May–Aug in Argentina) ──────────────────────
     const _mo=new Date().getMonth()+1;
     const gddNote=(_mo>=5&&_mo<=8)?`<div style="font-size:7.5px;color:#6b7280;margin-top:5px;padding:3px 6px;background:rgba(107,114,128,0.06);border-radius:3px">Dormancia invernal activa — GDD bajo esperado (May–Ago)</div>`:'';
     // ── Render ───────────────────────────────────────────────────────────────
-    body.innerHTML=`<div class="cancha-head"><div class="cancha-name">${canName(cid)}</div><div class="urgency-badge" style="background:${hex(worstU)}">${UL[worstU]||worstU}</div></div><div class="zone-grid">${zGrid}</div><div class="zone-detail" id="zoneDetailSection"><div style="color:var(--dim);font-size:9px;line-height:1.5;">Selecciona una zona del mapa para ver las acciones recomendadas.</div></div><div class="metrics-section"><div class="metrics-title">ESTADO DEL CAMPO</div><div class="metrics-grid"><div class="metric-cell"><div class="metric-label">ET₀ HOY</div><div class="metric-value">${et0}<span class="metric-unit"> mm/d</span></div></div><div class="metric-cell"><div class="metric-label">ET₀ ACUM 7d</div><div class="metric-value" style="color:${parseFloat(et0Sem)>40?'#f59e0b':'var(--whi)'}">${et0Sem}<span class="metric-unit"> mm</span></div></div><div class="metric-cell"><div class="metric-label">DÉFICIT</div><div class="metric-value" style="color:${defHigh?'#f59e0b':'var(--whi)'}">${defi}<span class="metric-unit"> mm</span></div></div><div class="metric-cell"><div class="metric-label">LLUVIA 48H</div><div class="metric-value">${lluvia}<span class="metric-unit"> mm</span></div></div><div class="metric-cell"><div class="metric-label">RIEGO ÓPTIMO</div><div class="metric-value" style="font-size:10px">${hora}</div></div><div class="metric-cell"><div class="metric-label">NDVI CANCHA</div><div class="metric-value" style="font-size:11px;color:${ndviCol}">${ndviStr}</div></div></div></div>${sarHtml}${era5Html}<div class="gdd-section"><div class="gdd-item"><div class="gdd-label">GDD Acum. 7 dias</div><div class="gdd-value">${gdd7}<span class="gdd-unit"> C</span></div></div><div class="gdd-sep"></div><div class="gdd-item"><div class="gdd-label">GDD por dia</div><div class="gdd-value">${gddR}<span class="gdd-unit"> C</span></div></div>${gddNote}</div><div class="fungal-section"><div class="fungal-header"><span class="fungal-label">RIESGO HONGOS (Smith-Kerns)</span><span class="fungal-badge" style="background:${fColor}">${fNivel.toUpperCase()}</span></div><div class="fungal-bar-bg"><div class="fungal-bar-fill" style="width:${fPct}%;background:${fColor}"></div></div><div class="fungal-desc">${wl.fungal_desc||wl.fungal_accion||'Sin datos de riesgo fungico.'}</div></div><div class="ipos-section"><div class="ipos-header"><span class="ipos-label">CARGA IPOS</span><span class="ipos-value">${Math.round(ipos)} pts</span></div><div class="ipos-bar-bg"><div class="ipos-bar-fill" style="width:${iposPct}%;background:${iposColor}"></div></div><div class="ipos-tiers"><span>0</span><span>100</span><span>200</span><span>300</span><span>400+</span></div><button onclick="openLogActividad('${cid}')" style="margin-top:6px;width:100%;padding:5px 0;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.25);border-radius:3px;color:#c9a84c;font-size:7.5px;font-weight:700;letter-spacing:1px;cursor:pointer;font-family:inherit">+ REGISTRAR ACTIVIDAD</button></div>`;
+    body.innerHTML=`<div class="cancha-head"><div class="cancha-name">${canName(cid)}</div><div class="urgency-badge" style="background:${hex(worstU)}">${UL[worstU]||worstU}</div></div><div class="zone-grid">${zGrid}</div><div class="zone-detail" id="zoneDetailSection"><div style="color:var(--dim);font-size:9px;line-height:1.5;">Selecciona una zona del mapa para ver las acciones recomendadas.</div></div><div class="metrics-section"><div class="metrics-title">ESTADO DEL CAMPO</div><div class="metrics-grid"><div class="metric-cell"><div class="metric-label">ET₀ HOY</div><div class="metric-value">${et0}<span class="metric-unit"> mm/d</span></div></div><div class="metric-cell"><div class="metric-label">ET₀ ACUM 7d</div><div class="metric-value" style="color:${parseFloat(et0Sem)>40?'#f59e0b':'var(--whi)'}">${et0Sem}<span class="metric-unit"> mm</span></div></div><div class="metric-cell"><div class="metric-label">DÉFICIT</div><div class="metric-value" style="color:${defHigh?'#f59e0b':'var(--whi)'}">${defi}<span class="metric-unit"> mm</span></div></div><div class="metric-cell"><div class="metric-label">LLUVIA 48H</div><div class="metric-value">${lluvia}<span class="metric-unit"> mm</span></div></div><div class="metric-cell"><div class="metric-label">RIEGO ÓPTIMO</div><div class="metric-value" style="font-size:10px">${hora}</div></div><div class="metric-cell"><div class="metric-label">NDVI CANCHA</div><div class="metric-value" style="font-size:11px;color:${ndviCol}">${ndviStr}</div></div></div></div>${sarHtml}${spatHtml}${era5Html}<div class="gdd-section"><div class="gdd-item"><div class="gdd-label">GDD Acum. 7 dias</div><div class="gdd-value">${gdd7}<span class="gdd-unit"> C</span></div></div><div class="gdd-sep"></div><div class="gdd-item"><div class="gdd-label">GDD por dia</div><div class="gdd-value">${gddR}<span class="gdd-unit"> C</span></div></div>${gddNote}</div><div class="fungal-section"><div class="fungal-header"><span class="fungal-label">RIESGO HONGOS (Smith-Kerns)</span><span class="fungal-badge" style="background:${fColor}">${fNivel.toUpperCase()}</span></div><div class="fungal-bar-bg"><div class="fungal-bar-fill" style="width:${fPct}%;background:${fColor}"></div></div><div class="fungal-desc">${wl.fungal_desc||wl.fungal_accion||'Sin datos de riesgo fungico.'}</div></div><div class="ipos-section"><div class="ipos-header"><span class="ipos-label">CARGA IPOS</span><span class="ipos-value">${Math.round(ipos)} pts</span></div><div class="ipos-bar-bg"><div class="ipos-bar-fill" style="width:${iposPct}%;background:${iposColor}"></div></div><div class="ipos-tiers"><span>0</span><span>100</span><span>200</span><span>300</span><span>400+</span></div><button onclick="openLogActividad('${cid}')" style="margin-top:6px;width:100%;padding:5px 0;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.25);border-radius:3px;color:#c9a84c;font-size:7.5px;font-weight:700;letter-spacing:1px;cursor:pointer;font-family:inherit">+ REGISTRAR ACTIVIDAD</button></div>`;
     renderZoneDetail(cancha,_activeZoneId);
 }
 let _sarChart=null;
@@ -396,7 +493,7 @@ function toggleGrid3x3(){
 }
 function activateCancha(cid){
     _activeCanchaId=cid;const cancha=_data?.canchas?.[cid];
-    renderPanel(cid);renderZones(cancha);updateSatBadge(cancha);
+    renderPanel(cid);renderZones(cancha);renderSpatialAlerts(cancha);updateSatBadge(cancha);
     if(cancha?.heatmap_archivo)renderHeatmap(cancha.heatmap_archivo);
     renderZoneDetail(cancha,_activeZoneId);
     // SAR chart + Grid 3×3 solo visibles para Amalfitani
