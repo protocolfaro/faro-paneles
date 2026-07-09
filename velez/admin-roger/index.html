@@ -283,14 +283,25 @@ function toggleHeatmap(){
 window.addEventListener('resize',()=>{if(_hmFile&&_hmVisible)renderHeatmap(_hmFile);});
 // ── Diagnóstico unificado: construye lista de hallazgos con dato/acción/solución ──
 function _buildHallazgos(cancha,wl){
-    const FX=3,FY=3,FW=62;
+    const FX=3,FY=3,FW=62,FH=99;
     const h=[];
-    // 1. Alertas satelitales — posición pixel exacta
+    const satAlerts=cancha?.spatial_alerts||[];
+    const focos=cancha?.focos_reales||[];
+
+    // Zone bounds helpers (north=y_frac 1, south=0 — mismo convenio que satellite_pipeline)
+    const _zBounds=zid=>{
+        const zc=ZONE_COORDS[zid];if(!zc)return null;
+        return{yMin:1-(zc.y+zc.h-FY)/FH,yMax:1-(zc.y-FY)/FH,
+               xMin:(zc.x-FX)/FW,xMax:(zc.x+zc.w-FX)/FW};
+    };
+    const _inZone=(xf,yf,b)=>b&&yf>=b.yMin&&yf<=b.yMax&&xf>=b.xMin&&xf<=b.xMax;
+
+    // 1. Alertas satelitales — posición pixel exacta (fuente primaria)
     const acMap={NDVI_BAJO:'REGAR · Monitorear cobertura verde',STRESS_COMBO:'REGAR + AEREAR — estrés multiespectral',COMPACTACION:'AEREAR · Subsolado preventivo',STRESS_HIDRICO:'REGAR · Déficit hídrico detectado'};
-    (cancha?.spatial_alerts||[]).forEach(a=>{
+    satAlerts.forEach(a=>{
         h.push({
             tipo:a.tipo||'ALERTA SAT.',zona_label:'Posición satelital real',
-            cx:FX+(a.x_frac||0.5)*FW, cy:FY+(1-(a.y_frac||0.5))*99,
+            cx:FX+(a.x_frac||0.5)*FW, cy:FY+(1-(a.y_frac||0.5))*FH,
             r:Math.max(2.2,(a.radius_frac||0.05)*FW),
             color:a.color||'#ef4444',urgencia:a.urgencia||'ESTA_SEMANA',
             dato:`${a.label||''}${a.sub_label?' · '+a.sub_label:''}`,
@@ -299,43 +310,64 @@ function _buildHallazgos(cancha,wl){
             source:'satellite',
         });
     });
-    // 2. Prescripciones por zona — SIN posición SVG.
-    // Las zonas son datos de nivel-zona (no pixel). La visualización espacial ya la hace
-    // renderZones() con rectángulos coloreados + pills de acción. Círculos aquí = fake precision.
+
+    // 2. Prescripciones por zona — posición quirúrgica cuando hay datos satelitales en la zona
+    // Regla: si la satellite_alert YA marcó la zona → cx=null (no duplicar).
+    // Si hay foco_real en zona sin satellite_alert → usar foco como posición (info nueva).
+    // DRENAR/FUNGICIDA: siempre cx=null (sin datos pixel para drenaje).
     Object.entries(cancha?.zones||{}).forEach(([zid,zone])=>{
         if((zone.urgency||'OK')==='OK')return;
         const acts=(zone.actions||[]).filter(a=>a.type&&a.type!=='OK'&&ACTION_COL[a.type]);
         if(!acts.length)return;
-        acts.forEach((act)=>{
+        const bounds=_zBounds(zid);
+        // Focos en la zona, ordenados por NDVI ascendente (peor primero)
+        const zFocos=focos.filter(f=>_inZone(f.x??0.5,f.y??0.5,bounds)).sort((a,b)=>a.ndvi-b.ndvi);
+        // ¿Hay satellite_alert NDVI en la zona?
+        const hasNdviSat=satAlerts.some(a=>(a.tipo==='NDVI_BAJO'||a.tipo==='STRESS_COMBO'||a.tipo==='STRESS_HIDRICO')&&_inZone(a.x_frac??0.5,a.y_frac??0.5,bounds));
+
+        acts.forEach(act=>{
+            let cx=null,cy=null,r=null,source='prescription';
+            if(act.type==='REGAR'||act.type==='FERTILIZAR'){
+                // Usa foco NDVI peor en zona solo si no hay satellite_alert NDVI solapado
+                if(!hasNdviSat&&zFocos.length){
+                    const f=zFocos[0];
+                    cx=FX+(f.x??0.5)*FW; cy=FY+(1-(f.y??0.5))*FH; r=2.8;
+                }
+            } else if(act.type==='AEREAR'){
+                // Solo si hay satellite_alert COMPACTACION en zona (posición SAR)
+                const zCompact=satAlerts.find(a=>a.tipo==='COMPACTACION'&&_inZone(a.x_frac??0.5,a.y_frac??0.5,bounds));
+                // COMPACTACION alerts are already rendered in step 1; keep cx=null to avoid duplicate
+                // Only assign position if there's a foco but no satellite at all in zone
+                if(!hasNdviSat&&!zCompact&&zFocos.length){
+                    const f=zFocos[0];
+                    cx=FX+(f.x??0.5)*FW; cy=FY+(1-(f.y??0.5))*FH; r=2.8;
+                }
+            }
+            // DRENAR, FUNGICIDA y cualquier otro: siempre cx=null (sin dato pixel)
             h.push({
                 tipo:act.type,zona_label:ZONE_FULL[zid]||ZONE_SHORT[zid]||zid,
-                cx:null,cy:null,r:null,  // sin círculo — posición real desconocida dentro de la zona
+                cx,cy,r,
                 color:ACTION_COL[act.type]||'#6b7280',
                 urgencia:act.urgency||zone.urgency||'ESTA_SEMANA',
                 dato:act.metric||'',
                 accion:act.detail||act.type,
                 razon:act.razon||null,
-                source:'prescription',
+                source,
             });
         });
     });
-    // 3. Riesgo fungal — solo en el informe (panel), NO como círculo posicional en el campo.
-    // Un riesgo climático global no tiene posición espacial válida dentro del rectángulo.
+
+    // 3. Riesgo fungal global — solo en el informe, sin círculo en campo
     const hasFungicida=h.some(x=>x.tipo==='FUNGICIDA');
     const fNivel=wl?.fungal_nivel||'bajo';
     if(!hasFungicida&&(fNivel==='alto'||fNivel==='medio')){
-        h.push({
-            tipo:'RIESGO FUNGAL',zona_label:'Campo global — modelo Smith-Kerns',
-            cx:null,cy:null,r:null,  // sin círculo en SVG (riesgo climático, sin posición)
-            color:fNivel==='alto'?'#ef4444':'#a855f7',
+        h.push({tipo:'RIESGO FUNGAL',zona_label:'Campo global — modelo Smith-Kerns',
+            cx:null,cy:null,r:null,color:fNivel==='alto'?'#ef4444':'#a855f7',
             urgencia:fNivel==='alto'?'HOY':'ESTA_SEMANA',
             dato:wl?.fungal_desc||`Nivel: ${fNivel.toUpperCase()}`,
-            accion:'Aplicar FUNGICIDA preventivo',
-            razon:wl?.fungal_accion||null,
-            source:'climate',
-        });
+            accion:'Aplicar FUNGICIDA preventivo',razon:wl?.fungal_accion||null,source:'climate'});
     }
-    // Ordenar por urgencia
+
     const urgOrd=['HOY','ESTA_SEMANA','PROXIMA_SEMANA','MONITOREAR','OK'];
     h.sort((a,b)=>(urgOrd.indexOf(a.urgencia)<0?99:urgOrd.indexOf(a.urgencia))-(urgOrd.indexOf(b.urgencia)<0?99:urgOrd.indexOf(b.urgencia)));
     return h;
@@ -485,15 +517,20 @@ function renderPanel(cid){
         nextSarLabel=nextSarDias!=null?(nextSarDias<=0?'HOY/AYER':`${dow} ${dd}/${mm} (${nextSarDias}d)`):`${dow} ${dd}/${mm}`;
     }
     const maxUrg=hallazgos.length?hallazgos[0].urgencia:'OK';
-    // numerar solo hallazgos con posición en el campo; climáticos muestran ⚠
+    // SVG counter — only hallazgos with position get a number on the field
     let _svgN=0;
     const dxItemsHtml=hallazgos.map((h)=>{
         const hasSvg=h.cx!=null;
+        const isSat=h.source==='satellite';
         const badge=hasSvg?(++_svgN):'⚠';
-        const badgeColor=hasSvg?h.color:'rgba(255,255,255,0.15)';
-        const textColor=hasSvg?(h.source==='satellite'?'#fff':'#060a0f'):'var(--whi)';
+        // Satellite: solid fill badge. Prescription-with-position: outline badge. Climate: dim badge.
+        const badgeStyle=hasSvg
+            ?(isSat?`background:${h.color};color:#fff`:`background:transparent;color:${h.color};border:1.5px solid ${h.color}`)
+            :'background:rgba(255,255,255,0.10);color:var(--whi)';
         const bg=URG_BG[h.urgencia]||'rgba(255,255,255,0.03)';
-        return `<div class="dx-item" style="background:${bg};border-left-color:${h.color}"><div class="dx-num" style="background:${badgeColor};color:${textColor}">${badge}</div><div class="dx-body"><div class="dx-row"><div><div class="dx-tipo" style="color:${h.color}">${h.tipo}</div><div class="dx-zona">${h.zona_label}${!hasSvg?'<span style="color:var(--dim2);font-size:6px;margin-left:4px">· sin posición SVG</span>':''}</div></div><div class="dx-urg" style="background:${hex(h.urgencia)}">${UL[h.urgencia]||h.urgencia}</div></div>${h.dato?`<div class="dx-ev">Dato: ${h.dato}</div>`:''}${h.accion?`<div class="dx-accion" style="color:${h.color}">→ ${h.accion}</div>`:''}${h.razon?`<div class="dx-conf">Por qué: ${h.razon}</div>`:''}</div></div>`;
+        const zonaNote=!hasSvg?'<span style="color:var(--dim2);font-size:6px;margin-left:4px">· zona</span>'
+            :(!isSat?'<span style="color:var(--dim2);font-size:6px;margin-left:4px">· foco NDVI</span>':'');
+        return `<div class="dx-item" style="background:${bg};border-left-color:${h.color}"><div class="dx-num" style="${badgeStyle}">${badge}</div><div class="dx-body"><div class="dx-row"><div><div class="dx-tipo" style="color:${h.color}">${h.tipo}</div><div class="dx-zona">${h.zona_label}${zonaNote}</div></div><div class="dx-urg" style="background:${hex(h.urgencia)}">${UL[h.urgencia]||h.urgencia}</div></div>${h.dato?`<div class="dx-ev">Dato: ${h.dato}</div>`:''}${h.accion?`<div class="dx-accion" style="color:${h.color}">→ ${h.accion}</div>`:''}${h.razon?`<div class="dx-conf">Por qué: ${h.razon}</div>`:''}</div></div>`;
     }).join('');
     const spatHtml=hallazgos.length?`<div class="dx-section"><div class="dx-header"><div><div class="dx-title">DIAGNÓSTICO DE CAMPO</div><div class="dx-summary" style="color:${hex(maxUrg)}">${hallazgos.length} hallazgo${hallazgos.length!==1?'s':''} · urgencia máx: ${UL[maxUrg]||maxUrg}</div></div>${nextSarLabel?`<div class="dx-sar-badge">Próx. SAR: ${nextSarLabel}</div>`:''}</div><div class="dx-list">${dxItemsHtml}</div></div>`:(nextSarLabel?`<div class="dx-section"><div class="dx-header"><div class="dx-title">ESTADO CAMPO</div><div class="dx-sar-badge">Próx. SAR: ${nextSarLabel}</div></div><div style="font-size:8px;color:var(--dim)">Sin hallazgos activos · campo en parámetros normales.</div></div>`:'');
     // ── GDD dormancy note (winter May–Aug in Argentina) ──────────────────────
