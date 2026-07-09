@@ -311,49 +311,54 @@ function _buildHallazgos(cancha,wl){
         });
     });
 
-    // 2. Prescripciones por zona — posición quirúrgica cuando hay datos satelitales en la zona
-    // Regla: si la satellite_alert YA marcó la zona → cx=null (no duplicar).
-    // Si hay foco_real en zona sin satellite_alert → usar foco como posición (info nueva).
-    // DRENAR/FUNGICIDA: siempre cx=null (sin datos pixel para drenaje).
+    // 2. Prescripciones por zona — colapsar idénticas en una sola entrada "campo completo"
+    // Agrupa por tipo+metric+detail: si N zonas tienen la misma prescripción exacta
+    // se muestra una sola vez con zona_label "Campo completo (N zonas)" o la lista de zonas.
+    const allZoneIds=Object.keys(cancha?.zones||{});
+    const prescGroups={};  // key: tipo|metric|detail → {act, urgencia, zids[], cx, cy, r}
     Object.entries(cancha?.zones||{}).forEach(([zid,zone])=>{
         if((zone.urgency||'OK')==='OK')return;
         const acts=(zone.actions||[]).filter(a=>a.type&&a.type!=='OK'&&ACTION_COL[a.type]);
         if(!acts.length)return;
         const bounds=_zBounds(zid);
-        // Focos en la zona, ordenados por NDVI ascendente (peor primero)
         const zFocos=focos.filter(f=>_inZone(f.x??0.5,f.y??0.5,bounds)).sort((a,b)=>a.ndvi-b.ndvi);
-        // ¿Hay satellite_alert NDVI en la zona?
         const hasNdviSat=satAlerts.some(a=>(a.tipo==='NDVI_BAJO'||a.tipo==='STRESS_COMBO'||a.tipo==='STRESS_HIDRICO')&&_inZone(a.x_frac??0.5,a.y_frac??0.5,bounds));
-
         acts.forEach(act=>{
-            let cx=null,cy=null,r=null,source='prescription';
-            if(act.type==='REGAR'||act.type==='FERTILIZAR'){
-                // Usa foco NDVI peor en zona solo si no hay satellite_alert NDVI solapado
-                if(!hasNdviSat&&zFocos.length){
-                    const f=zFocos[0];
-                    cx=FX+(f.x??0.5)*FW; cy=FY+(1-(f.y??0.5))*FH; r=2.8;
+            const key=`${act.type}|${act.metric||''}|${act.detail||''}`;
+            if(!prescGroups[key]){
+                // Calcular posición solo si la prescripción tiene respaldo satelital
+                let cx=null,cy=null,r=null;
+                if(act.type==='REGAR'||act.type==='FERTILIZAR'){
+                    if(!hasNdviSat&&zFocos.length){const f=zFocos[0];cx=FX+(f.x??0.5)*FW;cy=FY+(1-(f.y??0.5))*FH;r=2.8;}
+                } else if(act.type==='AEREAR'){
+                    const zCompact=satAlerts.find(a=>a.tipo==='COMPACTACION'&&_inZone(a.x_frac??0.5,a.y_frac??0.5,bounds));
+                    if(!hasNdviSat&&!zCompact&&zFocos.length){const f=zFocos[0];cx=FX+(f.x??0.5)*FW;cy=FY+(1-(f.y??0.5))*FH;r=2.8;}
                 }
-            } else if(act.type==='AEREAR'){
-                // Solo si hay satellite_alert COMPACTACION en zona (posición SAR)
-                const zCompact=satAlerts.find(a=>a.tipo==='COMPACTACION'&&_inZone(a.x_frac??0.5,a.y_frac??0.5,bounds));
-                // COMPACTACION alerts are already rendered in step 1; keep cx=null to avoid duplicate
-                // Only assign position if there's a foco but no satellite at all in zone
-                if(!hasNdviSat&&!zCompact&&zFocos.length){
-                    const f=zFocos[0];
-                    cx=FX+(f.x??0.5)*FW; cy=FY+(1-(f.y??0.5))*FH; r=2.8;
-                }
+                prescGroups[key]={act,urgencia:act.urgency||zone.urgency||'ESTA_SEMANA',zids:[zid],cx,cy,r};
+            } else {
+                prescGroups[key].zids.push(zid);
+                // Tomar la urgencia más crítica del grupo
+                const urgOrd2=['HOY','ESTA_SEMANA','PROXIMA_SEMANA','MONITOREAR','OK'];
+                const cur=prescGroups[key].urgencia,nw=act.urgency||zone.urgency||'ESTA_SEMANA';
+                if(urgOrd2.indexOf(nw)<urgOrd2.indexOf(cur))prescGroups[key].urgencia=nw;
             }
-            // DRENAR, FUNGICIDA y cualquier otro: siempre cx=null (sin dato pixel)
-            h.push({
-                tipo:act.type,zona_label:ZONE_FULL[zid]||ZONE_SHORT[zid]||zid,
-                cx,cy,r,
-                color:ACTION_COL[act.type]||'#6b7280',
-                urgencia:act.urgency||zone.urgency||'ESTA_SEMANA',
-                dato:act.metric||'',
-                accion:act.detail||act.type,
-                razon:act.razon||null,
-                source,
-            });
+        });
+    });
+    Object.values(prescGroups).forEach(({act,urgencia,zids,cx,cy,r})=>{
+        const nZonas=zids.length,nTotal=allZoneIds.filter(z=>cancha?.zones?.[z]?.urgency!=='OK').length||allZoneIds.length;
+        const zona_label=nZonas>=allZoneIds.length-1
+            ?'Campo completo — todas las zonas'
+            :(nZonas>2?`${nZonas} zonas · `+zids.slice(0,2).map(z=>ZONE_SHORT[z]||z).join(', ')+'…'
+                      :zids.map(z=>ZONE_FULL[z]||ZONE_SHORT[z]||z).join(' · '));
+        h.push({
+            tipo:act.type,zona_label,
+            cx,cy,r,
+            color:ACTION_COL[act.type]||'#6b7280',
+            urgencia,
+            dato:act.metric||'',
+            accion:act.detail||act.type,
+            razon:act.razon||null,
+            source:'prescription',
         });
     });
 
