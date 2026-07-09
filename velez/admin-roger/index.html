@@ -325,33 +325,37 @@ function _buildHallazgos(cancha,wl){
         });
     });
 
-    // 2. Prescripciones por zona — colapsar idénticas en una sola entrada "campo completo"
-    // Agrupa por tipo+metric+detail: si N zonas tienen la misma prescripción exacta
-    // se muestra una sola vez con zona_label "Campo completo (N zonas)" o la lista de zonas.
+    // 2. Prescripciones por zona — solo tipos NO cubiertos por satélite
+    // Si el satélite ya marcó NDVI bajo → los círculos ①②③ SON las posiciones de riego/fertilización.
+    // Agregar "REGAR campo completo" encima sería repetir lo mismo sin precisión.
+    // Solo se muestran prescripciones que el satélite NO cubre: DRENAR, AEREAR (sin sat), FUNGICIDA.
+    const hasAnyNdviSat=satAlerts.some(a=>a.tipo==='NDVI_BAJO'||a.tipo==='STRESS_COMBO'||a.tipo==='STRESS_HIDRICO');
+    const NDVI_TYPES=new Set(['REGAR','FERTILIZAR']); // cubiertos por círculos satélite si hay NDVI
     const allZoneIds=Object.keys(cancha?.zones||{});
-    const prescGroups={};  // key: tipo|metric|detail → {act, urgencia, zids[], cx, cy, r}
+    const prescGroups={};
     Object.entries(cancha?.zones||{}).forEach(([zid,zone])=>{
         if((zone.urgency||'OK')==='OK')return;
-        const acts=(zone.actions||[]).filter(a=>a.type&&a.type!=='OK'&&ACTION_COL[a.type]);
+        const acts=(zone.actions||[]).filter(a=>{
+            if(!a.type||a.type==='OK'||!ACTION_COL[a.type])return false;
+            // Suprimir REGAR/FERTILIZAR si el satélite ya los cubre con posición exacta
+            if(hasAnyNdviSat&&NDVI_TYPES.has(a.type))return false;
+            return true;
+        });
         if(!acts.length)return;
         const bounds=_zBounds(zid);
         const zFocos=focos.filter(f=>_inZone(f.x??0.5,f.y??0.5,bounds)).sort((a,b)=>a.ndvi-b.ndvi);
-        const hasNdviSat=satAlerts.some(a=>(a.tipo==='NDVI_BAJO'||a.tipo==='STRESS_COMBO'||a.tipo==='STRESS_HIDRICO')&&_inZone(a.x_frac??0.5,a.y_frac??0.5,bounds));
         acts.forEach(act=>{
             const key=`${act.type}|${act.metric||''}|${act.detail||''}`;
             if(!prescGroups[key]){
-                // Calcular posición solo si la prescripción tiene respaldo satelital
                 let cx=null,cy=null,r=null;
-                if(act.type==='REGAR'||act.type==='FERTILIZAR'){
-                    if(!hasNdviSat&&zFocos.length){const f=zFocos[0];cx=FX+(f.x??0.5)*FW;cy=FY+(1-(f.y??0.5))*FH;r=2.8;}
-                } else if(act.type==='AEREAR'){
+                if(act.type==='AEREAR'){
+                    // Solo posición si hay foco y no hay sat COMPACTACION
                     const zCompact=satAlerts.find(a=>a.tipo==='COMPACTACION'&&_inZone(a.x_frac??0.5,a.y_frac??0.5,bounds));
-                    if(!hasNdviSat&&!zCompact&&zFocos.length){const f=zFocos[0];cx=FX+(f.x??0.5)*FW;cy=FY+(1-(f.y??0.5))*FH;r=2.8;}
+                    if(!zCompact&&zFocos.length){const f=zFocos[0];cx=FX+(f.x??0.5)*FW;cy=FY+(1-(f.y??0.5))*FH;r=2.8;}
                 }
                 prescGroups[key]={act,urgencia:act.urgency||zone.urgency||'ESTA_SEMANA',zids:[zid],cx,cy,r};
             } else {
                 prescGroups[key].zids.push(zid);
-                // Tomar la urgencia más crítica del grupo
                 const urgOrd2=['HOY','ESTA_SEMANA','PROXIMA_SEMANA','MONITOREAR','OK'];
                 const cur=prescGroups[key].urgencia,nw=act.urgency||zone.urgency||'ESTA_SEMANA';
                 if(urgOrd2.indexOf(nw)<urgOrd2.indexOf(cur))prescGroups[key].urgencia=nw;
@@ -359,21 +363,12 @@ function _buildHallazgos(cancha,wl){
         });
     });
     Object.values(prescGroups).forEach(({act,urgencia,zids,cx,cy,r})=>{
-        const nZonas=zids.length,nTotal=allZoneIds.filter(z=>cancha?.zones?.[z]?.urgency!=='OK').length||allZoneIds.length;
-        const zona_label=nZonas>=allZoneIds.length-1
-            ?'Campo completo — todas las zonas'
-            :(nZonas>2?`${nZonas} zonas · `+zids.slice(0,2).map(z=>ZONE_SHORT[z]||z).join(', ')+'…'
-                      :zids.map(z=>ZONE_FULL[z]||ZONE_SHORT[z]||z).join(' · '));
-        h.push({
-            tipo:act.type,zona_label,
-            cx,cy,r,
-            color:ACTION_COL[act.type]||'#6b7280',
-            urgencia,
-            dato:act.metric||'',
-            accion:act.detail||act.type,
-            razon:act.razon||null,
-            source:'prescription',
-        });
+        const zona_label=zids.length>=allZoneIds.length-1
+            ?'Campo completo'
+            :(zids.length>2?`${zids.length} zonas`:zids.map(z=>ZONE_SHORT[z]||z).join(' · '));
+        h.push({tipo:act.type,zona_label,cx,cy,r,
+            color:ACTION_COL[act.type]||'#6b7280',urgencia,
+            dato:act.metric||'',accion:act.detail||act.type,razon:act.razon||null,source:'prescription'});
     });
 
     // 3. Riesgo fungal global — solo en el informe, sin círculo en campo
