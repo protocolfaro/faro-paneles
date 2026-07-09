@@ -389,6 +389,12 @@ function _buildHallazgos(cancha,wl){
 function renderZones(cancha){
     const svg=document.getElementById('prescSvg');if(!svg||!cancha?.zones)return;
     svg.innerHTML='';const NS='http://www.w3.org/2000/svg';
+    // Si el satélite ya marcó NDVI bajo, no mostrar pills REG/FER en las zonas — los círculos ①②③ son la precisión
+    const _satAlerts=cancha?.spatial_alerts||[];
+    const _vdHm=_vd?.usuarios?.roger?.heatmaps?.[cancha?.id||_activeCanchaId]||{};
+    const _focos=cancha?.focos_reales||_vdHm.focos_reales||[];
+    const _hasNdviSat=_satAlerts.some(a=>a.tipo==='NDVI_BAJO'||a.tipo==='STRESS_COMBO'||a.tipo==='STRESS_HIDRICO')
+        ||(_satAlerts.length===0&&_focos.some(f=>(f.ndvi??1)<0.50));
     Object.entries(cancha.zones).forEach(([zid,zone])=>{
         const rc=zone.svg_rect||ZONE_COORDS[zid]||{},u=zone.urgency||'OK',color=hex(u);
         const isHoy=u==='HOY',isOK=u==='OK',acN=zone.actions?.length||0,opBase=isOK?0.06:isHoy?0.42:acN>1?0.38:0.20,isActive=_activeZoneId===zid;
@@ -403,8 +409,12 @@ function renderZones(cancha){
             const cx=rc.x+rc.w/2,cy=rc.y+rc.h/2;
             // Nombre de zona
             const lbl=document.createElementNS(NS,'text');lbl.setAttribute('x',cx);lbl.setAttribute('y',cy-2.4);lbl.setAttribute('text-anchor','middle');lbl.setAttribute('font-family','Epilogue,sans-serif');lbl.setAttribute('font-size','3.0');lbl.setAttribute('font-weight','700');lbl.setAttribute('fill','#fff');lbl.setAttribute('fill-opacity','0.85');lbl.textContent=ZONE_SHORT[zid]||zid;g.appendChild(lbl);
-            // Pills de acción — todas las acciones activas de esta zona en una fila
-            const actActs=(zone.actions||[]).filter(a=>a.type&&a.type!=='OK'&&ACTION_COL[a.type]);
+            // Pills de acción — omitir REG/FER si el satélite ya los cubre con círculos exactos
+            const actActs=(zone.actions||[]).filter(a=>{
+                if(!a.type||a.type==='OK'||!ACTION_COL[a.type])return false;
+                if(_hasNdviSat&&(a.type==='REGAR'||a.type==='FERTILIZAR'))return false;
+                return true;
+            });
             if(actActs.length){
                 const pillW=9,pillH=3.2,pillGap=1.0,pillR=0.8;
                 const totalW=actActs.length*(pillW+pillGap)-pillGap;
