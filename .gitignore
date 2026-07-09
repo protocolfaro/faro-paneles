@@ -1,0 +1,7 @@
+# Datos de prueba local — no van en el repo del panel
+prescriptions_raw.json
+*.tmp
+.env
+.env.*
+node_modules/
+.claude/
