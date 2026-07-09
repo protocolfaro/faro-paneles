@@ -299,22 +299,17 @@ function _buildHallazgos(cancha,wl){
             source:'satellite',
         });
     });
-    // 2. Prescripciones por zona — posición x por tipo de acción (spread honesto)
-    // Cada tipo tiene una x característica fija en el campo para diferenciarse visualmente.
-    // No implica posición exacta dentro de la zona; el canchero entiende que es la ZONA.
-    const ACT_X={AEREAR:FX+9,REGAR:FX+18,DRENAR:FX+31,FUNGICIDA:FX+44,FERTILIZAR:FX+53};
+    // 2. Prescripciones por zona — SIN posición SVG.
+    // Las zonas son datos de nivel-zona (no pixel). La visualización espacial ya la hace
+    // renderZones() con rectángulos coloreados + pills de acción. Círculos aquí = fake precision.
     Object.entries(cancha?.zones||{}).forEach(([zid,zone])=>{
         if((zone.urgency||'OK')==='OK')return;
-        const zc=ZONE_COORDS[zid];if(!zc)return;
         const acts=(zone.actions||[]).filter(a=>a.type&&a.type!=='OK'&&ACTION_COL[a.type]);
         if(!acts.length)return;
-        const cy=zc.y+zc.h/2;
         acts.forEach((act)=>{
-            // x fijo por tipo: AEREAR=12, REGAR=21, DRENAR=34, FUNGICIDA=47, FERTILIZAR=56
-            const cx=ACT_X[act.type]||34;
             h.push({
                 tipo:act.type,zona_label:ZONE_FULL[zid]||ZONE_SHORT[zid]||zid,
-                cx,cy,r:2.4,
+                cx:null,cy:null,r:null,  // sin círculo — posición real desconocida dentro de la zona
                 color:ACTION_COL[act.type]||'#6b7280',
                 urgencia:act.urgency||zone.urgency||'ESTA_SEMANA',
                 dato:act.metric||'',
@@ -360,9 +355,34 @@ function renderZones(cancha){
         if(isActive){const br=document.createElementNS(NS,'rect');br.setAttribute('x',rc.x+0.3);br.setAttribute('y',rc.y+0.3);br.setAttribute('width',rc.w-0.6);br.setAttribute('height',rc.h-0.6);br.setAttribute('fill','none');br.setAttribute('stroke','rgba(255,255,255,0.85)');br.setAttribute('stroke-width','0.4');g.appendChild(br);}
         if(!isOK){
             const cx=rc.x+rc.w/2,cy=rc.y+rc.h/2;
-            const lbl=document.createElementNS(NS,'text');lbl.setAttribute('x',cx);lbl.setAttribute('y',cy-1.6);lbl.setAttribute('text-anchor','middle');lbl.setAttribute('font-family','Epilogue,sans-serif');lbl.setAttribute('font-size','3.0');lbl.setAttribute('font-weight','700');lbl.setAttribute('fill','#fff');lbl.setAttribute('fill-opacity','0.85');lbl.textContent=ZONE_SHORT[zid]||zid;g.appendChild(lbl);
-            const pt=zone.primary||{};
-            if(pt.type&&pt.type!=='OK'){const sub=document.createElementNS(NS,'text');sub.setAttribute('x',cx);sub.setAttribute('y',cy+2.4);sub.setAttribute('text-anchor','middle');sub.setAttribute('font-family','Epilogue,sans-serif');sub.setAttribute('font-size','2.4');sub.setAttribute('font-weight','700');sub.setAttribute('fill','#fff');sub.setAttribute('fill-opacity','0.65');sub.textContent=pt.type;g.appendChild(sub);}
+            // Nombre de zona
+            const lbl=document.createElementNS(NS,'text');lbl.setAttribute('x',cx);lbl.setAttribute('y',cy-2.4);lbl.setAttribute('text-anchor','middle');lbl.setAttribute('font-family','Epilogue,sans-serif');lbl.setAttribute('font-size','3.0');lbl.setAttribute('font-weight','700');lbl.setAttribute('fill','#fff');lbl.setAttribute('fill-opacity','0.85');lbl.textContent=ZONE_SHORT[zid]||zid;g.appendChild(lbl);
+            // Pills de acción — todas las acciones activas de esta zona en una fila
+            const actActs=(zone.actions||[]).filter(a=>a.type&&a.type!=='OK'&&ACTION_COL[a.type]);
+            if(actActs.length){
+                const pillW=9,pillH=3.2,pillGap=1.0,pillR=0.8;
+                const totalW=actActs.length*(pillW+pillGap)-pillGap;
+                const pillX0=cx-totalW/2;
+                actActs.forEach((act,ai)=>{
+                    const px=pillX0+ai*(pillW+pillGap);
+                    const py=cy+0.8;
+                    const pill=document.createElementNS(NS,'rect');
+                    pill.setAttribute('x',px);pill.setAttribute('y',py);
+                    pill.setAttribute('width',pillW);pill.setAttribute('height',pillH);
+                    pill.setAttribute('rx',pillR);
+                    pill.setAttribute('fill',ACTION_COL[act.type]||'#6b7280');
+                    pill.setAttribute('fill-opacity',act.urgency==='HOY'?'0.80':'0.55');
+                    g.appendChild(pill);
+                    const ACT_SHORT2={AEREAR:'AER',REGAR:'REG',FUNGICIDA:'FUN',FERTILIZAR:'FER',DRENAR:'DRE'};
+                    const pt2=document.createElementNS(NS,'text');
+                    pt2.setAttribute('x',px+pillW/2);pt2.setAttribute('y',py+pillH-0.7);
+                    pt2.setAttribute('text-anchor','middle');pt2.setAttribute('font-family','Epilogue,sans-serif');
+                    pt2.setAttribute('font-size','2.2');pt2.setAttribute('font-weight','700');
+                    pt2.setAttribute('fill','#000');pt2.setAttribute('fill-opacity','0.85');
+                    pt2.textContent=ACT_SHORT2[act.type]||act.type.slice(0,3);
+                    g.appendChild(pt2);
+                });
+            }
         }
         g.addEventListener('click',()=>selectZone(zid));svg.appendChild(g);
     });
