@@ -267,7 +267,8 @@ async function renderHeatmap(file){
     const dpr=window.devicePixelRatio||1,cssW=canvas.offsetWidth||400,cssH=canvas.offsetHeight||600;
     canvas.width=cssW*dpr;canvas.height=cssH*dpr;canvas.style.width=cssW+'px';canvas.style.height=cssH+'px';
     const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);ctx.clearRect(0,0,cssW,cssH);
-    const url=`https://raw.githubusercontent.com/protocolfaro/faroprotocol/main/velez/heatmaps/${file}`;
+    const fname=(file||'').split('/').pop();  // strip prefix path — archivo tiene "heatmaps/heatmap_X.png"
+    const url=`https://raw.githubusercontent.com/protocolfaro/faroprotocol/main/velez/heatmaps/${fname}`;
     return new Promise(res=>{
         const img=new Image();img.crossOrigin='anonymous';
         img.onload=()=>{ctx.save();ctx.translate(cssW,0);ctx.rotate(Math.PI/2);ctx.drawImage(img,0,0,736,484,0,0,cssH,cssW);ctx.restore();canvas.style.opacity=_hmVisible?'0.55':'0';res();};
@@ -285,8 +286,21 @@ window.addEventListener('resize',()=>{if(_hmFile&&_hmVisible)renderHeatmap(_hmFi
 function _buildHallazgos(cancha,wl){
     const FX=3,FY=3,FW=62,FH=99;
     const h=[];
-    const satAlerts=cancha?.spatial_alerts||[];
-    const focos=cancha?.focos_reales||[];
+    const cid=cancha?.id||_activeCanchaId;
+    // Focos: Railway primero, fallback a velez_data.json (siempre hay dato)
+    const vdHm=_vd?.usuarios?.roger?.heatmaps?.[cid]||{};
+    const focos=cancha?.focos_reales||vdHm.focos_reales||[];
+    // Alertas satelitales: Railway primero; si vacío, sintetizar desde focos
+    let satAlerts=cancha?.spatial_alerts||[];
+    if(!satAlerts.length&&focos.length){
+        satAlerts=focos.filter(f=>(f.ndvi??1)<0.50).map(f=>{
+            const ndvi=f.ndvi??0;
+            return{x_frac:f.x,y_frac:f.y,radius_frac:0.05,tipo:'NDVI_BAJO',
+                label:`NDVI ${ndvi.toFixed(2)}`,sub_label:`NDVI ${ndvi.toFixed(2)}`,
+                urgencia:ndvi<0.25?'HOY':'ESTA_SEMANA',color:'#ef4444',
+                confianza_pct:55,fuentes:['ndvi'],dias_activo:0};
+        });
+    }
 
     // Zone bounds helpers (north=y_frac 1, south=0 — mismo convenio que satellite_pipeline)
     const _zBounds=zid=>{
@@ -619,7 +633,8 @@ function toggleGrid3x3(){
 function activateCancha(cid){
     _activeCanchaId=cid;const cancha=_data?.canchas?.[cid];
     renderPanel(cid);renderZones(cancha);renderSpatialAlerts(cancha);updateSatBadge(cancha);
-    if(cancha?.heatmap_archivo)renderHeatmap(cancha.heatmap_archivo);
+    const hmFile=cancha?.heatmap_archivo||_vd?.usuarios?.roger?.heatmaps?.[cid]?.archivo;
+    if(hmFile)renderHeatmap(hmFile);
     renderZoneDetail(cancha,_activeZoneId);
     // SAR chart + Grid 3×3 solo visibles para Amalfitani
     const isAmal=cid==='amalfitani';
