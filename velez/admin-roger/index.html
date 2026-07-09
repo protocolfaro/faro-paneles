@@ -290,15 +290,29 @@ function _buildHallazgos(cancha,wl){
     // Focos: Railway primero, fallback a velez_data.json (siempre hay dato)
     const vdHm=_vd?.usuarios?.roger?.heatmaps?.[cid]||{};
     const focos=cancha?.focos_reales||vdHm.focos_reales||[];
+    // Dormancia invernal: GDD=0 en mayo-agosto → NDVI bajo es NORMAL, no emergencia
+    const _mo=new Date().getMonth()+1;
+    const _isDormancia=(_mo>=5&&_mo<=8)||((wl?.gdd_rate_diario??1)===0&&_mo>=4&&_mo<=9);
+    const _ndviUrgencia=(ndvi)=>{
+        if(_isDormancia) return ndvi<0.10?'ESTA_SEMANA':'MONITOREAR'; // dormancia: umbral mucho más bajo
+        return ndvi<0.25?'HOY':ndvi<0.40?'ESTA_SEMANA':'MONITOREAR';
+    };
     // Alertas satelitales: Railway primero; si vacío, sintetizar desde focos
     let satAlerts=cancha?.spatial_alerts||[];
     if(!satAlerts.length&&focos.length){
         satAlerts=focos.filter(f=>(f.ndvi??1)<0.50).map(f=>{
             const ndvi=f.ndvi??0;
             return{x_frac:f.x,y_frac:f.y,radius_frac:0.05,tipo:'NDVI_BAJO',
-                label:`NDVI ${ndvi.toFixed(2)}`,sub_label:`NDVI ${ndvi.toFixed(2)}`,
-                urgencia:ndvi<0.25?'HOY':'ESTA_SEMANA',color:'#ef4444',
+                label:`NDVI ${ndvi.toFixed(2)}`,sub_label:'',
+                urgencia:_ndviUrgencia(ndvi),color:_isDormancia?'#f59e0b':'#ef4444',
                 confianza_pct:55,fuentes:['ndvi'],dias_activo:0};
+        });
+    } else if(satAlerts.length&&_isDormancia){
+        // Corregir urgencia de alertas Railway en dormancia — HOY no aplica si pasto duerme
+        satAlerts=satAlerts.map(a=>{
+            if(a.tipo!=='NDVI_BAJO'&&a.tipo!=='STRESS_COMBO')return a;
+            const ndvi=parseFloat((a.label||'0').replace('NDVI ',''))||0;
+            return{...a,urgencia:_ndviUrgencia(ndvi),color:_isDormancia?'#f59e0b':a.color};
         });
     }
 
@@ -311,14 +325,23 @@ function _buildHallazgos(cancha,wl){
     const _inZone=(xf,yf,b)=>b&&yf>=b.yMin&&yf<=b.yMax&&xf>=b.xMin&&xf<=b.xMax;
 
     // 1. Alertas satelitales — posición pixel exacta (fuente primaria)
-    const acMap={NDVI_BAJO:'REGAR · Monitorear cobertura verde',STRESS_COMBO:'REGAR + AEREAR — estrés multiespectral',COMPACTACION:'AEREAR · Subsolado preventivo',STRESS_HIDRICO:'REGAR · Déficit hídrico detectado'};
+    const acMap={
+        NDVI_BAJO: _isDormancia?'Dormancia activa — monitorear recuperación primaveral':'REGAR · Monitorear cobertura verde',
+        STRESS_COMBO:'REGAR + AEREAR — estrés multiespectral',
+        COMPACTACION:'AEREAR · Subsolado preventivo',
+        STRESS_HIDRICO:'REGAR · Déficit hídrico detectado',
+    };
     satAlerts.forEach(a=>{
+        const lbl=a.label||'';
+        const sub=a.sub_label||'';
+        const datoStr=sub&&sub!==lbl?`${lbl} · ${sub}`:lbl; // evitar "NDVI 0.12 · NDVI 0.12"
         h.push({
-            tipo:a.tipo||'ALERTA SAT.',zona_label:'Posición satelital real',
+            tipo:a.tipo||'ALERTA SAT.',
+            zona_label:_isDormancia?'Posición satelital · dormancia invernal':'Posición satelital real',
             cx:FX+(a.x_frac||0.5)*FW, cy:FY+(1-(a.y_frac||0.5))*FH,
             r:Math.max(2.2,(a.radius_frac||0.05)*FW),
             color:a.color||'#ef4444',urgencia:a.urgencia||'ESTA_SEMANA',
-            dato:`${a.label||''}${a.sub_label?' · '+a.sub_label:''}`,
+            dato:datoStr,
             accion:acMap[a.tipo]||a.tipo,
             razon:a.confianza_pct!=null?`Confianza ${a.confianza_pct}% · Fuentes: ${(a.fuentes||[]).join(' + ')||'?'}${a.dias_activo?` · Activo ${a.dias_activo}d`:''}`:null,
             source:'satellite',
@@ -515,11 +538,18 @@ function renderPanel(cid){
     const zoneOrder=Object.keys(cancha.zones||{}).length?Object.keys(cancha.zones):_amalOrder;
     const zGrid=zoneOrder.map(zid=>{const z=cancha.zones?.[zid]||{},u=z.urgency||'OK',pt=z.primary||{},acCnt=z.actions?.length||0,bg=`rgba(${hexRgb(hex(u))},${u==='OK'?0.06:acCnt>1?0.22:0.13})`,sel=_activeZoneId===zid;return `<div class="zone-tile${sel?' selected':''}" data-zone="${zid}" onclick="selectZone('${zid}')" style="background:${bg};border-color:${u!=='OK'?hex(u):'rgba(255,255,255,0.06)'}"><div class="zone-tile-label" style="display:flex;justify-content:space-between;align-items:center">${ZONE_SHORT[zid]||zid}${acCnt>1?`<span style="background:rgba(255,255,255,0.15);border-radius:2px;padding:0 3px;font-size:6px">${acCnt}</span>`:''}</div><div class="zone-tile-urgency" style="color:${hex(u)}">${UL[u]||u}</div><div class="zone-tile-type" style="color:${ACTION_COL[pt.type]||'#6b7280'}">${pt.type&&pt.type!=='OK'?pt.type:'OK'}</div></div>`;}).join('');
     const et0=fmt1(wl.et0_mm_dia),et0Sem=fmt1(wl.et0_acumulado_7d||wl.et0_semana_mm),defi=fmt1(wl.deficit_hidrico_mm||wl.deficit_mm),defHigh=parseFloat(defi)>5,hum=fmt0(wl.humedad_suelo_pct),lluvia=fmt1(wl.lluvia_48h_mm),hora=wl.hora_riego_optima||'-',gdd7=fmt1(wl.gdd_acumulado_7d),gddR=fmt1(wl.gdd_rate_diario);
-    const cNdvi=cancha.ndvi!=null?parseFloat(cancha.ndvi):null,ndviStr=cNdvi!=null?cNdvi.toFixed(3):'-',ndviCol=cNdvi==null?'var(--dim)':cNdvi>0.55?'var(--green)':cNdvi<0.35?'#f59e0b':'var(--whi)';
+    // NDVI: usar fuente más confiable — gndvi_por_cancha de S2 si disponible, sino cancha.ndvi
+    const _vdNdvi=_vd?.weather_live?.gndvi_por_cancha?.canchas?.[cid]?.ndvi;
+    const cNdvi=_vdNdvi!=null?parseFloat(_vdNdvi):(cancha.ndvi!=null?parseFloat(cancha.ndvi):null);
+    const _ndviSrc=_vdNdvi!=null?'S2':'hm';
+    const ndviStr=cNdvi!=null?cNdvi.toFixed(3):'-';
+    const ndviCol=cNdvi==null?'var(--dim)':cNdvi>0.55?'var(--green)':cNdvi<0.35?'#f59e0b':'var(--whi)';
     // ── SAR section — per-cancha VV/VH, global for change/insar ─────────────
-    const sarVV=cancha.sar_vv_db??wl.sar_vv_db,sarInsar=wl.insar_mm,sarFecha=cancha.sar_fecha||wl.sar_fecha||'',sarChange=wl.sar_vv_change_6d,vhVv=cancha.sar_vh_db!=null?(cancha.sar_vh_db-sarVV):wl.vh_vv_ratio;
-    const vvCls=sarVV!=null?(sarVV>-7.5?'alert':sarVV>-9.5?'':'warn'):'';
-    const vvLbl=sarVV!=null?(sarVV>-7.5?'COMPACTACIÓN ALTA':sarVV>-9.5?'NORMAL':'SUELO SUELTO'):'—';
+    // SAR proxy (Van Genuchten) usa escala diferente — no comparar con umbrales Sentinel-1 reales
+    const _sarIsProxy=!wl.sar_disponible||(wl.sar_mensaje||'').includes('proxy')||(wl.sar_mensaje||'').includes('Van Genuchten');
+    const sarVV=cancha.sar_vv_db??(!_sarIsProxy?wl.sar_vv_db:null),sarInsar=wl.insar_mm,sarFecha=cancha.sar_fecha||wl.sar_fecha||'',sarChange=wl.sar_vv_change_6d,vhVv=cancha.sar_vh_db!=null?(cancha.sar_vh_db-sarVV):wl.vh_vv_ratio;
+    const vvCls=sarVV!=null?(_sarIsProxy?'warn':sarVV>-7.5?'alert':sarVV>-9.5?'':'warn'):'';
+    const vvLbl=sarVV!=null?(_sarIsProxy?'PROXY SM':'':sarVV>-7.5?'COMPACTACIÓN ALTA':sarVV>-9.5?'NORMAL':'SUELO SUELTO'):'—';
     const chgCls=sarChange!=null?(sarChange<-1.5?'alert':sarChange>1.0?'warn':''):'';
     const chgLbl=sarChange!=null?(sarChange<-1.5?'MAS SECO':sarChange<-0.5?'SECANDO':sarChange<0.5?'ESTABLE':'HUMEDO'):'—';
     const insarAbs=sarInsar!=null?Math.abs(sarInsar):0,insarCls=sarInsar!=null?(insarAbs>5?'alert':insarAbs>2?'warn':''):'';
